@@ -11,6 +11,8 @@ This project is configured with:
 - **EditorConfig**: Maintains consistent coding styles across different editors
 - **Jest**: JavaScript testing framework for unit tests
 - **Cypress**: End-to-end testing framework for browser testing
+- **Commitlint**: Git commit message linting for conventional commits
+- **Husky**: Git hooks for running pre-commit checks
 - **Apifox**: API documentation and testing tool
 
 ## Installation
@@ -268,3 +270,89 @@ Configure environments in `.apifoxrc.json`:
 - **Development**: http://localhost:3000/api
 - **Staging**: https://staging-api.example.com
 - **Production**: https://api.example.com
+
+## Commit Message Convention
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) standard enforced by Commitlint.
+
+### Commit Message Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Types
+
+- **feat**: A new feature
+- **fix**: A bug fix
+- **docs**: Documentation only changes
+- **style**: Code style changes (formatting, missing semicolons, etc)
+- **refactor**: Code refactoring without changing functionality
+- **perf**: Performance improvements
+- **test**: Adding or updating tests
+- **build**: Changes that affect the build system or dependencies
+- **ci**: Changes to CI configuration
+- **chore**: Other changes that don't modify src or test files
+- **revert**: Reverts a previous commit
+
+### Examples
+
+**Good commit messages:**
+
+```bash
+feat: add user authentication
+fix: resolve login button not working
+docs: update API documentation
+refactor: restructure user service
+test: add unit tests for helper functions
+```
+
+**Bad commit messages:**
+
+```bash
+# Too vague
+update code
+fix bug
+
+# Wrong format
+UPDATE: added new feature
+
+# Missing type
+add user authentication
+```
+
+### Installation
+
+After installing dependencies, setup Husky:
+
+```bash
+npm install
+npx husky install
+```
+
+### Usage
+
+When you commit, commitlint will automatically check your commit message:
+
+```bash
+# Good commit - will pass
+git commit -m "feat: add user registration"
+
+# Bad commit - will fail
+git commit -m "update code"
+# Error: subject may not be empty [subject-empty]
+```
+
+### Configuration
+
+Configuration file: `commitlint.config.js`
+
+- Enforces conventional commit format
+- Validates type, subject, body, and footer
+- Maximum header length: 100 characters
+- Maximum body/footer length: 200 characters
+- Automatically ignores Merge and Revert commits
