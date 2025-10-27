@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "editorconfig.editorconfig",
+    "42crunch.vscode-openapi",
+    "redhat.vscode-yaml"
+  ]
+}
+

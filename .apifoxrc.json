@@ -1,0 +1,37 @@
+{
+  "projectName": "Minor Review API",
+  "apiBaseUrl": "http://localhost:3000/api",
+  "openApiPath": "./docs/api/openapi.json",
+  "environments": [
+    {
+      "name": "Development",
+      "baseUrl": "http://localhost:3000/api",
+      "variables": {
+        "API_BASE_URL": "http://localhost:3000/api",
+        "AUTH_TOKEN": ""
+      }
+    },
+    {
+      "name": "Staging",
+      "baseUrl": "https://staging-api.example.com",
+      "variables": {
+        "API_BASE_URL": "https://staging-api.example.com",
+        "AUTH_TOKEN": ""
+      }
+    },
+    {
+      "name": "Production",
+      "baseUrl": "https://api.example.com",
+      "variables": {
+        "API_BASE_URL": "https://api.example.com",
+        "AUTH_TOKEN": ""
+      }
+    }
+  ],
+  "importSettings": {
+    "autoConvertQueryToParams": true,
+    "autoConvertPathToParams": true,
+    "generateExampleResponse": true,
+    "generateCodeSnippets": true
+  }
+}

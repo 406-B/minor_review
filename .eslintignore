@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+coverage/
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+# Configuration files (optional, can be removed if you want to lint these)
+*.config.js
+*.config.ts
+
+# Generated files
+*.min.js
+
