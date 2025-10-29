@@ -6,6 +6,12 @@ class CanteenSerializer(serializers.ModelSerializer):
         model = Canteen
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at']
+    
+    def validate_name(self, value):
+        """验证食堂名称不为空"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("食堂名称不能为空")
+        return value.strip()
 
 class TagSerializer(serializers.ModelSerializer):
     dish_count = serializers.SerializerMethodField()
@@ -18,6 +24,15 @@ class TagSerializer(serializers.ModelSerializer):
     def get_dish_count(self, obj):
         """Return the number of dishes with this tag"""
         return obj.dishes.count()
+    
+    def validate_name(self, value):
+        """验证标签名称不为空且长度符合要求"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("标签名称不能为空")
+        value = value.strip()
+        if len(value) > 30:
+            raise serializers.ValidationError("标签名称不能超过30个字符")
+        return value
 
 class DishSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
@@ -53,24 +68,17 @@ class DishSerializer(serializers.ModelSerializer):
         """Check if there are pending tags waiting for approval"""
         return obj.pending_tags.exists()
     
-    def validate(self, data):
-        request = self.context.get('request')
-        if not request:
-            return data
-        
-        user = request.user
-        
-        # 如果用户试图修改标签
-        if 'tags' in data:
-            # 管理员可以直接修改
-            if user.is_staff or user.is_superuser:
-                # 允许修改，什么都不做
-                pass
-            else:
-                # 普通用户：将标签移到 pending_tags
-                data['pending_tags'] = data.pop('tags')
-        
-        return data
+    def validate_name(self, value):
+        """验证菜品名称"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("菜品名称不能为空")
+        return value.strip()
+    
+    def validate_price(self, value):
+        """验证价格非负"""
+        if value < 0:
+            raise serializers.ValidationError("价格不能为负数")
+        return value
         
 class DishListSerializer(serializers.ModelSerializer):
     """Simplified serializer for list views"""
