@@ -32,10 +32,7 @@ cypress/downloads/
 *.apifox
 
 # IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-
+.vscode/
 # Test files
 .jest-cache/
 
