@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Canteen, Tag, Dish, Rating
+from .models import Canteen, Tag, Dish, Rating, Review
 
 class CanteenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -104,3 +104,61 @@ class RatingSerializer(serializers.ModelSerializer):
         if value < 1.0 or value > 5.0:
             raise serializers.ValidationError("评分必须在 1.0-5.0 之间")
         return value
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """评论序列化器"""
+    username = serializers.CharField(source='user.username', read_only=True)
+    dish_name = serializers.CharField(source='dish.name', read_only=True)
+    user_rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Review
+        fields = [
+            'id', 'user', 'username', 'dish', 'dish_name',
+            'content', 'images', 'rating', 'user_rating',
+            'likes_count', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['user', 'likes_count', 'created_at', 'updated_at']
+
+    def get_user_rating(self, obj):
+        """获取用户对该菜品的评分"""
+        if obj.rating:
+            return obj.rating.score
+        return None
+
+    def validate_content(self, value):
+        """验证评论内容"""
+        if not value or not value.strip():
+            raise serializers.ValidationError("评论内容不能为空")
+        if len(value.strip()) < 5:
+            raise serializers.ValidationError("评论内容至少5个字符")
+        if len(value) > 1000:
+            raise serializers.ValidationError("评论内容不能超过1000个字符")
+        return value.strip()
+
+    def validate_images(self, value):
+        """验证图片列表"""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("图片必须是列表格式")
+        if len(value) > 9:
+            raise serializers.ValidationError("最多上传9张图片")
+        return value
+
+
+class ReviewListSerializer(serializers.ModelSerializer):
+    """评论列表序列化器（简化版）"""
+    username = serializers.CharField(source='user.username', read_only=True)
+    user_rating = serializers.DecimalField(
+        source='rating.score',
+        max_digits=3,
+        decimal_places=2,
+        read_only=True
+    )
+
+    class Meta:
+        model = Review
+        fields = [
+            'id', 'user', 'username', 'content', 'images',
+            'user_rating', 'likes_count', 'created_at'
+        ]

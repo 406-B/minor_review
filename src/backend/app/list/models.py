@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.conf import settings
 
 
 class Canteen(models.Model):
@@ -96,9 +97,25 @@ class Dish(models.Model):
         self.save(update_fields=['view_count'])
 
 class Rating(models.Model):
-    dish = models.ForeignKey(Dish, on_delete=models.CASCADE, related_name='ratings')
-    rating = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)])
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ratings')
+    """用户对菜品的评分"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='dish_ratings',
+        help_text="评分用户"
+    )
+    dish = models.ForeignKey(
+        Dish,
+        on_delete=models.CASCADE,
+        related_name='ratings',
+        help_text="被评分的菜品"
+    )
+    score = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
+        help_text="评分 1-5 分"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -106,7 +123,52 @@ class Rating(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Rating'
         verbose_name_plural = 'Ratings'
-        unique_together = ['dish', 'user']
+        unique_together = ['user', 'dish']
 
     def __str__(self):
-        return f"{self.user.username} - {self.dish.name} - {self.rating}"
+        return f"{self.user.username} - {self.dish.name}: {self.score}分"
+
+
+class Review(models.Model):
+    """用户对菜品的文字评论"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='dish_reviews',
+        help_text="评论用户"
+    )
+    dish = models.ForeignKey(
+        Dish,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        help_text="被评论的菜品"
+    )
+    content = models.TextField(help_text="评论内容")
+    images = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="评论图片URL列表"
+    )
+    rating = models.ForeignKey(
+        Rating,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='review',
+        help_text="关联的评分（可选）"
+    )
+    likes_count = models.IntegerField(default=0, help_text="点赞数")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Review'
+        verbose_name_plural = 'Reviews'
+        indexes = [
+            models.Index(fields=['dish', '-created_at']),
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.dish.name}: {self.content[:50]}"

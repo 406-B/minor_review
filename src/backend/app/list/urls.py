@@ -41,5 +41,19 @@ urlpatterns = [
     path('tags/', views.tag_list, name='tag-list'),
     # POST /api/tags/create/ - 创建新标签（需管理员权限）
     path('tags/create/', views.create_tag, name='create-tag'),
+
+    # ==================== 评论相关 ====================
+    # GET /api/dishes/<id>/reviews/ - 获取菜品的评论列表
+    path('dishes/<int:dish_id>/reviews/', views.review_list, name='review-list'),
+    # POST /api/dishes/<id>/reviews/create/ - 创建评论（需登录）
+    path('dishes/<int:dish_id>/reviews/create/', views.create_review, name='create-review'),
+    # PUT/PATCH /api/reviews/<id>/ - 更新评论（需登录，仅本人）
+    path('reviews/<int:review_id>/', views.update_review, name='update-review'),
+    # DELETE /api/reviews/<id>/ - 删除评论（需登录，仅本人或管理员）
+    path('reviews/<int:review_id>/delete/', views.delete_review, name='delete-review'),
+    # POST /api/reviews/<id>/like/ - 点赞/取消点赞评论（需登录）
+    path('reviews/<int:review_id>/like/', views.like_review, name='like-review'),
+    # GET /api/reviews/my/ - 获取我的评论（需登录）
+    path('reviews/my/', views.my_reviews, name='my-reviews'),
 ]
 

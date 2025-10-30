@@ -3,8 +3,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.db.models import Q, Avg, Count
-from .models import Canteen, Dish, Tag, Rating
-from .serializers import CanteenSerializer, DishSerializer, DishListSerializer, TagSerializer
+from .models import Canteen, Dish, Tag, Rating, Review
+from .serializers import (
+    CanteenSerializer, DishSerializer, DishListSerializer, TagSerializer,
+    RatingSerializer, ReviewSerializer, ReviewListSerializer
+)
 
 
 @api_view(['GET'])
@@ -432,3 +435,165 @@ def create_tag(request):
         'message': '标签创建失败',
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ==================== 评论相关视图 ====================
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def review_list(request, dish_id):
+    """
+    获取指定菜品的评论列表
+    支持排序：按时间(默认)、点赞数
+    """
+    dish = get_object_or_404(Dish, id=dish_id)
+    reviews = Review.objects.filter(dish=dish)
+
+    # 排序
+    ordering = request.query_params.get('ordering', '-created_at')
+    if ordering in ['created_at', '-created_at', 'likes_count', '-likes_count']:
+        reviews = reviews.order_by(ordering)
+
+    serializer = ReviewListSerializer(reviews, many=True)
+    return Response({
+        'code': 200,
+        'message': '获取评论列表成功',
+        'data': {
+            'reviews': serializer.data,
+            'total': reviews.count()
+        }
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_review(request, dish_id):
+    """
+    用户创建评论
+
+    请求体示例：
+    {
+        "content": "很好吃！",
+        "images": ["http://example.com/1.jpg", "http://example.com/2.jpg"],
+        "rating_score": 4.5  # 可选，如果提供则同时创建或更新评分
+    }
+    """
+    dish = get_object_or_404(Dish, id=dish_id)
+    user = request.user
+
+    # 检查用户是否已经评论过
+    existing_review = Review.objects.filter(user=user, dish=dish).first()
+    if existing_review:
+        return Response({
+            'code': 400,
+            'message': '您已经评论过该菜品，请编辑现有评论',
+            'data': {'review_id': existing_review.id}
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # 处理评分（如果提供）
+    rating_score = request.data.get('rating_score')
+    rating_obj = None
+
+    if rating_score:
+        try:
+            rating_score = float(rating_score)
+            if rating_score < 1.0 or rating_score > 5.0:
+                return Response({
+                    'code': 400,
+                    'message': '评分必须在 1.0-5.0 之间'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # 创建或更新评分
+            rating_obj, created = Rating.objects.update_or_create(
+                user=user,
+                dish=dish,
+                defaults={'score': rating_score}
+            )
+
+            # 重新计算菜品平均分
+            avg_rating = Rating.objects.filter(dish=dish).aggregate(Avg('score'))['score__avg']
+            dish.rating = round(avg_rating, 2) if avg_rating else 0
+            dish.save(update_fields=['rating'])
+
+        except ValueError:
+            return Response({
+                'code': 400,
+                'message': '评分格式不正确'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    # 创建评论
+    serializer = ReviewSerializer(data=request.data)
+    if serializer.is_valid():
+        review = serializer.save(user=user, dish=dish, rating=rating_obj)
+
+        return Response({
+            'code': 201,
+            'message': '评论创建成功',
+            'data': ReviewSerializer(review).data
+        }, status=status.HTTP_201_CREATED)
+
+    return Response({
+        'code': 400,
+        'message': '评论创建失败',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def update_review(request, review_id):
+    """
+    用户更新自己的评论
+
+    请求体示例（可部分更新）：
+    {
+        "content": "更新后的内容",
+        "images": ["http://example.com/new.jpg"]
+    }
+    """
+    review = get_object_or_404(Review, id=review_id)
+
+    # 检查权限：只能编辑自己的评论
+    if review.user != request.user:
+        return Response({
+            'code': 403,
+            'message': '您没有权限编辑此评论'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = ReviewSerializer(review, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            'code': 200,
+            'message': '评论更新成功',
+            'data': serializer.data
+        })
+
+    return Response({
+        'code': 400,
+        'message': '评论更新失败',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def delete_review(request, review_id):
+    """
+    用户删除自己的评论
+    管理员可以删除任何评论
+    """
+    review = get_object_or_404(Review, id=review_id)
+
+    # 检查权限：只能删除自己的评论，或者管理员
+    if review.user != request.user and not (request.user.is_staff or request.user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '您没有权限删除此评论'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    review.delete()
+    return Response({
+        'code': 200,
+        'message': '评论删除成功'
+    })
