@@ -57,7 +57,7 @@ class Dish(models.Model):
         Tag, blank=True, related_name='dishes', help_text="Tags for filtering and display"
     )
     pending_tags = models.ManyToManyField(
-        Tag, blank=True, related_name='pending_dishes', 
+        Tag, blank=True, related_name='pending_dishes',
         help_text="Tags submitted by users, pending admin approval"
     )
 
@@ -94,3 +94,19 @@ class Dish(models.Model):
         """Increment the view count when a dish is viewed"""
         self.view_count += 1
         self.save(update_fields=['view_count'])
+
+class Rating(models.Model):
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE, related_name='ratings')
+    rating = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)])
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ratings')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Rating'
+        verbose_name_plural = 'Ratings'
+        unique_together = ['dish', 'user']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.dish.name} - {self.rating}"
