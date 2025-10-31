@@ -1,23 +1,22 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
+// App.vue simplified to avoid missing component imports and to render routes.
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
+  <div id="app-root">
+    <nav class="top-nav">
+      <router-link to="/">首页</router-link>
+      <router-link to="/profile">个人主页</router-link>
+    </nav>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+    <main>
+      <router-view />
+    </main>
+  </div>
 </template>
 
 <style scoped>
+/* kept some legacy styles harmlessly; main UI is handled in components */
 header {
   line-height: 1.5;
 }
@@ -44,4 +43,8 @@ header {
     flex-wrap: wrap;
   }
 }
+
+.top-nav { display:flex; gap:1rem; padding:0.75rem 1rem; background:#fafafa; border-bottom:1px solid rgba(0,0,0,0.04) }
+.top-nav a { color:#2b8aef; text-decoration:none }
+#app-root { min-height: 100vh }
 </style>
