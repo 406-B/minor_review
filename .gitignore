@@ -39,6 +39,9 @@ cypress/downloads/
 # Test files
 .jest-cache/
 
+# Husky
+.husky/_/
+
 # IDE - IntelliJ IDEA
 .idea/
 *.iml
