@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "user",
     "post",
     "login",  # 登录注册应用
+    "profile",  # 用户个人资料应用 11/2 yyf
 ]
 
 REST_FRAMEWORK = {
