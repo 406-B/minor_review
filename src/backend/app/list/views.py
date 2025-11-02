@@ -56,10 +56,15 @@ def canteen_detail(request, canteen_id):
     if min_rating:
         dishes = dishes.filter(rating__gte=float(min_rating))
 
-    # 支持搜索
+    # 支持关键词搜索（搜索菜品名称、描述、食堂名称、标签名称）
     search = request.query_params.get('search', None)
     if search:
-        dishes = dishes.filter(Q(name__icontains=search) | Q(description__icontains=search))
+        dishes = dishes.filter(
+            Q(name__icontains=search) |
+            Q(description__icontains=search) |
+            Q(canteen__name__icontains=search) |
+            Q(tags__name__icontains=search)
+        ).distinct()  # 去重，因为标签可能匹配多次
 
     # 排序
     ordering = request.query_params.get('ordering', '-rating')
@@ -116,13 +121,15 @@ def dish_list(request):
     if max_price:
         queryset = queryset.filter(price__lte=float(max_price))
 
-    # 搜索
+    # 关键词搜索（搜索菜品名称、描述、食堂名称、标签名称）
     search = request.query_params.get('search', None)
     if search:
         queryset = queryset.filter(
             Q(name__icontains=search) |
-            Q(description__icontains=search)
-        )
+            Q(description__icontains=search) |
+            Q(canteen__name__icontains=search) |
+            Q(tags__name__icontains=search)
+        ).distinct()  # 去重，因为标签可能匹配多次
 
     # 排序
     ordering = request.query_params.get('ordering', '-rating')
@@ -239,7 +246,7 @@ def rate_dish(request, dish_id):
     new_rating = (ratings * dish.view_count + rating_value) / (dish.view_count + 1)
     dish.rating = round(new_rating, 2)
     dish.save(update_fields=['rating'])
-    Rating.objects.create(dish=dish, user=user, rating=rating_value)
+    Rating.objects.create(dish=dish, user=request.user, score=rating_value)
     return Response({
         'code': 200,
         'message': '评分成功',
@@ -444,10 +451,19 @@ def create_tag(request):
 def review_list(request, dish_id):
     """
     获取指定菜品的评论列表
+    支持关键词搜索：搜索评论内容、用户名
     支持排序：按时间(默认)、点赞数
     """
     dish = get_object_or_404(Dish, id=dish_id)
     reviews = Review.objects.filter(dish=dish)
+
+    # 关键词搜索（搜索评论内容、用户名）
+    search = request.query_params.get('search', None)
+    if search:
+        reviews = reviews.filter(
+            Q(content__icontains=search) |
+            Q(user__username__icontains=search)
+        )
 
     # 排序
     ordering = request.query_params.get('ordering', '-created_at')
