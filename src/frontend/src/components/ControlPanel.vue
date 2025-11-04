@@ -6,9 +6,19 @@
 </template>
 
 <script setup>
+const emit = defineEmits(['logged-out'])
+
 const onLogout = () => {
-  // TODO: 调用登出 API 并清理本地状态 / 跳转登录页
-  console.log('logout clicked (TODO)')
+  // 清理本地 token / 用户信息
+  try { localStorage.removeItem('jwt') } catch (e) { /* ignore */ }
+  try { localStorage.removeItem('user') } catch (e) { /* ignore */ }
+
+  // 通知父组件或应用已登出，父组件可根据需要刷新状态或跳转。
+  emit('logged-out')
+
+  // TODO: 前端登录页尚未实现，跳转功能暂不需要实现。
+  // 将来可以在此处调用 router.push('/login') 或者调用后端登出接口再跳转。
+  console.log('logout processed (token cleared, TODO: navigate to login)')
 }
 </script>
 

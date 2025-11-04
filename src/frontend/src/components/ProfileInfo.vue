@@ -1,27 +1,40 @@
 <template>
   <div class="profile-info">
     <div class="avatar-area">
-      <img class="avatar" src="@/assets/logo.svg" alt="avatar" />
+      <img class="avatar" :src="avatarSrc" alt="avatar" />
     </div>
     <div class="meta">
-      <h2 class="name">Example User</h2>
-      <p class="bio">这是一个示例个人简介（TODO: 从后端加载真实用户信息）</p>
-
-      <ul class="meta-list">
-        <li><strong>邮箱：</strong>example@example.com <!-- TODO: 替换为真实数据 --></li>
-        <li><strong>注册时间：</strong>2025-01-01 <!-- TODO: 后端数据 --></li>
-      </ul>
-
-      <div class="placeholders">
-        <!-- 预留空间用于未来功能 -->
-        <p class="todo">TODO: 显示用户角色 / 等级 / 个人签名等</p>
-      </div>
+      <h2 class="name">{{ userDisplayName }}</h2>
+        <ul class="meta-list">
+          <li v-if="user.created"><strong>注册时间：</strong>{{ formatDate(user.created) }}</li>
+        </ul>
     </div>
   </div>
 </template>
 
 <script setup>
-// 本组件目前仅用于展示静态示例信息，后续应从后端获取真实用户数据
+import { computed } from 'vue'
+
+const props = defineProps({
+  user: { type: Object, default: () => ({}) }
+})
+
+
+const userDisplayName = computed(() => props.user.nickname || props.user.name || '匿名用户')
+
+const avatarSrc = computed(() => {
+  if (props.user && props.user.avatar) return props.user.avatar
+  try { return new URL('../assets/logo.svg', import.meta.url).href } catch (e) { return '' }
+})
+
+function formatDate(iso) {
+  try {
+    const d = new Date(iso)
+    return d.toLocaleString()
+  } catch (e) { return iso }
+}
+
+
 </script>
 
 <style scoped>
@@ -39,4 +52,5 @@
 .todo { color: #999; margin-top: 0.5rem; }
 .name { margin: 0; }
 .bio { margin: 0.25rem 0; color: #555 }
+.actions { margin-top: 0.75rem }
 </style>

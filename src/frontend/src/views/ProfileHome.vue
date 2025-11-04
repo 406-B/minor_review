@@ -2,8 +2,8 @@
   <div class="profile-home">
     <h1 class="title">个人主页</h1>
 
-    <!-- 我的资料（最上方） -->
-    <ProfileInfo />
+  <!-- 我的资料（最上方） -->
+  <ProfileInfo :user="user" />
 
     <!-- 已发布与 我的互动 同行 -->
     <div class="grid">
@@ -58,13 +58,14 @@ import { getProfileSections } from '@/api/profile'
 
 const published = ref([])
 const interactions = ref([])
+const user = ref({})
 
 const load = async () => {
   try {
     const res = await getProfileSections()
-    published.value = res.published || []
-    interactions.value = res.interactions || []
-    // TODO: 使用 res.user 填充 ProfileInfo（目前 ProfileInfo 为静态示例）
+  published.value = res.published || []
+  interactions.value = res.interactions || []
+  user.value = res.user || {}
   } catch (e) {
     console.error('加载个人主页数据失败', e)
   }
