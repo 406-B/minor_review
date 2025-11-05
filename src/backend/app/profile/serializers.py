@@ -48,5 +48,17 @@ class UserStatsSerializer(serializers.Serializer):
     用户统计信息序列化器
     """
     liked_posts_count = serializers.IntegerField(help_text="点赞的帖子数量")
-    commented_posts_count = serializers.IntegerField(help_text="评论的帖子数量")
+    comments_count = serializers.IntegerField(help_text="评论数量")
+    posts_count = serializers.IntegerField(help_text="发布的帖子数量")
     following_count = serializers.IntegerField(help_text="关注的人数量")
+
+
+class UserCommentSerializer(serializers.Serializer):
+    """
+    用户评论序列化器（用于个人主页显示）
+    """
+    id = serializers.IntegerField(help_text="评论ID")
+    content = serializers.CharField(help_text="评论内容")
+    created_at = serializers.DateTimeField(help_text="评论时间")
+    post_id = serializers.IntegerField(help_text="所属帖子ID")
+    post_subject = serializers.CharField(help_text="所属帖子标题")

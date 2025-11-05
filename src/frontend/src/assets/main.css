@@ -1,4 +1,5 @@
-@import './base.css';
+/* base.css is imported from JS entry to avoid PostCSS resolving it relative to different cwd */
+/* @import './base.css'; */
 
 #app {
   max-width: 1280px;

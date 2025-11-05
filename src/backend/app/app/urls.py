@@ -28,6 +28,8 @@ urlpatterns = [
     path("", include("login.urls")),
     # 用户个人资料路由 11/2 yyf
     path("", include("profile.urls")),
+    # 社区论坛路由 11/3 yyf
+    path("api/v1/", include("post.urls")),
 ]
 
 # 在开发环境中提供media文件服务 11/2 yyf

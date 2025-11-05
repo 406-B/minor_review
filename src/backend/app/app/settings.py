@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # "corsheaders",  # 使用 Vite 代理后不需要 CORS
     "rest_framework",
     "rest_framework.authtoken",  # 添加 Token 认证
     "django_filters",
@@ -78,13 +79,13 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# CORS 跨域配置（开发环境）
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # React 前端
-    "http://localhost:5173",  # Vite 前端
-    "http://localhost:8080",  # Vue 前端
+# CSRF 受信任源配置（必须保留）
+# Vite 代理会转发请求，但 Origin 头仍然是 localhost:5173
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8080",
 ]
-CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = "app.urls"
 
