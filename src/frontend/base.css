@@ -1,0 +1,124 @@
+
+/* 基础重置与全局主题色 */
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  background: #fff7ed;
+  color: #222;
+  min-height: 100vh;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+a:hover {
+  color: #ff9800;
+}
+
+#app {
+  min-height: 100vh;
+  background: #fff7ed;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* 侧边栏优化 */
+.canteen-sidebar-menu {
+  background: linear-gradient(180deg, orange 80%, #ffb74d 100%);
+  border-right: none !important;
+  box-shadow: 2px 0 8px #f5c16c33;
+  min-width: 200px;
+  font-size: 18px;
+  height: 100vh;
+}
+.el-menu-item.is-active {
+  background: #fff3e0 !important;
+  color: orange !important;
+  font-weight: bold;
+}
+.el-menu-item {
+  border-radius: 6px;
+  margin: 4px 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.el-menu-item:hover {
+  background: #ffe0b2 !important;
+  color: #ff9800 !important;
+}
+
+/* 主内容区优化 */
+.canteen-main {
+  background: #fff;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  padding: 32px 40px;
+  min-height: 100vh;
+  height: 100vh;
+  width: 100vw;
+  transition: box-shadow 0.2s;
+  overflow-y: auto;
+}
+
+
+/* 卡片与楼层窗口优化 */
+.window-block {
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.window-block:hover {
+  box-shadow: 0 8px 32px #ff980033;
+  transform: translateY(-4px) scale(1.03);
+}
+.window-title {
+  font-size: 18px;
+  color: orange;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.dish-list li {
+  padding: 4px 0;
+  font-size: 15px;
+  border-bottom: 1px dashed #ffe0b2;
+}
+.dish-list li:last-child {
+  border-bottom: none;
+}
+.dish-price {
+  color: #ff9800;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+/* 空提示优化 */
+.empty-tip {
+  color: #bbb;
+  text-align: center;
+  margin-top: 120px;
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  background: #fff7ed;
+}
+::-webkit-scrollbar-thumb {
+  background: #ffe0b2;
+  border-radius: 4px;
+}
