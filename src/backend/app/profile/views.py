@@ -1,7 +1,7 @@
 """
 用户个人资料视图
 """
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -258,3 +258,175 @@ def get_stats(request):
     serializer = UserStatsSerializer(data=stats)
     serializer.is_valid(raise_exception=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+# 11/3 yyf 用户发布的帖子
+@extend_schema(
+    parameters=[
+        OpenApiParameter(name='page', type=int, description='页码，默认1'),
+        OpenApiParameter(name='page_size', type=int, description='每页数量，默认20'),
+    ],
+    responses={
+        200: OpenApiResponse(description="获取用户帖子成功"),
+        401: OpenApiResponse(description="未登录"),
+    },
+    description="获取当前登录用户发布的帖子列表",
+    summary="获取我的帖子",
+    operation_id="get_my_posts",
+    tags=["Profile"],
+)
+@api_view(["GET"])
+@login_required
+def get_my_posts(request):
+    """
+    获取当前登录用户发布的帖子列表
+    """
+    from post.controllers import get_user_posts
+    from post.serializers import PostSerializer
+    
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 20))
+    
+    result = get_user_posts(request.user.id, page=page, page_size=page_size)
+    
+    serializer = PostSerializer(result['posts'], many=True, context={'request': request})
+    
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'posts': serializer.data,
+            'pagination': {
+                'total': result['total'],
+                'page': result['page'],
+                'page_size': result['page_size'],
+                'total_pages': result['total_pages']
+            }
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(description="获取最近3个帖子成功"),
+        401: OpenApiResponse(description="未登录"),
+    },
+    description="获取当前登录用户最近发布的3个帖子",
+    summary="获取最近3个帖子",
+    operation_id="get_recent_posts",
+    tags=["Profile"],
+)
+@api_view(["GET"])
+@login_required
+def get_recent_posts(request):
+    """
+    获取当前登录用户最近发布的3个帖子
+    """
+    from post.controllers import get_user_recent_posts
+    from post.serializers import PostSummarySerializer
+    
+    posts = get_user_recent_posts(request.user.id, limit=3)
+    serializer = PostSummarySerializer(posts, many=True)
+    
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': serializer.data
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter(name='page', type=int, description='页码，默认1'),
+        OpenApiParameter(name='page_size', type=int, description='每页数量，默认20'),
+    ],
+    responses={
+        200: OpenApiResponse(description="获取点赞帖子列表成功"),
+        401: OpenApiResponse(description="未登录"),
+    },
+    description="获取当前登录用户点赞过的所有帖子",
+    summary="获取点赞的帖子",
+    operation_id="get_liked_posts",
+    tags=["Profile"],
+)
+@api_view(["GET"])
+@login_required
+def get_liked_posts(request):
+    """
+    获取当前登录用户点赞过的所有帖子
+    """
+    from post.controllers import get_user_liked_posts
+    from post.serializers import PostSummarySerializer
+    
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 20))
+    
+    result = get_user_liked_posts(request.user.id, page=page, page_size=page_size)
+    
+    serializer = PostSummarySerializer(result['posts'], many=True)
+    
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'posts': serializer.data,
+            'pagination': {
+                'total': result['total'],
+                'page': result['page'],
+                'page_size': result['page_size'],
+                'total_pages': result['total_pages']
+            }
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter(name='page', type=int, description='页码，默认1'),
+        OpenApiParameter(name='page_size', type=int, description='每页数量，默认20'),
+    ],
+    responses={
+        200: OpenApiResponse(description="获取评论列表成功"),
+        401: OpenApiResponse(description="未登录"),
+    },
+    description="获取当前登录用户发出的所有评论",
+    summary="获取我的评论",
+    operation_id="get_my_comments",
+    tags=["Profile"],
+)
+@api_view(["GET"])
+@login_required
+def get_my_comments(request):
+    """
+    获取当前登录用户发出的所有评论
+    """
+    from post.controllers import get_user_comments
+    
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 20))
+    
+    result = get_user_comments(request.user.id, page=page, page_size=page_size)
+    
+    # 构建评论数据
+    comments_data = []
+    for comment in result['comments']:
+        comments_data.append({
+            'id': comment.id,
+            'content': comment.content,
+            'created_at': comment.created_at,
+            'post_id': comment.post.id,
+            'post_subject': comment.post.subject
+        })
+    
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'comments': comments_data,
+            'pagination': {
+                'total': result['total'],
+                'page': result['page'],
+                'page_size': result['page_size'],
+                'total_pages': result['total_pages']
+            }
+        }
+    }, status=status.HTTP_200_OK)
