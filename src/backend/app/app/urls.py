@@ -25,6 +25,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # API 路由
     path("api/", include("list.urls")),
+    # 登录注册路由
+    path("", include("login.urls")),
 ]
 
 if settings.DEBUG:

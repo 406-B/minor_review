@@ -87,7 +87,7 @@ watch(() => props.canteenId, fetchFloors, { immediate: true })
 }
 .windows-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 24px;
   margin-top: 16px;
 }

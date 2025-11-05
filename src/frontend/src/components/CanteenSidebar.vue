@@ -67,12 +67,14 @@ function goSearch() {
 .sidebar-vertical {
 	display: flex;
 	flex-direction: column;
-	height: 100vh;
+	height: calc(100vh - 60px);
 	width: 220px;
 	min-width: 200px;
 	max-width: 260px;
 	background: orange;
 	box-shadow: 2px 0 16px #e0e0e0aa;
+	position: relative;
+	top: 0;
 }
 .sidebar-search {
 	padding: 16px 12px 8px 12px;
