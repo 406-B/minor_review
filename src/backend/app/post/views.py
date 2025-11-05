@@ -3,6 +3,9 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 import json
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+# TODO: 登录页实现后移除/调整：下面导入的 jwt_authentication 与 login_required 在当前阶段
+# 用于在视图层手动触发或保护请求。前端登录页完成并通过 Authorization header 发送 JWT 后，
+# 可在视图中移除对 jwt_authentication 的显式调用以及临时性的装饰器调整。
 from utils.jwt import login_required, jwt_authentication
 from .serializers import (
     PostSerializer, PostDetailSerializer, CommentSerializer,
@@ -23,6 +26,7 @@ from . import controllers
 @require_http_methods(["GET"])
 def post_list(request):
     """获取帖子列表"""
+    # TODO: 登录页实现后可删除 - 临时在 GET 视图中显式触发 JWT 认证，以便在前端登录页未完成时识别用户
     jwt_authentication(request)
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
@@ -57,6 +61,7 @@ def post_list(request):
 @require_http_methods(["GET"])
 def post_detail(request, post_id):
     """获取帖子详情"""
+    # TODO: 登录页实现后可删除 - 临时在 GET 视图中显式触发 JWT 认证
     jwt_authentication(request)
     post = controllers.get_post_detail(post_id)
     
@@ -81,6 +86,8 @@ def post_detail(request, post_id):
     request=CreatePostSerializer,
     responses={200: PostSerializer}
 )
+# TODO: 登录页实现后删除：该装饰器组合为临时性保护/绕过方案。
+# 在前端登录页实现并正常通过 Authorization header 登录后，可移除本注释及相应视图层的临时处理。
 @csrf_exempt
 @require_http_methods(["POST"])
 @login_required
@@ -127,6 +134,7 @@ def create_post(request):
     ],
     responses={200: dict}
 )
+# TODO: 登录页实现后删除：临时性保护（可在前端登录完善后移除）
 @csrf_exempt
 @require_http_methods(["DELETE"])
 @login_required
@@ -154,6 +162,7 @@ def delete_post(request, post_id):
     ],
     responses={200: dict}
 )
+# TODO: 登录页实现后删除：此处为在后端保证操作权限的临时方案
 @csrf_exempt
 @require_http_methods(["POST"])
 @login_required
@@ -182,6 +191,7 @@ def toggle_post_like(request, post_id):
     request=CreateCommentSerializer,
     responses={200: CommentSerializer}
 )
+# TODO: 登录页实现后删除：创建评论相关的后端临时保护/处理
 @csrf_exempt
 @require_http_methods(["POST"])
 @login_required
@@ -239,6 +249,7 @@ def create_comment(request):
 @require_http_methods(["GET"])
 def comment_list(request, post_id):
     """获取帖子评论列表"""
+    # TODO: 登录页实现后可删除 - 临时在 GET 视图中显式触发 JWT 认证
     jwt_authentication(request)
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
@@ -276,6 +287,7 @@ def comment_list(request, post_id):
     ],
     responses={200: dict}
 )
+# TODO: 登录页实现后删除：该删除评论的装饰器/保护为临时实现
 @csrf_exempt
 @require_http_methods(["DELETE"])
 @login_required
@@ -346,6 +358,7 @@ def forum_home(request):
     
     返回帖子的标题和内容前30字预览
     """
+    # TODO: 登录页实现后可删除 - 临时在 GET 视图中显式触发 JWT 认证
     jwt_authentication(request)
     sort_by = request.GET.get('sort_by', 'time')
     page = int(request.GET.get('page', 1))
