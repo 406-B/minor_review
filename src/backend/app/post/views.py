@@ -1,7 +1,9 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+import json
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from utils.jwt import login_required
+from utils.jwt import login_required, jwt_authentication
 from .serializers import (
     PostSerializer, PostDetailSerializer, CommentSerializer,
     CreatePostSerializer, CreateCommentSerializer, PostHomeSerializer
@@ -21,6 +23,7 @@ from . import controllers
 @require_http_methods(["GET"])
 def post_list(request):
     """获取帖子列表"""
+    jwt_authentication(request)
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
     
@@ -54,6 +57,7 @@ def post_list(request):
 @require_http_methods(["GET"])
 def post_detail(request, post_id):
     """获取帖子详情"""
+    jwt_authentication(request)
     post = controllers.get_post_detail(post_id)
     
     if not post:
@@ -77,11 +81,21 @@ def post_detail(request, post_id):
     request=CreatePostSerializer,
     responses={200: PostSerializer}
 )
+@csrf_exempt
 @require_http_methods(["POST"])
 @login_required
 def create_post(request):
     """创建帖子"""
-    serializer = CreatePostSerializer(data=request.data)
+    # 解析 JSON 请求体
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'code': 400,
+            'message': '无效的 JSON 数据'
+        }, status=400)
+    
+    serializer = CreatePostSerializer(data=data)
     
     if not serializer.is_valid():
         return JsonResponse({
@@ -113,6 +127,7 @@ def create_post(request):
     ],
     responses={200: dict}
 )
+@csrf_exempt
 @require_http_methods(["DELETE"])
 @login_required
 def delete_post(request, post_id):
@@ -139,6 +154,7 @@ def delete_post(request, post_id):
     ],
     responses={200: dict}
 )
+@csrf_exempt
 @require_http_methods(["POST"])
 @login_required
 def toggle_post_like(request, post_id):
@@ -166,11 +182,21 @@ def toggle_post_like(request, post_id):
     request=CreateCommentSerializer,
     responses={200: CommentSerializer}
 )
+@csrf_exempt
 @require_http_methods(["POST"])
 @login_required
 def create_comment(request):
     """创建评论"""
-    serializer = CreateCommentSerializer(data=request.data)
+    # 解析 JSON 请求体
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'code': 400,
+            'message': '无效的 JSON 数据'
+        }, status=400)
+    
+    serializer = CreateCommentSerializer(data=data)
     
     if not serializer.is_valid():
         return JsonResponse({
@@ -213,6 +239,7 @@ def create_comment(request):
 @require_http_methods(["GET"])
 def comment_list(request, post_id):
     """获取帖子评论列表"""
+    jwt_authentication(request)
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
     
@@ -249,6 +276,7 @@ def comment_list(request, post_id):
     ],
     responses={200: dict}
 )
+@csrf_exempt
 @require_http_methods(["DELETE"])
 @login_required
 def delete_comment(request, comment_id):
@@ -275,6 +303,7 @@ def delete_comment(request, comment_id):
     ],
     responses={200: dict}
 )
+@csrf_exempt
 @require_http_methods(["POST"])
 @login_required
 def toggle_comment_like(request, comment_id):
@@ -317,6 +346,7 @@ def forum_home(request):
     
     返回帖子的标题和内容前30字预览
     """
+    jwt_authentication(request)
     sort_by = request.GET.get('sort_by', 'time')
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
