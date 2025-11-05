@@ -3,6 +3,25 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
   {
     path: '/',
+    redirect: '/community'
+  },
+  {
+    path: '/community',
+    name: 'CommunityHome',
+    component: () => import('../views/CommunityHome.vue')
+  },
+  {
+    path: '/community/create',
+    name: 'PostCreate',
+    component: () => import('../views/PostCreate.vue')
+  },
+  {
+    path: '/community/:id',
+    name: 'PostDetail',
+    component: () => import('../views/PostDetail.vue')
+  },
+  {
+    path: '/',
     name: 'Home',
     // keep existing App as root; App.vue may contain its own content
     component: () => import('@/App.vue')

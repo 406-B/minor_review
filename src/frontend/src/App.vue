@@ -1,11 +1,15 @@
 <script setup>
-// App.vue simplified to avoid missing component imports and to render routes.
+import { useRouter } from 'vue-router'
+const router = useRouter()
+function goCommunity() { router.push({ name: 'CommunityHome' }) }
+function goHome() { router.push({ path: '/' }) }
+function goProfile() { router.push({ path: '/profile' }) }
 </script>
 
 <template>
   <div id="app-root">
     <nav class="top-nav">
-      <router-link to="/">首页</router-link>
+      <router-link to="/">点评社区</router-link>
       <router-link to="/profile">个人主页</router-link>
     </nav>
 
@@ -14,6 +18,7 @@
     </main>
   </div>
 </template>
+
 
 <style scoped>
 /* kept some legacy styles harmlessly; main UI is handled in components */

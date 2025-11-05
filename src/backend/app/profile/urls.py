@@ -12,4 +12,10 @@ urlpatterns = [
     path("api/v1/profile/password", views.update_password, name="update_password"),
     # 用户统计信息
     path("api/v1/profile/stats", views.get_stats, name="get_stats"),
+    # 用户帖子相关
+    path("api/v1/profile/posts", views.get_my_posts, name="get_my_posts"),
+    path("api/v1/profile/posts/recent", views.get_recent_posts, name="get_recent_posts"),
+    path("api/v1/profile/posts/liked", views.get_liked_posts, name="get_liked_posts"),
+    # 用户评论
+    path("api/v1/profile/comments", views.get_my_comments, name="get_my_comments"),
 ]

@@ -1,3 +1,5 @@
+<!-- TODO：互动信息部分仍存在问题，需要前后端进行修改 -->
+
 <template>
   <div class="profile-home">
     <h1 class="title">个人主页</h1>
@@ -16,7 +18,7 @@
             <ul class="posts">
               <li v-for="(p, idx) in published.slice(0,2)" :key="p.id" class="post">
                 <div class="post-title">{{ p.title }}</div>
-                <div class="post-meta">{{ p.createdAt }} <!-- TODO: 使用后端时间字段并格式化 --> </div>
+                <div class="post-meta">{{ p.createdAt }}</div>
               </li>
               <li v-if="!published || published.length === 0" class="empty">暂无已发布内容</li>
             </ul>
@@ -37,7 +39,7 @@
                 @navigate="onNavigate"
               />
             </div>
-            <p class="hint"><!-- TODO: 后续替换为真实互动内容 --> 示例数据仅用于演示</p>
+            <p v-if="loading" class="hint">加载中...</p>
           </template>
         </SectionCard>
       </div>
@@ -50,25 +52,86 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import SectionCard from '@/components/SectionCard.vue'
 import ProfileInfo from '@/components/ProfileInfo.vue'
 import InteractionStat from '@/components/InteractionStat.vue'
 import ControlPanel from '@/components/ControlPanel.vue'
 import { getProfileSections } from '@/api/profile'
+import { getMyPosts, getUserStats } from '@/api/community'
 
+const router = useRouter()
 const published = ref([])
 const interactions = ref([])
 const user = ref({})
+const loading = ref(false)
 
 const load = async () => {
+  loading.value = true
   try {
+    // 获取个人资料和基础数据
     const res = await getProfileSections()
-  published.value = res.published || []
-  interactions.value = res.interactions || []
-  user.value = res.user || {}
+    user.value = res.user || {}
+    
+    // 获取用户统计信息
+    let receivedCommentsCount = 0
+    try {
+      const stats = await getUserStats()
+      
+      // 获取我的帖子列表以统计收到的评论数
+      try {
+        const postsRes = await getMyPosts(1, 100) // 获取更多帖子以准确统计
+        if (postsRes.code === 200 && postsRes.data) {
+          // 计算所有帖子收到的评论总数
+          receivedCommentsCount = (postsRes.data.posts || []).reduce((sum, post) => {
+            return sum + (post.comments_count || 0)
+          }, 0)
+          
+          // 设置已发布内容列表（只显示前5条）
+          published.value = (postsRes.data.posts || []).slice(0, 5).map(post => ({
+            id: post.id,
+            title: post.subject || '无标题', // 直接使用 subject 字段
+            createdAt: formatTime(post.created_at)
+          }))
+        }
+      } catch (err) {
+        console.error('获取我的帖子失败:', err)
+      }
+      
+      // 设置交互统计数据
+      interactions.value = [
+        { name: '我点赞的帖子', count: stats.liked_posts_count || 0, to: '/community' },
+        { name: '我收到的评论', count: receivedCommentsCount, to: '/community' },
+        { name: '我发布的评论', count: stats.commented_posts_count || 0, to: '/community' }
+      ]
+    } catch (err) {
+      console.error('获取用户统计失败:', err)
+      // 使用默认值
+      interactions.value = [
+        { name: '我点赞的帖子', count: 0, to: '/community' },
+        { name: '我收到的评论', count: 0, to: '/community' },
+        { name: '我发布的评论', count: 0, to: '/community' }
+      ]
+      published.value = res.published || []
+    }
   } catch (e) {
     console.error('加载个人主页数据失败', e)
+  } finally {
+    loading.value = false
   }
+}
+
+// 格式化时间
+const formatTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  return date.toLocaleDateString('zh-CN', { 
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 onMounted(load)
