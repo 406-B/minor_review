@@ -19,6 +19,17 @@ const routes = [
     path: '/community/:id',
     name: 'PostDetail',
     component: () => import('../views/PostDetail.vue')
+  },
+  {
+    path: '/',
+    name: 'Home',
+    // keep existing App as root; App.vue may contain its own content
+    component: () => import('@/App.vue')
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/ProfileHome.vue')
   }
 ]
 
