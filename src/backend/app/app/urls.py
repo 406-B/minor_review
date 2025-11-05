@@ -17,9 +17,19 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     # API 路由
     path("api/", include("list.urls")),
+    # 登录注册路由
+    path("", include("login.urls")),
+    # 用户个人资料路由 11/2 yyf
+    path("", include("profile.urls")),
 ]
+
+# 在开发环境中提供media文件服务 11/2 yyf
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
