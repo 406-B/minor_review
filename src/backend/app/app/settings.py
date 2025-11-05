@@ -38,17 +38,27 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "rest_framework.authtoken",  # 添加 Token 认证
     "django_filters",
+    "drf_spectacular",  # API 文档
     "list",
     "user",
     "post",
+    "login",  # 登录注册应用
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
-    'DEFAULT_FILTER_BACKENDS': [
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',  # Session认证
+        'rest_framework.authentication.TokenAuthentication',  # Token认证
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',  # 默认允许所有用户，在视图中可覆盖
+    ],
+        'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
@@ -66,6 +76,14 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# CORS 跨域配置（开发环境）
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # React 前端
+    "http://localhost:5173",  # Vite 前端
+    "http://localhost:8080",  # Vue 前端
+]
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = "app.urls"
 
@@ -143,3 +161,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# JWT 认证配置
+JWT_SECRET = "django-insecure-jwt-secret-key-change-in-production"
+JWT_EXPIRE_HOURS = 24
+SALT = "django-insecure-salt-change-in-production"  # 密码加密盐值

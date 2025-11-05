@@ -1,5 +1,6 @@
 <template>
   <div class="dish-search-page">
+    <el-button type="primary" @click="$router.push('/canteen')" class="back-btn">返回食堂主页</el-button>
     <el-form :inline="true" :model="searchForm" class="search-form" @submit.prevent="onSearch">
       <el-form-item label="菜品名">
         <el-input v-model="searchForm.name" placeholder="输入菜品名" clearable />
@@ -97,6 +98,9 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   box-shadow: 0 4px 32px #e0e0e0aa;
+}
+.back-btn {
+  margin-bottom: 18px;
 }
 .search-form {
   margin-bottom: 24px;
