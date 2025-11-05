@@ -1,13 +1,13 @@
 <template>
   <div class="dish-detail" v-if="dish">
-    <img :src="dish.image" alt="菜品图片" class="dish-image" />
+  <img :src="getImageUrl(dish.image)" alt="菜品图片" class="dish-image" />
     <div class="dish-info">
       <h2>{{ dish.name }}</h2>
       <div class="dish-tags">
         <el-tag v-for="tag in dish.tags" :key="tag.id" type="warning">{{ tag.name }}</el-tag>
       </div>
       <div class="dish-rating">
-        <el-rate v-model="dish.rating" disabled show-score />
+        <el-rate v-model="dishRatingNumber" disabled show-score />
         <span class="dish-price">￥{{ dish.price }}</span>
       </div>
       <div class="dish-desc">{{ dish.description }}</div>
@@ -30,16 +30,19 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { getDishDetail, getReviews } from '../api/canteenApi'
+import { getDishDetail, getReviews } from '@/utils/api/listApi'
 
 const route = useRoute()
 const dish = ref(null)
 const reviews = ref([])
+const dishRatingNumber = ref(0)
 
 const fetchDish = async () => {
   const res = await getDishDetail(route.params.id)
   if (res && res.data) {
     dish.value = res.data
+    // 保证评分为Number类型
+    dishRatingNumber.value = Number(res.data.rating) || 0
   }
 }
 const fetchReviews = async () => {
@@ -47,6 +50,14 @@ const fetchReviews = async () => {
   if (res && res.data && res.data.reviews) {
     reviews.value = res.data.reviews
   }
+}
+
+
+function getImageUrl(image) {
+  if (!image) return ''
+  if (image.startsWith('http://') || image.startsWith('https://')) return image
+  if (image.startsWith('/media/')) return image
+  return '/media/' + image.replace(/^\/+/, '')
 }
 
 onMounted(() => {
@@ -61,12 +72,13 @@ onMounted(() => {
   flex-direction: column;
   align-items: flex-start;
   gap: 24px;
-  padding: 32px;
+  padding: 48px 80px 48px 80px;
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px #f5c16c22;
-  max-width: 800px;
-  margin: 32px auto;
+  border-radius: 0;
+  box-shadow: none;
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
 }
 .dish-image {
   width: 320px;

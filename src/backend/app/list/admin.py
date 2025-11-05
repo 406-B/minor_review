@@ -1,5 +1,22 @@
 from django.contrib import admin
-from .models import Canteen, Tag, Dish, Rating, Review
+from .models import Canteen, Tag, Dish, Rating, Review, Floor, Window
+# 注册 Floor
+@admin.register(Floor)
+class FloorAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'canteen', 'order']
+    list_filter = ['canteen']
+    search_fields = ['name', 'canteen__name']
+    ordering = ['canteen', 'order', 'id']
+    list_per_page = 50
+
+# 注册 Window
+@admin.register(Window)
+class WindowAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'floor', 'order']
+    list_filter = ['floor']
+    search_fields = ['name', 'floor__name', 'floor__canteen__name']
+    ordering = ['floor', 'order', 'id']
+    list_per_page = 50
 
 # Register your models here.
 @admin.register(Canteen)

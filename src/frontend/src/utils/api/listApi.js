@@ -19,62 +19,71 @@ import axios from 'axios';
 
 // 创建 axios 实例
 const api = axios.create({
-  baseURL: '/api', // 根据实际情况修改为后端地址，如 'http://localhost:8000/api'
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+	baseURL: '/api', // 根据实际情况修改为后端地址，如 'http://localhost:8000/api'
+	timeout: 10000,
+	headers: {
+		'Content-Type': 'application/json',
+	},
 });
 
 // 请求拦截器 - 添加认证 token
 api.interceptors.request.use(
-  (config) => {
-    // 从 localStorage 获取 token
-    const token = localStorage.getItem('access_token') || localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+	(config) => {
+		// 从 localStorage 获取 token
+		const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+		if (token) {
+			config.headers.Authorization = `Bearer ${token}`;
+		}
+		return config;
+	},
+	(error) => {
+		return Promise.reject(error);
+	}
 );
 
 // 响应拦截器 - 统一处理错误
 api.interceptors.response.use(
-  (response) => {
-    // 统一处理响应格式
-    // 如果后端返回的是 { code, message, data } 格式，直接返回 data
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-      return response.data;
-    }
-    return response.data;
-  },
-  (error) => {
-    // 处理错误响应
-    const message = error.response?.data?.message || error.message || '请求失败';
+	(response) => {
+		// 统一处理响应格式
+		// 如果后端返回的是 { code, message, data } 格式，直接返回 data
+		if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+			return response.data;
+		}
+		return response.data;
+	},
+	(error) => {
+		// 处理错误响应
+		const message = error.response?.data?.message || error.message || '请求失败';
 
-    // 处理 401 未授权
-    if (error.response?.status === 401) {
-      // 可以在这里跳转到登录页
-      console.error('未授权，请先登录');
-    }
+		// 处理 401 未授权
+		if (error.response?.status === 401) {
+			// 可以在这里跳转到登录页
+			console.error('未授权，请先登录');
+		}
 
-    // 处理 403 禁止访问
-    if (error.response?.status === 403) {
-      console.error('没有权限访问该资源');
-    }
+		// 处理 403 禁止访问
+		if (error.response?.status === 403) {
+			console.error('没有权限访问该资源');
+		}
 
-    return Promise.reject({
-      code: error.response?.status || 500,
-      message,
-      errors: error.response?.data?.errors || {},
-    });
-  }
+		return Promise.reject({
+			code: error.response?.status || 500,
+			message,
+			errors: error.response?.data?.errors || {},
+		});
+	}
 );
 
 // ==================== 食堂相关 API ====================
+
+/**
+ * 获取食堂楼层与窗口
+ * @param {number|string} canteenId - 食堂ID
+ * @returns {Promise<{code: number, message: string, data: Array}>}
+ */
+export const getCanteenFloors = (canteenId) => {
+	return api.get(`/canteens/${canteenId}/floors/`);
+};
 
 /**
  * 获取食堂列表
@@ -84,7 +93,7 @@ api.interceptors.response.use(
  * @returns {Promise<{code: number, message: string, data: Array}>}
  */
 export const getCanteens = (params = {}) => {
-  return api.get('/canteens/', { params });
+	return api.get('/canteens/', { params });
 };
 
 /**
@@ -98,7 +107,7 @@ export const getCanteens = (params = {}) => {
  * @returns {Promise<{code: number, message: string, data: {canteen: Object, dishes: Array, dish_count: number}}>}
  */
 export const getCanteenDetail = (canteenId, params = {}) => {
-  return api.get(`/canteens/${canteenId}/`, { params });
+	return api.get(`/canteens/${canteenId}/`, { params });
 };
 
 // ==================== 菜品相关 API ====================
@@ -116,7 +125,7 @@ export const getCanteenDetail = (canteenId, params = {}) => {
  * @returns {Promise<{code: number, message: string, data: Array}>}
  */
 export const getDishes = (params = {}) => {
-  return api.get('/dishes/', { params });
+	return api.get('/dishes/', { params });
 };
 
 /**
@@ -125,7 +134,7 @@ export const getDishes = (params = {}) => {
  * @returns {Promise<{code: number, message: string, data: Object}>}
  */
 export const getDishDetail = (dishId) => {
-  return api.get(`/dishes/${dishId}/`);
+	return api.get(`/dishes/${dishId}/`);
 };
 
 /**
@@ -135,7 +144,7 @@ export const getDishDetail = (dishId) => {
  * @returns {Promise<{code: number, message: string, data: Array}>}
  */
 export const getHotDishes = (params = { limit: 10 }) => {
-  return api.get('/dishes/hot/', { params });
+	return api.get('/dishes/hot/', { params });
 };
 
 /**
@@ -145,7 +154,7 @@ export const getHotDishes = (params = { limit: 10 }) => {
  * @returns {Promise<{code: number, message: string, data: Array}>}
  */
 export const getNewDishes = (params = { limit: 10 }) => {
-  return api.get('/dishes/new/', { params });
+	return api.get('/dishes/new/', { params });
 };
 
 /**
@@ -156,7 +165,7 @@ export const getNewDishes = (params = { limit: 10 }) => {
  * @returns {Promise<{code: number, message: string, data: {dish_id: number, new_rating: number}}>}
  */
 export const rateDish = (dishId, data) => {
-  return api.post(`/dishes/${dishId}/rate/`, data);
+	return api.post(`/dishes/${dishId}/rate/`, data);
 };
 
 /**
@@ -168,7 +177,7 @@ export const rateDish = (dishId, data) => {
  * @returns {Promise<{code: number, message: string, data: Object}>}
  */
 export const addTagToDish = (dishId, data) => {
-  return api.post(`/dishes/${dishId}/tags/`, data);
+	return api.post(`/dishes/${dishId}/tags/`, data);
 };
 
 /**
@@ -179,7 +188,7 @@ export const addTagToDish = (dishId, data) => {
  * @returns {Promise<{code: number, message: string, data: Object}>}
  */
 export const approvePendingTags = (dishId, data = {}) => {
-  return api.post(`/dishes/${dishId}/tags/approve/`, data);
+	return api.post(`/dishes/${dishId}/tags/approve/`, data);
 };
 
 /**
@@ -190,7 +199,7 @@ export const approvePendingTags = (dishId, data = {}) => {
  * @returns {Promise<{code: number, message: string, data: Object}>}
  */
 export const rejectPendingTags = (dishId, data) => {
-  return api.post(`/dishes/${dishId}/tags/reject/`, data);
+	return api.post(`/dishes/${dishId}/tags/reject/`, data);
 };
 
 // ==================== 标签相关 API ====================
@@ -200,7 +209,7 @@ export const rejectPendingTags = (dishId, data) => {
  * @returns {Promise<{code: number, message: string, data: Array}>}
  */
 export const getTags = () => {
-  return api.get('/tags/');
+	return api.get('/tags/');
 };
 
 /**
@@ -210,7 +219,7 @@ export const getTags = () => {
  * @returns {Promise<{code: number, message: string, data: Object}>}
  */
 export const createTag = (data) => {
-  return api.post('/tags/create/', data);
+	return api.post('/tags/create/', data);
 };
 
 // ==================== 评论相关 API ====================
@@ -224,7 +233,7 @@ export const createTag = (data) => {
  * @returns {Promise<{code: number, message: string, data: {reviews: Array, total: number}}>}
  */
 export const getReviews = (dishId, params = {}) => {
-  return api.get(`/dishes/${dishId}/reviews/`, { params });
+	return api.get(`/dishes/${dishId}/reviews/`, { params });
 };
 
 /**
@@ -237,7 +246,7 @@ export const getReviews = (dishId, params = {}) => {
  * @returns {Promise<{code: number, message: string, data: Object}>}
  */
 export const createReview = (dishId, data) => {
-  return api.post(`/dishes/${dishId}/reviews/create/`, data);
+	return api.post(`/dishes/${dishId}/reviews/create/`, data);
 };
 
 /**
@@ -249,7 +258,7 @@ export const createReview = (dishId, data) => {
  * @returns {Promise<{code: number, message: string, data: Object}>}
  */
 export const updateReview = (reviewId, data) => {
-  return api.put(`/reviews/${reviewId}/`, data);
+	return api.put(`/reviews/${reviewId}/`, data);
 };
 
 /**
@@ -259,7 +268,7 @@ export const updateReview = (reviewId, data) => {
  * @returns {Promise<{code: number, message: string, data: Object}>}
  */
 export const patchReview = (reviewId, data) => {
-  return api.patch(`/reviews/${reviewId}/`, data);
+	return api.patch(`/reviews/${reviewId}/`, data);
 };
 
 /**
@@ -268,7 +277,7 @@ export const patchReview = (reviewId, data) => {
  * @returns {Promise<{code: number, message: string}>}
  */
 export const deleteReview = (reviewId) => {
-  return api.delete(`/reviews/${reviewId}/delete/`);
+	return api.delete(`/reviews/${reviewId}/delete/`);
 };
 
 /**
@@ -277,7 +286,7 @@ export const deleteReview = (reviewId) => {
  * @returns {Promise<{code: number, message: string, data: Object}>}
  */
 export const likeReview = (reviewId) => {
-  return api.post(`/reviews/${reviewId}/like/`);
+	return api.post(`/reviews/${reviewId}/like/`);
 };
 
 /**
@@ -285,7 +294,7 @@ export const likeReview = (reviewId) => {
  * @returns {Promise<{code: number, message: string, data: {reviews: Array, total: number}}>}
  */
 export const getMyReviews = () => {
-  return api.get('/reviews/my/');
+	return api.get('/reviews/my/');
 };
 
 // 导出默认 axios 实例，方便直接使用

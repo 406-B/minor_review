@@ -41,7 +41,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getDishes, getTags } from '../api/canteenApi'
+import { getDishes, getTags } from '@/utils/api/listApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -91,9 +91,12 @@ onMounted(() => {
 
 <style scoped>
 .dish-search-page {
-  padding: 32px 40px;
+  padding: 40px 56px;
   background: #fff;
   min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 4px 32px #e0e0e0aa;
 }
 .search-form {
   margin-bottom: 24px;

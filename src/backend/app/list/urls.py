@@ -13,6 +13,8 @@ urlpatterns = [
     path('canteens/', views.canteen_list, name='canteen-list'),
     # GET /api/canteens/<id>/ - 获取食堂详情及菜品
     path('canteens/<int:canteen_id>/', views.canteen_detail, name='canteen-detail'),
+    # GET /api/canteens/<id>/floors/ - 获取食堂楼层与窗口
+    path('canteens/<int:canteen_id>/floors/', views.canteen_floors, name='canteen-floors'),
 
     # ==================== 菜品相关 ====================
     # GET /api/dishes/ - 获取菜品列表

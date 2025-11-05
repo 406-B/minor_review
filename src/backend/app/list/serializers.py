@@ -1,5 +1,27 @@
 from rest_framework import serializers
-from .models import Canteen, Tag, Dish, Rating, Review
+from .models import Canteen, Tag, Dish, Rating, Review, Floor, Window
+class WindowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Window
+        fields = ['id', 'name', 'order']
+
+class FloorSerializer(serializers.ModelSerializer):
+    windows = serializers.SerializerMethodField()
+    class Meta:
+        model = Floor
+        fields = ['id', 'name', 'order', 'windows']
+    def get_windows(self, obj):
+        windows = obj.windows.all()
+        return WindowWithDishesSerializer(windows, many=True).data
+
+class WindowWithDishesSerializer(serializers.ModelSerializer):
+    dishes = serializers.SerializerMethodField()
+    class Meta:
+        model = Window
+        fields = ['id', 'name', 'order', 'dishes']
+    def get_dishes(self, obj):
+        dishes = obj.dishes.all()
+        return DishListSerializer(dishes, many=True).data
 
 class CanteenSerializer(serializers.ModelSerializer):
     class Meta:
@@ -35,6 +57,7 @@ class TagSerializer(serializers.ModelSerializer):
         return value
 
 class DishSerializer(serializers.ModelSerializer):
+    window = WindowSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
     tag_ids = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -60,7 +83,8 @@ class DishSerializer(serializers.ModelSerializer):
             'id', 'name', 'description', 'price', 'image',
             'canteen', 'canteen_name', 'tags', 'tag_ids',
             'pending_tags', 'pending_tag_ids', 'has_pending_tags',
-            'rating', 'view_count', 'created_at', 'updated_at'
+            'rating', 'view_count', 'created_at', 'updated_at',
+            'window'
         ]
         read_only_fields = ['created_at', 'updated_at', 'view_count', 'rating']
 
@@ -81,13 +105,14 @@ class DishSerializer(serializers.ModelSerializer):
         return value
 
 class DishListSerializer(serializers.ModelSerializer):
+    window = WindowSerializer(read_only=True)
     """Simplified serializer for list views"""
     tags = TagSerializer(many=True, read_only=True)
     canteen_name = serializers.CharField(source='canteen.name', read_only=True)
 
     class Meta:
         model = Dish
-        fields = ['id', 'name', 'price', 'image', 'canteen_name', 'tags', 'rating', 'view_count']
+        fields = ['id', 'name', 'price', 'image', 'canteen_name', 'tags', 'rating', 'view_count', 'window']
 
 class RatingSerializer(serializers.ModelSerializer):
     """评分序列化器"""
