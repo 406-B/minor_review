@@ -3,6 +3,29 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.conf import settings
 
 
+
+class Floor(models.Model):
+    name = models.CharField(max_length=50, help_text="楼层名称")
+    canteen = models.ForeignKey('Canteen', on_delete=models.CASCADE, related_name='floors', help_text="所属食堂")
+    order = models.IntegerField(default=0, help_text="排序")
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = 'Floor'
+        verbose_name_plural = 'Floors'
+    def __str__(self):
+        return f"{self.canteen.name} - {self.name}"
+
+class Window(models.Model):
+    name = models.CharField(max_length=50, help_text="窗口名称")
+    floor = models.ForeignKey('Floor', on_delete=models.CASCADE, related_name='windows', help_text="所属楼层")
+    order = models.IntegerField(default=0, help_text="排序")
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = 'Window'
+        verbose_name_plural = 'Windows'
+    def __str__(self):
+        return f"{self.floor.canteen.name}-{self.floor.name}-{self.name}"
+
 class Canteen(models.Model):
 
     name = models.CharField(max_length=100, unique=True, help_text="Name of the canteen")
@@ -35,6 +58,7 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
+
 class Dish(models.Model):
 
     name = models.CharField(max_length=100, help_text="Name of the dish")
@@ -53,6 +77,14 @@ class Dish(models.Model):
         on_delete=models.CASCADE,
         related_name='dishes',
         help_text="Which canteen serves this dish",
+    )
+    window = models.ForeignKey(
+        'Window',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='dishes',
+        help_text="所属窗口（可选）"
     )
     tags = models.ManyToManyField(
         Tag, blank=True, related_name='dishes', help_text="Tags for filtering and display"

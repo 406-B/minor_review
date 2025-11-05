@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 
+
+import CanteenBrowser from '../views/CanteenBrowser.vue'
+import DishDetail from '../views/DishDetail.vue'
 import DishSearch from '../views/DishSearch.vue'
 
 const routes = [

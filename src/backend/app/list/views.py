@@ -1,3 +1,24 @@
+from .models import Floor, Window
+from .serializers import FloorSerializer
+# ==================== 食堂楼层与窗口接口 ====================
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status, permissions
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def canteen_floors(request, canteen_id):
+    """
+    获取指定食堂的所有楼层、窗口及窗口下的菜品
+    """
+    floors = Floor.objects.filter(canteen_id=canteen_id).order_by('order', 'id')
+    data = FloorSerializer(floors, many=True).data
+    return Response({
+        'code': 200,
+        'message': '获取楼层窗口成功',
+        'data': data
+    })
 from django.shortcuts import render, get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -9,6 +30,41 @@ from .serializers import (
     RatingSerializer, ReviewSerializer, ReviewListSerializer
 )
 
+# ==================== 我的评论视图 ====================
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def my_reviews(request):
+    """
+    获取当前登录用户的所有评论
+    支持分页和排序
+    """
+    user = request.user
+    reviews = Review.objects.filter(user=user)
+
+    # 排序
+    ordering = request.query_params.get('ordering', '-created_at')
+    if ordering in ['created_at', '-created_at', 'likes_count', '-likes_count']:
+        reviews = reviews.order_by(ordering)
+
+    # 分页（可选）
+    page = int(request.query_params.get('page', 1))
+    page_size = int(request.query_params.get('page_size', 10))
+    start = (page - 1) * page_size
+    end = start + page_size
+    paged_reviews = reviews[start:end]
+
+    serializer = ReviewListSerializer(paged_reviews, many=True)
+    return Response({
+        'code': 200,
+        'message': '获取我的评论成功',
+        'data': {
+            'reviews': serializer.data,
+            'total': reviews.count(),
+            'page': page,
+            'page_size': page_size
+        }
+    })
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
@@ -592,6 +648,7 @@ def update_review(request, review_id):
     }, status=status.HTTP_400_BAD_REQUEST)
 
 
+
 @api_view(['DELETE'])
 @permission_classes([permissions.IsAuthenticated])
 def delete_review(request, review_id):
@@ -613,3 +670,52 @@ def delete_review(request, review_id):
         'code': 200,
         'message': '评论删除成功'
     })
+
+
+# ==================== 评论点赞功能 ====================
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def like_review(request, review_id):
+    """
+    用户点赞/取消点赞评论
+    - 如果用户已点赞，则取消点赞
+    - 如果用户未点赞，则点赞
+    返回当前点赞状态和点赞数
+    """
+    review = get_object_or_404(Review, id=review_id)
+    user = request.user
+
+    # 假设有一个ReviewLike模型用于记录用户点赞（如未建表可用set模拟，或直接在Review模型加ManyToManyField）
+    # 这里用最简单的方式：在session中模拟（生产环境应建表）
+    # 推荐后续扩展ReviewLike模型
+    if not hasattr(review, '_liked_users'):
+        # 临时属性，实际应为数据库字段
+        review._liked_users = set()
+
+    # 用session模拟点赞（仅演示，实际应用请用数据库）
+    liked_key = f'review_liked_{review_id}'
+    liked = request.session.get(liked_key, False)
+
+    if liked:
+        # 取消点赞
+        review.likes_count = max(0, review.likes_count - 1)
+        request.session[liked_key] = False
+        review.save(update_fields=['likes_count'])
+        return Response({
+            'code': 200,
+            'message': '已取消点赞',
+            'liked': False,
+            'likes_count': review.likes_count
+        })
+    else:
+        # 点赞
+        review.likes_count += 1
+        request.session[liked_key] = True
+        review.save(update_fields=['likes_count'])
+        return Response({
+            'code': 200,
+            'message': '点赞成功',
+            'liked': True,
+            'likes_count': review.likes_count
+        })
