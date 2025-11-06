@@ -17,11 +17,14 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+<<<<<<< HEAD
       '/media': {
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       },
+=======
+>>>>>>> origin/dev
     },
   },
   resolve: {

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @import "../../base.css";
 
 
@@ -10,6 +11,10 @@
   box-sizing: border-box;
 }
 
+=======
+/* base.css is imported from JS entry to avoid PostCSS resolving it relative to different cwd */
+/* @import './base.css'; */
+>>>>>>> origin/dev
 
 #app {
   width: 100vw;

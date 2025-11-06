@@ -1,6 +1,10 @@
 <template>
+<<<<<<< HEAD
 	<TopBar />
 	<div class="community-page">
+=======
+		<div class="community-page">
+>>>>>>> origin/dev
 			<div class="top-actions">
 				<div class="title">点评社区</div>
 				<div class="actions">
@@ -49,7 +53,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+<<<<<<< HEAD
 import TopBar from '@/components/TopBar.vue'
+=======
+>>>>>>> origin/dev
 import { getPostList } from '@/api/community'
 
 const router = useRouter()
