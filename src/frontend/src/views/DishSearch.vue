@@ -1,0 +1,143 @@
+<template>
+  <div class="dish-search-page">
+    <el-button type="primary" @click="$router.push('/canteen')" class="back-btn">返回食堂主页</el-button>
+    <el-form :inline="true" :model="searchForm" class="search-form" @submit.prevent="onSearch">
+      <el-form-item label="菜品名">
+        <el-input v-model="searchForm.name" placeholder="输入菜品名" clearable />
+      </el-form-item>
+      <el-form-item label="价格区间">
+        <el-input-number v-model="searchForm.min_price" :min="0" placeholder="最低价" style="width: 90px" />
+        <span style="margin: 0 8px;">-</span>
+        <el-input-number v-model="searchForm.max_price" :min="0" placeholder="最高价" style="width: 90px" />
+      </el-form-item>
+      <el-form-item label="标签">
+        <el-select v-model="searchForm.tag_ids" multiple filterable placeholder="选择标签" style="min-width: 120px">
+          <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="onSearch">搜索</el-button>
+      </el-form-item>
+    </el-form>
+    <div class="dish-list-wrap">
+      <el-empty v-if="dishes.length === 0 && !loading" description="暂无菜品" />
+      <el-row :gutter="24">
+        <el-col v-for="dish in dishes" :key="dish.id" :span="6">
+          <el-card class="dish-card" shadow="hover" @click="goToDish(dish.id)">
+            <img :src="dish.image" alt="菜品图片" class="dish-img" />
+            <div class="dish-info">
+              <div class="dish-title">{{ dish.name }}</div>
+              <div class="dish-tags">
+                <el-tag v-for="tag in dish.tags" :key="tag.id" size="small">{{ tag.name }}</el-tag>
+              </div>
+              <div class="dish-price">￥{{ dish.price }}</div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getDishes, getTags } from '@/utils/api/listApi'
+
+const route = useRoute()
+const router = useRouter()
+const searchForm = ref({
+  name: '',
+  min_price: null,
+  max_price: null,
+  tag_ids: []
+})
+const dishes = ref([])
+const tags = ref([])
+const loading = ref(false)
+
+const fetchTags = async () => {
+  const res = await getTags()
+  if (res && res.data) tags.value = res.data
+}
+
+const fetchDishes = async () => {
+  loading.value = true
+  const params = {}
+  if (searchForm.value.name) params.search = searchForm.value.name
+  if (searchForm.value.min_price) params.min_price = searchForm.value.min_price
+  if (searchForm.value.max_price) params.max_price = searchForm.value.max_price
+  if (searchForm.value.tag_ids.length) params.tag_ids = searchForm.value.tag_ids
+  const res = await getDishes(params)
+  if (res && res.data) dishes.value = res.data
+  loading.value = false
+}
+
+function onSearch() {
+  fetchDishes()
+}
+function goToDish(id) {
+  router.push({ name: 'DishDetail', params: { id } })
+}
+
+onMounted(() => {
+  fetchTags()
+  // 支持从侧边栏快速搜索
+  if (route.query.q) {
+    searchForm.value.name = route.query.q
+    fetchDishes()
+  }
+})
+</script>
+
+<style scoped>
+.dish-search-page {
+  padding: 40px 56px;
+  background: #fff;
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-shadow: 0 4px 32px #e0e0e0aa;
+}
+.back-btn {
+  margin-bottom: 18px;
+}
+.search-form {
+  margin-bottom: 24px;
+}
+.dish-list-wrap {
+  margin-top: 16px;
+}
+.dish-card {
+  cursor: pointer;
+  margin-bottom: 24px;
+  transition: box-shadow 0.2s;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.dish-card:hover {
+  box-shadow: 0 8px 32px #ff980033;
+}
+.dish-img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+.dish-info {
+  padding: 10px 0 0 0;
+}
+.dish-title {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+.dish-tags {
+  margin-bottom: 6px;
+}
+.dish-price {
+  color: #ff9800;
+  font-size: 16px;
+  font-weight: bold;
+}
+</style>
