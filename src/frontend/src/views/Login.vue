@@ -1,8 +1,8 @@
-
 <template>
   <div class="login-bg">
     <el-card class="login-card">
-  <h2 class="login-title">登录</h2>
+      <div style="color:red;font-weight:bold;text-align:center;">[Login.vue 页面已加载]</div>
+      <h2 class="login-title">登录</h2>
       <el-form :model="loginForm" @submit.prevent="onLogin" label-width="80px" label-position="right">
         <el-form-item label="用户名">
           <el-input v-model="loginForm.username" autocomplete="username" style="width: 100%;" />
@@ -30,12 +30,22 @@ const router = useRouter();
 const loginForm = ref({ username: '', password: '' });
 
 const onLogin = async () => {
+  console.log('onLogin called', loginForm.value); // 调试：事件触发与数据
   try {
-  const res = await login(loginForm.value);
-    localStorage.setItem('token', res.data.jwt);
-  router.push('/home');
+    const res = await login(loginForm.value);
+    console.log('login response', res); // 调试：接口响应
+    localStorage.setItem('jwt', res.jwt); // 修正为 res.jwt
+    router.push('/home');
   } catch (err) {
-  alert(err.response?.data?.message || '登录失败');
+    console.error('login error', err); // 调试：错误信息
+    const msg = err.response?.data?.message;
+    if (msg === 'Invalid credentials') {
+      alert('用户名或密码错误');
+    } else if (msg === 'User not found') {
+      alert('用户不存在');
+    } else {
+      alert(msg || '登录失败');
+    }
   }
 };
 </script>

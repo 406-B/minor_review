@@ -1,30 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Login from '../views/Login.vue';
-import Register from '../views/Register.vue';
-import Home from '../views/Home.vue';
-import CanteenBrowser from '../views/CanteenBrowser.vue';
-import DishDetail from '../views/DishDetail.vue';
-import DishSearch from '../views/DishSearch.vue';
 
 const routes = [
-  { path: '/login', component: Login },
-  { path: '/register', component: Register },
-  { path: '/home', component: Home },
-  { path: '/', name: 'CanteenBrowser', component: CanteenBrowser },
-  { path: '/canteen', name: 'CanteenBrowserAlt', component: CanteenBrowser },
-  { path: '/dish/:id', name: 'DishDetail', component: DishDetail },
-  { path: '/search', name: 'DishSearch', component: DishSearch },
+  { path: '/login', name: 'Login', component: () => import('../views/Login.vue') },
+  { path: '/register', name: 'Register', component: () => import('../views/Register.vue') },
+  { path: '/home', name: 'Home', component: () => import('../views/Home.vue') },
+  { path: '/canteen', name: 'CanteenBrowser', component: () => import('../views/CanteenBrowser.vue') },
+  { path: '/dish/:id', name: 'DishDetail', component: () => import('../views/DishDetail.vue') },
+  { path: '/search', name: 'DishSearch', component: () => import('../views/DishSearch.vue') },
+  { path: '/community', name: 'CommunityHome', component: () => import('../views/CommunityHome.vue') },
+  { path: '/community/create', name: 'PostCreate', component: () => import('../views/PostCreate.vue') },
+  { path: '/community/:id', name: 'PostDetail', component: () => import('../views/PostDetail.vue') },
+  { path: '/profile', name: 'Profile', component: () => import('@/views/ProfileHome.vue') },
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFound.vue') },
+  { path: '/', redirect: '/canteen' }
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 });
 
-// 路由守卫：未登录跳转登录
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
-  // 只有 /login 和 /register 不需要 token
+  const token = localStorage.getItem('jwt');
   if (!['/login', '/register'].includes(to.path) && !token) {
     next('/login');
   } else {

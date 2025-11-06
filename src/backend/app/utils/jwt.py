@@ -61,10 +61,19 @@ def encrypt_password(password):
 def jwt_authentication(request):
     """
     根据jwt验证用户身份
+    支持两种格式：
+    1. Authorization: <token>
+    2. Authorization: Bearer <token>
     """
     request.user = None
     token = request.headers.get("Authorization")
-    if token:
+    if token: # jwt 认证方式不规范 11/2 yyf
+        # 处理 "Bearer <token>" 格式
+        if token.startswith("Bearer "):
+            token = token[7:]  # 移除 "Bearer " 前缀（7个字符）
+        elif token.startswith("bearer "):
+            token = token[7:]  # 兼容小写
+        
         payload = verify_jwt(token)
         if payload:
             user_id = payload.get("user_id")

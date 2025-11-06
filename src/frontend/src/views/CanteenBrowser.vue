@@ -3,10 +3,10 @@
     <div class="top-bar">
       <div class="app-title">小众点评</div>
       <div class="nav-options">
-        <span class="nav-item active" @click="$router.push('/canteen')">食堂浏览</span>
-        <span class="nav-item">美食论坛</span>
+  <span class="nav-item active" @click="$router.push('/canteen')">食堂浏览</span>
+  <span class="nav-item" @click="$router.push('/community')">美食论坛</span>
       </div>
-  <div class="user-profile-text" @click="() => {}">个人主页</div>
+  <div class="user-profile-text" @click="$router.push('/profile')">个人主页</div>
     </div>
     <div style="display: flex; flex: 1 1 0; min-height: 0;">
       <CanteenSidebar
