@@ -79,6 +79,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+<<<<<<< HEAD
 # CORS 跨域配置（开发环境）
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React 前端
@@ -87,6 +88,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+=======
+>>>>>>> origin/dev
 # CSRF 受信任源配置（必须保留）
 # Vite 代理会转发请求，但 Origin 头仍然是 localhost:5173
 CSRF_TRUSTED_ORIGINS = [

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 /* 基础重置与全局主题色 */
 html, body {
@@ -122,3 +123,11 @@ a:hover {
   background: #ffe0b2;
   border-radius: 4px;
 }
+=======
+:root {
+  --section-gap: 32px;
+  --max-width: 1280px;
+}
+
+body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f7f9fb }
+>>>>>>> origin/dev
