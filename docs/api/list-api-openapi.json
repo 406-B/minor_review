@@ -1,0 +1,1458 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Minor Review - List API",
+    "description": "API documentation for List module (Canteens, Dishes, Tags, Reviews)",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support",
+      "email": "support@example.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000/api",
+      "description": "Development server (Django)"
+    },
+    {
+      "url": "https://api.example.com/api",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Canteens",
+      "description": "食堂相关接口"
+    },
+    {
+      "name": "Dishes",
+      "description": "菜品相关接口"
+    },
+    {
+      "name": "Tags",
+      "description": "标签相关接口"
+    },
+    {
+      "name": "Reviews",
+      "description": "评论相关接口"
+    }
+  ],
+  "paths": {
+    "/canteens/": {
+      "get": {
+        "tags": ["Canteens"],
+        "summary": "获取食堂列表",
+        "operationId": "getCanteens",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "搜索食堂名称"
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["name", "-name", "created_at", "-created_at"],
+              "default": "name"
+            },
+            "description": "排序方式"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "获取食堂列表成功"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Canteen"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/canteens/{canteen_id}/": {
+      "get": {
+        "tags": ["Canteens"],
+        "summary": "获取食堂详情及菜品",
+        "operationId": "getCanteenDetail",
+        "parameters": [
+          {
+            "name": "canteen_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "tag_ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "description": "按标签筛选（可多个）",
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "min_rating",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "最低评分"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "关键词搜索"
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "rating",
+                "-rating",
+                "view_count",
+                "-view_count",
+                "price",
+                "-price",
+                "name",
+                "-name"
+              ],
+              "default": "-rating"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CanteenDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dishes/": {
+      "get": {
+        "tags": ["Dishes"],
+        "summary": "获取菜品列表",
+        "operationId": "getDishes",
+        "parameters": [
+          {
+            "name": "canteen_id",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "按食堂筛选"
+          },
+          {
+            "name": "tag_ids",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "description": "按标签筛选（可多个）",
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "min_rating",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "最低评分"
+          },
+          {
+            "name": "min_price",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "最低价格"
+          },
+          {
+            "name": "max_price",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "最高价格"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "关键词搜索"
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "rating",
+                "-rating",
+                "view_count",
+                "-view_count",
+                "price",
+                "-price",
+                "name",
+                "-name"
+              ],
+              "default": "-rating"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dishes/{dish_id}/": {
+      "get": {
+        "tags": ["Dishes"],
+        "summary": "获取菜品详情",
+        "operationId": "getDishDetail",
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishDetailResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dishes/hot/": {
+      "get": {
+        "tags": ["Dishes"],
+        "summary": "获取热门菜品",
+        "operationId": "getHotDishes",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "返回数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dishes/new/": {
+      "get": {
+        "tags": ["Dishes"],
+        "summary": "获取新品菜品",
+        "operationId": "getNewDishes",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "返回数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dishes/{dish_id}/rate/": {
+      "post": {
+        "tags": ["Dishes"],
+        "summary": "给菜品评分",
+        "operationId": "rateDish",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 5,
+                    "example": 4.5
+                  }
+                },
+                "required": ["rating"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/dishes/{dish_id}/tags/": {
+      "post": {
+        "tags": ["Dishes"],
+        "summary": "给菜品添加标签",
+        "operationId": "addTagToDish",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "example": [1, 2, 3]
+                  },
+                  "tag_name": {
+                    "type": "string",
+                    "example": "新标签名称"
+                  }
+                },
+                "anyOf": [{ "required": ["tag_ids"] }, { "required": ["tag_name"] }]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/dishes/{dish_id}/tags/approve/": {
+      "post": {
+        "tags": ["Dishes"],
+        "summary": "批准待审核标签（管理员）",
+        "operationId": "approvePendingTags",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "example": [1, 2],
+                    "description": "要批准的标签ID列表，留空则批准所有"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/dishes/{dish_id}/tags/reject/": {
+      "post": {
+        "tags": ["Dishes"],
+        "summary": "拒绝待审核标签（管理员）",
+        "operationId": "rejectPendingTags",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "example": [1, 2]
+                  }
+                },
+                "required": ["tag_ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/tags/": {
+      "get": {
+        "tags": ["Tags"],
+        "summary": "获取所有标签",
+        "operationId": "getTags",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tags/create/": {
+      "post": {
+        "tags": ["Tags"],
+        "summary": "创建新标签（管理员）",
+        "operationId": "createTag",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "辣"
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/dishes/{dish_id}/reviews/": {
+      "get": {
+        "tags": ["Reviews"],
+        "summary": "获取菜品评论列表",
+        "operationId": "getReviews",
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "搜索评论内容或用户名"
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["created_at", "-created_at", "likes_count", "-likes_count"],
+              "default": "-created_at"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dishes/{dish_id}/reviews/create/": {
+      "post": {
+        "tags": ["Reviews"],
+        "summary": "创建评论",
+        "operationId": "createReview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "example": "很好吃！",
+                    "minLength": 5,
+                    "maxLength": 1000
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "maxItems": 9,
+                    "example": ["http://example.com/1.jpg"]
+                  },
+                  "rating_score": {
+                    "type": "number",
+                    "minimum": 1.0,
+                    "maximum": 5.0,
+                    "example": 4.5,
+                    "description": "可选，如果提供则同时创建或更新评分"
+                  }
+                },
+                "required": ["content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/reviews/{review_id}/": {
+      "put": {
+        "tags": ["Reviews"],
+        "summary": "更新评论",
+        "operationId": "updateReview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "example": "更新后的内容"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "example": ["http://example.com/new.jpg"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Reviews"],
+        "summary": "部分更新评论",
+        "operationId": "patchReview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/reviews/{review_id}/delete/": {
+      "delete": {
+        "tags": ["Reviews"],
+        "summary": "删除评论",
+        "operationId": "deleteReview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "评论删除成功"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/reviews/{review_id}/like/": {
+      "post": {
+        "tags": ["Reviews"],
+        "summary": "点赞/取消点赞评论",
+        "operationId": "likeReview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/reviews/my/": {
+      "get": {
+        "tags": ["Reviews"],
+        "summary": "获取我的评论",
+        "operationId": "getMyReviews",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "使用 Bearer Token 认证，格式：Authorization: Bearer <token>"
+      }
+    },
+    "schemas": {
+      "Canteen": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "第一食堂"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Tag": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "辣"
+          },
+          "dish_count": {
+            "type": "integer",
+            "example": 10
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Dish": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "宫保鸡丁"
+          },
+          "description": {
+            "type": "string",
+            "example": "经典川菜，麻辣鲜香"
+          },
+          "price": {
+            "type": "string",
+            "format": "decimal",
+            "example": "12.50"
+          },
+          "image": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "http://example.com/image.jpg"
+          },
+          "canteen": {
+            "type": "integer",
+            "example": 1
+          },
+          "canteen_name": {
+            "type": "string",
+            "example": "第一食堂"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          "pending_tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          "has_pending_tags": {
+            "type": "boolean",
+            "example": false
+          },
+          "rating": {
+            "type": "string",
+            "format": "decimal",
+            "example": "4.5"
+          },
+          "view_count": {
+            "type": "integer",
+            "example": 100
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DishListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "string",
+            "format": "decimal"
+          },
+          "image": {
+            "type": "string",
+            "nullable": true
+          },
+          "canteen_name": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          },
+          "rating": {
+            "type": "string",
+            "format": "decimal"
+          },
+          "view_count": {
+            "type": "integer"
+          }
+        }
+      },
+      "Review": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "user": {
+            "type": "integer",
+            "example": 1
+          },
+          "username": {
+            "type": "string",
+            "example": "user123"
+          },
+          "dish": {
+            "type": "integer",
+            "example": 1
+          },
+          "dish_name": {
+            "type": "string",
+            "example": "宫保鸡丁"
+          },
+          "content": {
+            "type": "string",
+            "example": "很好吃！"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "example": ["http://example.com/1.jpg"]
+          },
+          "user_rating": {
+            "type": "number",
+            "nullable": true,
+            "example": 4.5
+          },
+          "likes_count": {
+            "type": "integer",
+            "example": 10
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CanteenDetailResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "获取食堂详情成功"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "canteen": {
+                "$ref": "#/components/schemas/Canteen"
+              },
+              "dishes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DishListItem"
+                }
+              },
+              "dish_count": {
+                "type": "integer",
+                "example": 20
+              }
+            }
+          }
+        }
+      },
+      "DishListResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "获取菜品列表成功"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DishListItem"
+            }
+          }
+        }
+      },
+      "DishDetailResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "获取菜品详情成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Dish"
+          }
+        }
+      },
+      "TagListResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "获取标签列表成功"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          }
+        }
+      },
+      "TagResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 201
+          },
+          "message": {
+            "type": "string",
+            "example": "标签创建成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Tag"
+          }
+        }
+      },
+      "RateResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "评分成功"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "dish_id": {
+                "type": "integer",
+                "example": 1
+              },
+              "new_rating": {
+                "type": "number",
+                "example": 4.5
+              }
+            }
+          }
+        }
+      },
+      "ReviewListResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "获取评论列表成功"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "reviews": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Review"
+                }
+              },
+              "total": {
+                "type": "integer",
+                "example": 10
+              }
+            }
+          }
+        }
+      },
+      "ReviewResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 201
+          },
+          "message": {
+            "type": "string",
+            "example": "评论创建成功"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Review"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 400
+          },
+          "message": {
+            "type": "string",
+            "example": "错误信息"
+          },
+          "errors": {
+            "type": "object",
+            "description": "字段验证错误详情"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "请求参数错误",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": 400,
+              "message": "请提供评分值"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未认证",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": 401,
+              "message": "Authentication credentials were not provided."
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "无权限",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "code": 403,
+              "message": "您没有权限编辑此评论"
+            }
+          }
+        }
+      }
+    }
+  }
+}
