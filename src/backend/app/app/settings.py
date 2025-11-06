@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # "corsheaders",  # 使用 Vite 代理后不需要 CORS
     "rest_framework",
     "rest_framework.authtoken",  # 添加 Token 认证
     "django_filters",
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     "user",
     "post",
     "login",  # 登录注册应用
+    "profile",  # 用户个人资料应用 11/2 yyf
 ]
 
 REST_FRAMEWORK = {
@@ -84,6 +86,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8080",  # Vue 前端
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF 受信任源配置（必须保留）
+# Vite 代理会转发请求，但 Origin 头仍然是 localhost:5173
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8080",
+]
 
 ROOT_URLCONF = "app.urls"
 

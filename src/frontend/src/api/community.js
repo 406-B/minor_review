@@ -1,0 +1,237 @@
+// 社区论坛 API
+import request from './request'
+
+const BASE_URL = '/v1'
+
+// 获取 JWT Token
+const getToken = () => {
+  const token = localStorage.getItem('jwt') || ''
+  // 如果 token 存在且不包含 'Bearer' 前缀，则添加
+  return token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
+}
+
+// ============ 帖子相关接口 ============
+
+/**
+ * 获取帖子列表
+ * @param {number} page - 页码，默认 1
+ * @param {number} page_size - 每页数量，默认 20
+ * @returns {Promise}
+ */
+export const getPostList = async (page = 1, page_size = 20) => {
+  try {
+    const token = getToken()
+    const config = token ? { headers: { Authorization: token } } : {}
+    const response = await request.get(`${BASE_URL}/posts/`, {
+      params: { page, page_size },
+      ...config
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 获取帖子详情
+ * @param {number} postId - 帖子ID
+ * @returns {Promise}
+ */
+export const getPostDetail = async (postId) => {
+  try {
+    const token = getToken()
+    const config = token ? { headers: { Authorization: token } } : {}
+    const response = await request.get(`${BASE_URL}/posts/${postId}/`, config)
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 创建帖子
+ * @param {string} subject - 帖子标题
+ * @param {string} content - 帖子内容
+ * @returns {Promise}
+ */
+export const createPost = async (subject, content) => {
+  try {
+    const token = getToken()
+    const response = await request.post(
+      `${BASE_URL}/posts/create/`,
+      { subject, content },
+      { headers: { Authorization: token } }
+    )
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 删除帖子
+ * @param {number} postId - 帖子ID
+ * @returns {Promise}
+ */
+export const deletePost = async (postId) => {
+  try {
+    const token = getToken()
+    const response = await request.delete(
+      `${BASE_URL}/posts/${postId}/delete/`,
+      { headers: { Authorization: token } }
+    )
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 切换帖子点赞
+ * @param {number} postId - 帖子ID
+ * @returns {Promise}
+ */
+export const togglePostLike = async (postId) => {
+  try {
+    const token = getToken()
+    const response = await request.post(
+      `${BASE_URL}/posts/${postId}/like/`,
+      {},
+      { headers: { Authorization: token } }
+    )
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+// ============ 评论相关接口 ============
+
+/**
+ * 获取帖子评论列表
+ * @param {number} postId - 帖子ID
+ * @param {number} page - 页码，默认 1
+ * @param {number} page_size - 每页数量，默认 20
+ * @returns {Promise}
+ */
+export const getCommentList = async (postId, page = 1, page_size = 20) => {
+  try {
+    const token = getToken()
+    const config = token ? { headers: { Authorization: token } } : {}
+    const response = await request.get(`${BASE_URL}/posts/${postId}/comments/`, {
+      params: { page, page_size },
+      ...config
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 创建评论
+ * @param {number} postId - 帖子ID
+ * @param {string} content - 评论内容
+ * @returns {Promise}
+ */
+export const createComment = async (postId, content) => {
+  try {
+    const token = getToken()
+    const response = await request.post(
+      `${BASE_URL}/comments/create/`,
+      { post: postId, content },
+      { headers: { Authorization: token } }
+    )
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 删除评论
+ * @param {number} commentId - 评论ID
+ * @returns {Promise}
+ */
+export const deleteComment = async (commentId) => {
+  try {
+    const token = getToken()
+    const response = await request.delete(
+      `${BASE_URL}/comments/${commentId}/delete/`,
+      { headers: { Authorization: token } }
+    )
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 切换评论点赞
+ * @param {number} commentId - 评论ID
+ * @returns {Promise}
+ */
+export const toggleCommentLike = async (commentId) => {
+  try {
+    const token = getToken()
+    const response = await request.post(
+      `${BASE_URL}/comments/${commentId}/like/`,
+      {},
+      { headers: { Authorization: token } }
+    )
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+// ============ 用户资料相关接口 ============
+
+/**
+ * 获取用户统计信息
+ * @returns {Promise}
+ */
+export const getUserStats = async () => {
+  try {
+    const token = getToken()
+    const response = await request.get(`${BASE_URL}/profile/stats`, {
+      headers: { Authorization: token }
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 获取我的帖子
+ * @param {number} page - 页码，默认 1
+ * @param {number} page_size - 每页数量，默认 20
+ * @returns {Promise}
+ */
+export const getMyPosts = async (page = 1, page_size = 20) => {
+  try {
+    const token = getToken()
+    const response = await request.get(`${BASE_URL}/profile/posts`, {
+      params: { page, page_size },
+      headers: { Authorization: token }
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+export default {
+  getPostList,
+  getPostDetail,
+  createPost,
+  deletePost,
+  togglePostLike,
+  getCommentList,
+  createComment,
+  deleteComment,
+  toggleCommentLike,
+  getUserStats,
+  getMyPosts
+}
