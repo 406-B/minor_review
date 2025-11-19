@@ -277,11 +277,5 @@ def register_user(request):
             return Response({"message": "Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except json.JSONDecodeError:
         return Response({"message": "Bad arguments"}, status=status.HTTP_400_BAD_REQUEST)
-<<<<<<< HEAD
     except:
         return Response({"message": "Bad arguments"}, status=status.HTTP_400_BAD_REQUEST)
-=======
-    except Exception:
-        return Response({"message": "Bad arguments"}, status=status.HTTP_400_BAD_REQUEST)
-    
->>>>>>> origin/dev
