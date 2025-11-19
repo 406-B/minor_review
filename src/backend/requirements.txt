@@ -1,0 +1,29 @@
+# Django 核心
+Django==4.2.5
+djangorestframework==3.14.0
+
+# 数据库
+mysqlclient==2.2.0
+
+# API 文档
+drf-spectacular==0.26.5
+
+# 过滤和认证
+django-filter==23.3
+djangorestframework-simplejwt==5.3.0
+
+# CORS 支持
+django-cors-headers==4.3.0
+
+# 图片处理
+Pillow==10.1.0
+
+# WSGI 服务器
+gunicorn==21.2.0
+
+# 环境变量管理
+python-decouple==3.8
+
+# JWT 和密码加密
+PyJWT==2.8.0
+scrypt==0.8.24

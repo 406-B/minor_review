@@ -20,22 +20,18 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from .health import health_check
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # 健康检查端点
+    path("api/v1/health/", health_check, name="health_check"),
     # API 路由
     path("api/", include("list.urls")),
-<<<<<<< HEAD
     # 登录注册路由（修正为 /api/v1/ 前缀）
     path("api/v1/", include("login.urls")),
     # 用户个人资料路由 11/2 yyf
     path("api/v1/", include("profile.urls")),
-=======
-    # 登录注册路由
-    path("", include("login.urls")),
-    # 用户个人资料路由 11/2 yyf
-    path("", include("profile.urls")),
->>>>>>> origin/dev
     # 社区论坛路由 11/3 yyf
     path("api/v1/", include("post.urls")),
 ]
