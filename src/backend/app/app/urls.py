@@ -25,17 +25,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # API 路由
     path("api/", include("list.urls")),
-<<<<<<< HEAD
     # 登录注册路由（修正为 /api/v1/ 前缀）
     path("api/v1/", include("login.urls")),
     # 用户个人资料路由 11/2 yyf
     path("api/v1/", include("profile.urls")),
-=======
-    # 登录注册路由
-    path("", include("login.urls")),
-    # 用户个人资料路由 11/2 yyf
-    path("", include("profile.urls")),
->>>>>>> origin/dev
     # 社区论坛路由 11/3 yyf
     path("api/v1/", include("post.urls")),
 ]

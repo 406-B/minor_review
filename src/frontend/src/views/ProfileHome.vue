@@ -2,13 +2,7 @@
 
 <template>
   <div class="profile-home">
-<<<<<<< HEAD
     <TopBar />
-=======
-    <h1 class="title">个人主页</h1>
-
-  <!-- 我的资料（最上方） -->
->>>>>>> origin/dev
   <ProfileInfo :user="user" />
 
     <!-- 已发布与 我的互动 同行 -->
@@ -57,10 +51,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-<<<<<<< HEAD
  import TopBar from '@/components/TopBar.vue'
-=======
->>>>>>> origin/dev
 import SectionCard from '@/components/SectionCard.vue'
 import ProfileInfo from '@/components/ProfileInfo.vue'
 import InteractionStat from '@/components/InteractionStat.vue'
