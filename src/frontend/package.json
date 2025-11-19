@@ -15,11 +15,7 @@
     "axios": "^1.13.1",
     "element-plus": "^2.11.5",
     "vue": "^3.5.22",
-<<<<<<< HEAD
     "vue-router": "^4.6.3"
-=======
-    "vue-router": "^4.2.12"
->>>>>>> origin/dev
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",
