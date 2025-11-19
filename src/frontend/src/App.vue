@@ -8,18 +8,7 @@ function goProfile() { router.push({ path: '/profile' }) }
 
 <template>
   <div id="app-root">
-<<<<<<< HEAD
     <router-view />
-=======
-    <nav class="top-nav">
-      <router-link to="/">点评社区</router-link>
-      <router-link to="/profile">个人主页</router-link>
-    </nav>
-
-    <main>
-      <router-view />
-    </main>
->>>>>>> origin/dev
   </div>
 </template>
 

@@ -79,7 +79,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-<<<<<<< HEAD
 # CORS 跨域配置（开发环境）
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React 前端
@@ -88,8 +87,6 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-=======
->>>>>>> origin/dev
 # CSRF 受信任源配置（必须保留）
 # Vite 代理会转发请求，但 Origin 头仍然是 localhost:5173
 CSRF_TRUSTED_ORIGINS = [
@@ -124,8 +121,16 @@ WSGI_APPLICATION = "app.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "minor_review",
+        "USER": "root",
+        "PASSWORD": "database",
+        "HOST": "localhost",  # 开发环境本地 MySQL
+        "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
@@ -165,6 +170,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles" # for Mysql
 
 # Media files (User uploaded content)
 MEDIA_URL = '/media/'
