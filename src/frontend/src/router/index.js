@@ -11,6 +11,8 @@ const routes = [
   { path: '/community/create', name: 'PostCreate', component: () => import('../views/PostCreate.vue') },
   { path: '/community/:id', name: 'PostDetail', component: () => import('../views/PostDetail.vue') },
   { path: '/profile', name: 'Profile', component: () => import('@/views/ProfileHome.vue') },
+  { path: '/profile/posts', name: 'MyPosts', component: () => import('../views/MyPosts.vue') },
+  { path: '/profile/edit', name: 'ProfileEdit', component: () => import('../views/ProfileEdit.vue') },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFound.vue') },
   { path: '/', redirect: '/canteen' }
 ];

@@ -16,6 +16,23 @@ export const getProfile = async () => {
   }
 }
 
+// 更新用户个人资料（昵称、头像）
+export const updateProfile = async (formData) => {
+  const token = localStorage.getItem('jwt') || ''
+  try {
+    // API 文档: PUT /api/v1/profile/update
+    const data = await request.put('/v1/profile/update', formData, {
+      headers: { 
+        Authorization: token,
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return data
+  } catch (err) {
+    throw err
+  }
+}
+
 // 获取用户统计信息（点赞、评论、关注数）
 export const getProfileStats = async () => {
   const token = localStorage.getItem('jwt') || ''
@@ -68,4 +85,4 @@ export const getProfileSections = async () => {
   }
 }
 
-export default { getProfile, getProfileStats, getProfileSections }
+export default { getProfile, updateProfile, getProfileStats, getProfileSections }
