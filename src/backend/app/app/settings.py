@@ -54,8 +54,8 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',  # Session认证
-        'rest_framework.authentication.TokenAuthentication',  # Token认证
+        'utils.authentication.JWTAuthentication',  # 仅使用自定义JWT认证，避免 Session CSRF 403
+        # 如需后台管理可再开启 SessionAuthentication
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',  # 默认允许所有用户，在视图中可覆盖
