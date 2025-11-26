@@ -1,5 +1,3 @@
-<!-- TODO：互动信息部分仍存在问题，需要前后端进行修改 -->
-
 <template>
   <div class="profile-home">
     <TopBar />
@@ -10,16 +8,18 @@
       <div class="col left">
         <SectionCard title="已发布内容">
           <template #actions>
-            <button class="link" @click.prevent="viewAllPublished">查看全部 <!-- TODO: 跳转到已发布列表 --></button>
+            <button class="link" @click.prevent="viewAllPublished">查看全部</button>
           </template>
           <template #content>
-            <ul class="posts">
-              <li v-for="(p, idx) in published.slice(0,2)" :key="p.id" class="post">
-                <div class="post-title">{{ p.title }}</div>
-                <div class="post-meta">{{ p.createdAt }}</div>
-              </li>
-              <li v-if="!published || published.length === 0" class="empty">暂无已发布内容</li>
-            </ul>
+            <div class="posts">
+              <PostItem
+                v-for="p in published.slice(0, 2)"
+                :key="p.id"
+                :post="p"
+                :showStats="false"
+              />
+              <p v-if="!published || published.length === 0" class="empty">暂无已发布内容</p>
+            </div>
           </template>
         </SectionCard>
       </div>
@@ -51,11 +51,12 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
- import TopBar from '@/components/TopBar.vue'
+import TopBar from '@/components/TopBar.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import ProfileInfo from '@/components/ProfileInfo.vue'
 import InteractionStat from '@/components/InteractionStat.vue'
 import ControlPanel from '@/components/ControlPanel.vue'
+import PostItem from '@/components/PostItem.vue'
 import { getProfileSections } from '@/api/profile'
 import { getMyPosts, getUserStats } from '@/api/community'
 
@@ -136,13 +137,11 @@ const formatTime = (timestamp) => {
 onMounted(load)
 
 const viewAllPublished = () => {
-  // TODO: 使用 vue-router 跳转到已发布内容列表
-  console.log('viewAllPublished TODO')
+  router.push('/profile/posts')
 }
 
 const onNavigate = (to) => {
-  // TODO: 路由跳转或父组件处理
-  console.log('navigate to', to)
+  router.push(to)
 }
 </script>
 
@@ -151,13 +150,11 @@ const onNavigate = (to) => {
 .title { font-size: 1.4rem; margin-bottom: 0.75rem }
 .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem }
 .col { display: flex; flex-direction: column; gap: 1rem }
-.posts { list-style: none; padding: 0; margin: 0 }
-.post { padding: 0.5rem 0; border-bottom: 1px dashed rgba(0,0,0,0.04) }
-.post-title { font-weight: 600 }
-.post-meta { font-size: 0.85rem; color: #666 }
+.posts { padding: 0; margin: 0 }
+.empty { color: #888; font-size: 0.9rem; text-align: center; padding: 1rem 0 }
 .interactions { display: flex; flex-wrap: wrap }
 .hint { color: #888; font-size: 0.85rem; margin-top: 0.5rem }
-.link { background: none; border: none; color: #2b8aef; cursor: pointer }
+.link { background: none; border: none; color: #2b8aef; cursor: pointer; font-size: 0.9rem }
 
 @media (min-width: 1024px) {
   .grid { grid-template-columns: 1fr 1fr }
