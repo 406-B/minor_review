@@ -38,8 +38,8 @@
       <el-empty v-if="!reviews.length" description="暂无评论" />
       <el-card v-for="review in reviews" :key="review.id" class="review-card">
         <div class="review-header">
-          <span class="review-user">{{ review.user_name }}</span>
-          <el-rate v-model="review.rating_score" disabled :max="5" />
+          <span class="review-user">{{ review.username || review.user_name }}</span>
+          <el-rate :model-value="Number(review.user_rating || 0)" disabled :max="5" show-score />
         </div>
         <div class="review-content">{{ review.content }}</div>
       </el-card>
@@ -135,6 +135,7 @@ onMounted(() => {
   width: 100vw;
   min-height: 100vh;
   margin: 0;
+  /* 页面整体不强制滚动，让内部评论区域单独滚动 */
 }
 .rate-section {
   display: flex;
@@ -210,6 +211,12 @@ onMounted(() => {
 .dish-reviews {
   width: 100%;
   margin-top: 24px;
+  /* 采用视窗高度自适应，减去顶部区域的估算高度 */
+  max-height: calc(100vh - 320px);
+  overflow-y: scroll; /* 强制常驻滚动条 */
+  padding-right: 4px;
+  scrollbar-gutter: stable both-edges;
+  min-height: 160px;
 }
 .review-card {
   margin-bottom: 16px;
@@ -226,5 +233,21 @@ onMounted(() => {
 .review-content {
   margin-top: 6px;
   color: #333;
+}
+
+/* 自定义滚动条（Webkit 浏览器） */
+.dish-reviews::-webkit-scrollbar {
+  width: 8px;
+}
+.dish-reviews::-webkit-scrollbar-track {
+  background: #fafafa;
+  border-radius: 4px;
+}
+.dish-reviews::-webkit-scrollbar-thumb {
+  background: #e0e0e0;
+  border-radius: 4px;
+}
+.dish-reviews::-webkit-scrollbar-thumb:hover {
+  background: #c7c7c7;
 }
 </style>

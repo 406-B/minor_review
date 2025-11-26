@@ -136,6 +136,10 @@ class ReviewSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     dish_name = serializers.CharField(source='dish.name', read_only=True)
     user_rating = serializers.SerializerMethodField()
+    # 显式声明只读外键，避免创建时要求客户端提交
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    dish = serializers.PrimaryKeyRelatedField(read_only=True)
+    rating = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Review
@@ -144,7 +148,8 @@ class ReviewSerializer(serializers.ModelSerializer):
             'content', 'images', 'rating', 'user_rating',
             'likes_count', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['user', 'likes_count', 'created_at', 'updated_at']
+    # dish 与 rating 在视图中通过上下文注入，不要求客户端提交
+    read_only_fields = ['user', 'dish', 'rating', 'likes_count', 'created_at', 'updated_at']
 
     def get_user_rating(self, obj):
         """获取用户对该菜品的评分"""
@@ -174,12 +179,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 class ReviewListSerializer(serializers.ModelSerializer):
     """评论列表序列化器（简化版）"""
     username = serializers.CharField(source='user.username', read_only=True)
-    user_rating = serializers.DecimalField(
-        source='rating.score',
-        max_digits=3,
-        decimal_places=2,
-        read_only=True
-    )
+    user_rating = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
@@ -187,3 +187,10 @@ class ReviewListSerializer(serializers.ModelSerializer):
             'id', 'user', 'username', 'content', 'images',
             'user_rating', 'likes_count', 'created_at'
         ]
+
+    def get_user_rating(self, obj):
+        # 优先关联的rating外键，否则尝试查找用户对该菜品的评分
+        if obj.rating:
+            return obj.rating.score
+        rating = Rating.objects.filter(user=obj.user, dish=obj.dish).first()
+        return rating.score if rating else None
