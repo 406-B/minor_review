@@ -8,23 +8,22 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    // 如果请求头中没有 Authorization，尝试从 localStorage 获取
-    if (!config.headers.Authorization) {
-      const token = localStorage.getItem('jwt');
-      if (token) {
-        // 如果 token 不包含 'Bearer ' 前缀，则添加
-        config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-        
-        // 开发环境下打印调试信息
-        if (import.meta.env.DEV) {
-          console.log('[请求] 已添加 Authorization 头:', config.headers.Authorization.substring(0, 20) + '...');
-        }
-      } else {
-        // 开发环境下警告未登录
-        if (import.meta.env.DEV) {
-          console.warn('[请求] 未找到 JWT Token，请求可能失败:', config.url);
-        }
+    // 统一从 localStorage 注入 Bearer token；若调用方自带 Authorization，则只在缺失时补充
+    const stored = localStorage.getItem('jwt');
+    if (stored) {
+      const bearer = stored.startsWith('Bearer ') ? stored : `Bearer ${stored}`;
+      if (!config.headers.Authorization) {
+        config.headers.Authorization = bearer;
+      } else if (!String(config.headers.Authorization).toLowerCase().startsWith('bearer ')) {
+        // 纠正非 Bearer 的裸 token
+        config.headers.Authorization = bearer;
       }
+
+      if (import.meta.env.DEV) {
+        console.log('[请求] Authorization:', String(config.headers.Authorization).slice(0, 24) + '...');
+      }
+    } else if (import.meta.env.DEV) {
+      console.warn('[请求] 未找到 JWT Token，可能触发401/403:', config.url);
     }
     return config;
   },
