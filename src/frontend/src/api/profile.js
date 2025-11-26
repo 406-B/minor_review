@@ -7,7 +7,7 @@ export const getProfile = async () => {
   try {
     // API 文档: GET /api/v1/profile
     const data = await request.get('/v1/profile', {
-      headers: { Authorization: token }
+      headers: token ? { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` } : {}
     })
     return data
   } catch (err) {
@@ -22,7 +22,7 @@ export const getProfileStats = async () => {
   try {
     // API 文档: GET /api/v1/profile/stats
     const data = await request.get('/v1/profile/stats', {
-      headers: { Authorization: token }
+      headers: token ? { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` } : {}
     })
     return data
   } catch (err) {

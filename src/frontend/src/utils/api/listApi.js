@@ -29,16 +29,26 @@ const api = axios.create({
 // 请求拦截器 - 添加认证 token
 api.interceptors.request.use(
 	(config) => {
-		// 从 localStorage 获取 token
-		const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+		// 统一支持多种 storage key，优先使用最新的 'jwt'
+		let token = localStorage.getItem('jwt')
+			|| localStorage.getItem('access_token')
+			|| localStorage.getItem('token');
 		if (token) {
-			config.headers.Authorization = `Bearer ${token}`;
+			// 纠正可能已有 Bearer 前缀的情况
+			if (token.toLowerCase().startsWith('bearer ')) {
+				config.headers.Authorization = token;
+			} else {
+				config.headers.Authorization = `Bearer ${token}`;
+			}
+		} else {
+			// 可选：开发环境下提示未登录
+			if (import.meta && import.meta.env && import.meta.env.DEV) {
+				console.warn('[listApi] 未找到JWT，部分需要登录的接口将返回403');
+			}
 		}
 		return config;
 	},
-	(error) => {
-		return Promise.reject(error);
-	}
+	(error) => Promise.reject(error)
 );
 
 // 响应拦截器 - 统一处理错误

@@ -25,6 +25,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.db.models import Q, Avg, Count
 from .models import Canteen, Dish, Tag, Rating, Review
+from django.contrib.auth.models import User as AuthUser
 from .serializers import (
     CanteenSerializer, DishSerializer, DishListSerializer, TagSerializer,
     RatingSerializer, ReviewSerializer, ReviewListSerializer
@@ -39,8 +40,14 @@ def my_reviews(request):
     获取当前登录用户的所有评论
     支持分页和排序
     """
-    user = request.user
-    reviews = Review.objects.filter(user=user)
+    # 将自定义 login.User 映射为 Django AuthUser（Rating/Review 外键依赖）
+    if isinstance(request.user, AuthUser):
+        auth_user = request.user
+    else:
+        auth_user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not auth_user and getattr(request.user, 'username', None):
+            auth_user = AuthUser.objects.create(username=request.user.username)
+    reviews = Review.objects.filter(user=auth_user)
 
     # 排序
     ordering = request.query_params.get('ordering', '-created_at')
@@ -271,6 +278,13 @@ def rate_dish(request, dish_id):
     注意：这是简化版本，实际应该记录每个用户的评分，然后计算平均值
     """
     dish = get_object_or_404(Dish, id=dish_id)
+    # 映射用户
+    if isinstance(request.user, AuthUser):
+        auth_user = request.user
+    else:
+        auth_user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not auth_user and getattr(request.user, 'username', None):
+            auth_user = AuthUser.objects.create(username=request.user.username)
 
     rating_value = request.data.get('rating')
     if not rating_value:
@@ -292,25 +306,29 @@ def rate_dish(request, dish_id):
             'message': '评分格式不正确',
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    ratings=Rating.objects.filter(dish=dish).aggregate(Avg('rating'))['rating__avg']
-    if ratings is None:
-        ratings = 0.0
-    else:
-        ratings = float(ratings)
+    # 创建或更新用户对该菜品的评分（Rating表字段为 score，不是 rating）
+    rating_obj, _ = Rating.objects.update_or_create(dish=dish, user=auth_user, defaults={'score': rating_value})
 
-    # 简单的移动平均
-    new_rating = (ratings * dish.view_count + rating_value) / (dish.view_count + 1)
-    dish.rating = round(new_rating, 2)
+    # 重新计算平均分，聚合字段应为 'score'
+    avg_score = Rating.objects.filter(dish=dish).aggregate(avg=Avg('score'))['avg']
+    dish.rating = round(float(avg_score), 2) if avg_score is not None else 0.0
     dish.save(update_fields=['rating'])
-    Rating.objects.create(dish=dish, user=request.user, score=rating_value)
+
     return Response({
         'code': 200,
         'message': '评分成功',
         'data': {
             'dish_id': dish.id,
+            'user_score': float(rating_obj.score),
             'new_rating': float(dish.rating)
         }
     })
+
+    # 若用户已评论该菜品但评论尚未关联评分，尝试关联
+    user_review = Review.objects.filter(user=auth_user, dish=dish, rating__isnull=True).first()
+    if user_review:
+        user_review.rating = rating_obj
+        user_review.save(update_fields=['rating'])
 
 
 @api_view(['POST'])
@@ -331,7 +349,12 @@ def add_tag_to_dish(request, dish_id):
     }
     """
     dish = get_object_or_404(Dish, id=dish_id)
-    user = request.user
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user and getattr(request.user, 'username', None):
+            user = AuthUser.objects.create(username=request.user.username)
 
     # 检查输入
     tag_ids = request.data.get('tag_ids', [])
@@ -397,6 +420,11 @@ def approve_pending_tags(request, dish_id):
     }
     """
     dish = get_object_or_404(Dish, id=dish_id)
+    if not isinstance(request.user, AuthUser):
+        # 管理员校验仍需使用 auth_user 对象
+        admin_user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not admin_user and getattr(request.user, 'username', None):
+            admin_user = AuthUser.objects.create(username=request.user.username)
 
     tag_ids = request.data.get('tag_ids', [])
 
@@ -435,6 +463,10 @@ def reject_pending_tags(request, dish_id):
     }
     """
     dish = get_object_or_404(Dish, id=dish_id)
+    if not isinstance(request.user, AuthUser):
+        admin_user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not admin_user and getattr(request.user, 'username', None):
+            admin_user = AuthUser.objects.create(username=request.user.username)
 
     tag_ids = request.data.get('tag_ids', [])
     if not tag_ids:
@@ -531,6 +563,7 @@ def review_list(request, dish_id):
         'code': 200,
         'message': '获取评论列表成功',
         'data': {
+            'dish_id': dish.id,
             'reviews': serializer.data,
             'total': reviews.count()
         }
@@ -551,7 +584,12 @@ def create_review(request, dish_id):
     }
     """
     dish = get_object_or_404(Dish, id=dish_id)
-    user = request.user
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user and getattr(request.user, 'username', None):
+            user = AuthUser.objects.create(username=request.user.username)
 
     # 检查用户是否已经评论过
     existing_review = Review.objects.filter(user=user, dish=dish).first()
@@ -563,7 +601,12 @@ def create_review(request, dish_id):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     # 处理评分（如果提供）
-    rating_score = request.data.get('rating_score')
+    # 兼容多种前端可能传入的评分字段名称
+    rating_score = (
+        request.data.get('rating_score') or
+        request.data.get('score') or
+        request.data.get('rating')
+    )
     rating_obj = None
 
     if rating_score:
@@ -592,9 +635,18 @@ def create_review(request, dish_id):
                 'code': 400,
                 'message': '评分格式不正确'
             }, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        # 未提供评分但已有评分时关联
+        existing_rating = Rating.objects.filter(user=user, dish=dish).first()
+        if existing_rating:
+            rating_obj = existing_rating
 
     # 创建评论
-    serializer = ReviewSerializer(data=request.data)
+    # 若前端未传 images，设为空列表避免验证错误
+    incoming_data = request.data.copy()
+    if 'images' not in incoming_data or incoming_data.get('images') in [None, '']:
+        incoming_data['images'] = []
+    serializer = ReviewSerializer(data=incoming_data, context={'request': request})
     if serializer.is_valid():
         review = serializer.save(user=user, dish=dish, rating=rating_obj)
 
@@ -607,7 +659,12 @@ def create_review(request, dish_id):
     return Response({
         'code': 400,
         'message': '评论创建失败',
-        'errors': serializer.errors
+        'errors': serializer.errors,
+        # 调试信息（DEBUG 模式下返回，生产应移除）
+        'debug': {
+            'incoming_keys': list(incoming_data.keys()),
+            'raw_data': incoming_data,
+        }
     }, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -624,9 +681,15 @@ def update_review(request, review_id):
     }
     """
     review = get_object_or_404(Review, id=review_id)
+    if not isinstance(request.user, AuthUser):
+        auth_user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not auth_user and getattr(request.user, 'username', None):
+            auth_user = AuthUser.objects.create(username=request.user.username)
+    else:
+        auth_user = request.user
 
     # 检查权限：只能编辑自己的评论
-    if review.user != request.user:
+    if review.user != auth_user:
         return Response({
             'code': 403,
             'message': '您没有权限编辑此评论'
@@ -657,9 +720,15 @@ def delete_review(request, review_id):
     管理员可以删除任何评论
     """
     review = get_object_or_404(Review, id=review_id)
+    if not isinstance(request.user, AuthUser):
+        auth_user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not auth_user and getattr(request.user, 'username', None):
+            auth_user = AuthUser.objects.create(username=request.user.username)
+    else:
+        auth_user = request.user
 
     # 检查权限：只能删除自己的评论，或者管理员
-    if review.user != request.user and not (request.user.is_staff or request.user.is_superuser):
+    if review.user != auth_user and not (getattr(auth_user, 'is_staff', False) or getattr(auth_user, 'is_superuser', False)):
         return Response({
             'code': 403,
             'message': '您没有权限删除此评论'
@@ -684,7 +753,12 @@ def like_review(request, review_id):
     返回当前点赞状态和点赞数
     """
     review = get_object_or_404(Review, id=review_id)
-    user = request.user
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user and getattr(request.user, 'username', None):
+            user = AuthUser.objects.create(username=request.user.username)
 
     # 假设有一个ReviewLike模型用于记录用户点赞（如未建表可用set模拟，或直接在Review模型加ManyToManyField）
     # 这里用最简单的方式：在session中模拟（生产环境应建表）
