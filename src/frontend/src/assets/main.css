@@ -1,36 +1,48 @@
 @import "../../base.css";
+@import "./theme/theme.css";
 
 
 .main-container {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
-  background: #fff;
+  background: var(--color-surface);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
 
 #app {
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
   margin: 0;
   padding: 0;
   font-weight: normal;
+  background: var(--color-bg);
 }
 
 a,
 .green {
   text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
+  color: var(--color-accent);
   transition: 0.4s;
   padding: 3px;
 }
 
 @media (hover: hover) {
   a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
+  background-color: var(--brand-100);
   }
 }
+
+/* generic card & section helpers */
+.ui-card{ background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); padding:16px; }
+.ui-section-title{ color:var(--color-accent); font-size:var(--text-lg); margin: 8px 0 12px; }
+.ui-toolbar{ display:flex; gap:12px; align-items:center; }
+
+/* scrollbar unify */
+*::-webkit-scrollbar{ width:8px; height:8px }
+*::-webkit-scrollbar-thumb{ background:var(--brand-200); border-radius:6px }
+*::-webkit-scrollbar-thumb:hover{ background:var(--brand-300) }
 
 
 @media (max-width: 900px) {

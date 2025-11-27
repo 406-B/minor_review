@@ -1,7 +1,10 @@
 <template>
-  <div class="login-bg">
-    <el-card class="login-card">
-      <div style="color:red;font-weight:bold;text-align:center;">[Login.vue 页面已加载]</div>
+  <PageContainer>
+    <template #header>
+      <AppTopBar />
+    </template>
+    <div class="login-bg">
+      <el-card class="login-card">
       <h2 class="login-title">登录</h2>
       <el-form :model="loginForm" @submit.prevent="onLogin" label-width="80px" label-position="right">
         <el-form-item label="用户名">
@@ -17,14 +20,17 @@
           <router-link to="/register">没有账号？去注册</router-link>
         </el-form-item>
       </el-form>
-    </el-card>
-  </div>
+      </el-card>
+    </div>
+  </PageContainer>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { login } from '@/api/listApi';
+import PageContainer from '@/components/ui/PageContainer.vue'
+import AppTopBar from '@/components/ui/AppTopBar.vue'
 
 const router = useRouter();
 const loginForm = ref({ username: '', password: '' });

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { isProtectedPath } from '@/constants/permissions.js'
 
 const routes = [
   { path: '/login', name: 'Login', component: () => import('../views/Login.vue') },
@@ -22,7 +23,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('jwt');
-  if (!['/login', '/register'].includes(to.path) && !token) {
+  if (!token && isProtectedPath(to.path)) {
     next('/login');
   } else {
     next();
