@@ -24,9 +24,11 @@ class WindowWithDishesSerializer(serializers.ModelSerializer):
         return DishListSerializer(dishes, many=True).data
 
 class CanteenSerializer(serializers.ModelSerializer):
+    distance = serializers.FloatField(read_only=True, required=False, help_text="距离（米）")
+
     class Meta:
         model = Canteen
-        fields = '__all__'
+        fields = ['id', 'name', 'latitude', 'longitude', 'address', 'distance', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
     def validate_name(self, value):
