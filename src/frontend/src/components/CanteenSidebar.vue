@@ -18,9 +18,9 @@
 			:default-active="activeCanteen"
 			class="canteen-sidebar-menu"
 			@select="handleSelect"
-			background-color="orange"
-			text-color="#fff"
-			active-text-color="#ffd04b"
+			background-color="transparent"
+			text-color="var(--color-text)"
+			active-text-color="var(--color-accent)"
 		>
 			<el-menu-item
 				v-for="canteen in canteens"
@@ -67,25 +67,25 @@ function goSearch() {
 .sidebar-vertical {
 	display: flex;
 	flex-direction: column;
-	height: calc(100vh - 60px);
+	height: auto;
 	width: 220px;
 	min-width: 200px;
 	max-width: 260px;
-	background: orange;
+	background: var(--brand-100);
 	box-shadow: 2px 0 16px #e0e0e0aa;
 	position: relative;
 	top: 0;
 }
 .sidebar-search {
 	padding: 16px 12px 8px 12px;
-	background: orange;
+	background: transparent;
 }
 .search-input {
 	width: 100%;
 }
 .canteen-sidebar-menu {
 	border-right: none;
-	background: orange;
+	background: transparent;
 	flex: 1 1 auto;
 	height: auto;
 	min-height: 0;

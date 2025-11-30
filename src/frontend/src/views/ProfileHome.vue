@@ -1,6 +1,8 @@
 <template>
-  <div class="profile-home">
-    <TopBar />
+  <PageContainer>
+    <template #header>
+      <AppTopBar />
+    </template>
   <ProfileInfo :user="user" />
 
     <!-- 已发布与 我的互动 同行 -->
@@ -45,13 +47,15 @@
 
     <!-- 控制组件板块（在底部） -->
     <ControlPanel />
-  </div>
+  </PageContainer>
 </template>
 
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import TopBar from '@/components/TopBar.vue'
+ import PageContainer from '@/components/ui/PageContainer.vue'
+ import SectionTitle from '@/components/ui/SectionTitle.vue'
+ import AppTopBar from '@/components/ui/AppTopBar.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import ProfileInfo from '@/components/ProfileInfo.vue'
 import InteractionStat from '@/components/InteractionStat.vue'
@@ -146,15 +150,17 @@ const onNavigate = (to) => {
 </script>
 
 <style scoped>
-.profile-home { padding: 1rem; }
+.profile-home { /* wrapped by PageContainer */ }
 .title { font-size: 1.4rem; margin-bottom: 0.75rem }
 .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem }
 .col { display: flex; flex-direction: column; gap: 1rem }
-.posts { padding: 0; margin: 0 }
-.empty { color: #888; font-size: 0.9rem; text-align: center; padding: 1rem 0 }
+.posts { list-style: none; padding: 0; margin: 0 }
+.post { padding: 0.5rem 0; border-bottom: 1px dashed rgba(0,0,0,0.04) }
+.post-title { font-weight: 600 }
+.post-meta { font-size: 0.85rem; color: var(--color-muted) }
 .interactions { display: flex; flex-wrap: wrap }
-.hint { color: #888; font-size: 0.85rem; margin-top: 0.5rem }
-.link { background: none; border: none; color: #2b8aef; cursor: pointer; font-size: 0.9rem }
+.hint { color: var(--color-muted); font-size: 0.85rem; margin-top: 0.5rem }
+.link { background: none; border: none; color: var(--color-accent); cursor: pointer }
 
 @media (min-width: 1024px) {
   .grid { grid-template-columns: 1fr 1fr }
