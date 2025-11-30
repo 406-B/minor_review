@@ -189,6 +189,14 @@ class Review(models.Model):
         related_name='review',
         help_text="关联的评分（可选）"
     )
+    # 发表时的评分快照（与Rating表独立，后续评分变更不影响已发布评论显示）
+    published_score = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="评论发布时的评分快照"
+    )
     likes_count = models.IntegerField(default=0, help_text="点赞数")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

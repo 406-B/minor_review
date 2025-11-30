@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 import json
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from utils.jwt import login_required
@@ -81,6 +82,7 @@ def post_detail(request, post_id):
     responses={200: PostSerializer}
 )
 @require_http_methods(["POST"])
+@csrf_exempt
 @login_required
 def create_post(request):
     """创建帖子"""
@@ -126,6 +128,7 @@ def create_post(request):
     responses={200: dict}
 )
 @require_http_methods(["DELETE"])
+@csrf_exempt
 @login_required
 def delete_post(request, post_id):
     """删除帖子"""
@@ -152,6 +155,7 @@ def delete_post(request, post_id):
     responses={200: dict}
 )
 @require_http_methods(["POST"])
+@csrf_exempt
 @login_required
 def toggle_post_like(request, post_id):
     """切换帖子点赞状态"""
@@ -179,6 +183,7 @@ def toggle_post_like(request, post_id):
     responses={200: CommentSerializer}
 )
 @require_http_methods(["POST"])
+@csrf_exempt
 @login_required
 def create_comment(request):
     """创建评论"""
@@ -272,6 +277,7 @@ def comment_list(request, post_id):
     responses={200: dict}
 )
 @require_http_methods(["DELETE"])
+@csrf_exempt
 @login_required
 def delete_comment(request, comment_id):
     """删除评论"""
@@ -298,6 +304,7 @@ def delete_comment(request, comment_id):
     responses={200: dict}
 )
 @require_http_methods(["POST"])
+@csrf_exempt
 @login_required
 def toggle_comment_like(request, comment_id):
     """切换评论点赞状态"""
