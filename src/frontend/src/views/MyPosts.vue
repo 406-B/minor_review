@@ -1,23 +1,24 @@
 <template>
-  <div class="my-posts">
-    <TopBar />
-    
-    <div class="container">
-      <div class="header">
-        <h1 class="page-title">我的帖子</h1>
-        <button class="back-btn" @click="goBack">返回</button>
-      </div>
+  <PageContainer>
+    <template #header>
+      <AppTopBar />
+    </template>
+    <div class="header">
+      <h1 class="page-title">我的帖子</h1>
+      <el-button size="small" @click="goBack">返回</el-button>
+    </div>
 
       <div v-if="loading" class="loading">加载中...</div>
 
       <div v-else-if="error" class="error">
         <p>{{ error }}</p>
-        <button @click="loadPosts" class="retry-btn">重试</button>
+        <el-button type="primary" @click="loadPosts">重试</el-button>
       </div>
 
       <div v-else-if="posts.length === 0" class="empty">
-        <p>暂无发布的帖子</p>
-        <button @click="goToCreate" class="create-btn">发布第一篇帖子</button>
+        <el-empty description="暂无发布的帖子">
+          <el-button type="primary" @click="goToCreate">发布第一篇帖子</el-button>
+        </el-empty>
       </div>
 
       <div v-else class="posts-container">
@@ -30,34 +31,28 @@
 
         <!-- 分页控件 -->
         <div v-if="pagination.total_pages > 1" class="pagination">
-          <button 
-            class="page-btn" 
+          <el-button 
             :disabled="pagination.page <= 1"
             @click="goToPage(pagination.page - 1)"
-          >
-            上一页
-          </button>
+          >上一页</el-button>
           <span class="page-info">
             第 {{ pagination.page }} / {{ pagination.total_pages }} 页
             (共 {{ pagination.total }} 篇)
           </span>
-          <button 
-            class="page-btn"
+          <el-button 
             :disabled="pagination.page >= pagination.total_pages"
             @click="goToPage(pagination.page + 1)"
-          >
-            下一页
-          </button>
+          >下一页</el-button>
         </div>
-      </div>
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import TopBar from '@/components/TopBar.vue'
+import PageContainer from '@/components/ui/PageContainer.vue'
+import AppTopBar from '@/components/ui/AppTopBar.vue'
 import PostItem from '@/components/PostItem.vue'
 import { getMyPosts } from '@/api/community'
 
@@ -115,16 +110,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.my-posts {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 1.5rem;
-}
+/* PageContainer 已提供容器与背景，此处仅小范围调整 */
 
 .header {
   display: flex;
@@ -132,7 +118,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .page-title {
@@ -142,21 +128,6 @@ onMounted(() => {
   margin: 0;
 }
 
-.back-btn {
-  padding: 0.5rem 1rem;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  color: #666;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-}
-
-.back-btn:hover {
-  background-color: #f5f5f5;
-  border-color: #999;
-}
 
 .loading,
 .error,
@@ -170,23 +141,6 @@ onMounted(() => {
   color: #c00;
 }
 
-.retry-btn,
-.create-btn {
-  margin-top: 1rem;
-  padding: 0.6rem 1.5rem;
-  background-color: #2b8aef;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.2s;
-}
-
-.retry-btn:hover,
-.create-btn:hover {
-  background-color: #1a73d9;
-}
 
 .posts-container {
   background-color: white;
@@ -204,27 +158,7 @@ onMounted(() => {
   border-top: 1px solid #e0e0e0;
 }
 
-.page-btn {
-  padding: 0.5rem 1rem;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  color: #666;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-}
-
-.page-btn:hover:not(:disabled) {
-  background-color: #2b8aef;
-  color: white;
-  border-color: #2b8aef;
-}
-
-.page-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* 分页按钮使用 Element Plus 默认样式 */
 
 .page-info {
   font-size: 0.9rem;
