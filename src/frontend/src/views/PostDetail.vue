@@ -1,16 +1,19 @@
 <template>
-	<div class="page">
+	<PageContainer>
+		<template #header>
+			<AppTopBar />
+		</template>
 			<div class="top-actions">
 				<PageActions>
 					<template #left>
-						<button @click="goBack">返回</button>
+						<button class="toolbar-btn" @click="goBack">返回</button>
 					</template>
 					<template #right>
 						<button v-if="canDelete" @click="handleDelete" class="delete-btn">删除</button>
 					</template>
 				</PageActions>
 
-				<div class="title">帖子详情</div>
+				<SectionTitle>帖子详情</SectionTitle>
 			</div>
 
 		<div class="content-wrap">
@@ -109,7 +112,7 @@
 			</div>
 			<div class="side-placeholder"></div>
 		</div>
-	</div>
+	</PageContainer>
 </template>
 
 <script setup>
@@ -136,6 +139,10 @@ const commenting = ref(false)
 const newComment = ref('')
 
 import PageActions from '../components/PageActions.vue'
+import PageContainer from '@/components/ui/PageContainer.vue'
+import SectionTitle from '@/components/ui/SectionTitle.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import AppTopBar from '@/components/ui/AppTopBar.vue'
 
 // 计算当前用户ID（从 localStorage 或其他地方获取）
 const currentUserId = computed(() => {
@@ -193,24 +200,36 @@ async function loadPost() {
 }
 
 async function handleDelete() {
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
 	if (!confirm('确定要删除这条帖子吗？')) return
 	
 	try {
 		const response = await deletePost(post.value.id)
 		
 		if (response.code === 200) {
-			alert('删除成功')
+			window.$message?.success?.('删除成功')
 			router.push({ name: 'CommunityHome' })
 		} else {
-			alert(response.message || '删除失败')
+			window.$message?.error?.(response.message || '删除失败')
 		}
 	} catch (err) {
 		console.error('删除帖子失败:', err)
-		alert('删除失败，请重试')
+		if (err?.response?.status === 401) {
+			window.$message?.warning?.('您需要先登录')
+			return router.push('/login')
+		}
+		window.$message?.error?.('删除失败，请重试')
 	}
 }
 
 async function handleLike() {
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
 	if (liking.value) return
 	liking.value = true
 	
@@ -225,10 +244,15 @@ async function handleLike() {
 			} else {
 				post.value.likes_count = Math.max(0, (post.value.likes_count || 0) - 1)
 			}
-		}
+	}
 	} catch (err) {
 		console.error('点赞操作失败:', err)
-		alert('操作失败，请重试')
+		if (err?.response?.status === 401) {
+			window.$message?.warning?.('您需要先登录')
+			router.push('/login')
+		} else {
+			window.$message?.error?.('操作失败，请重试')
+		}
 	} finally {
 		liking.value = false
 	}
@@ -236,6 +260,10 @@ async function handleLike() {
 
 async function handleComment() {
 	if (!newComment.value.trim() || commenting.value) return
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
 	commenting.value = true
 	
 	try {
@@ -249,17 +277,26 @@ async function handleComment() {
 			// 清空输入框
 			newComment.value = ''
 		} else {
-			alert(response.message || '评论失败')
+			window.$message?.error?.(response.message || '评论失败')
 		}
 	} catch (err) {
 		console.error('发表评论失败:', err)
-		alert('评论失败，请重试')
+		if (err?.response?.status === 401) {
+			window.$message?.warning?.('您需要先登录')
+			router.push('/login')
+		} else {
+			window.$message?.error?.('评论失败，请重试')
+		}
 	} finally {
 		commenting.value = false
 	}
 }
 
 async function handleCommentLike(comment) {
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
 	try {
 		const response = await toggleCommentLike(comment.id)
 		
@@ -271,14 +308,23 @@ async function handleCommentLike(comment) {
 			} else {
 				comment.likes_count = Math.max(0, (comment.likes_count || 0) - 1)
 			}
-		}
+	}
 	} catch (err) {
 		console.error('评论点赞操作失败:', err)
-		alert('操作失败，请重试')
+		if (err?.response?.status === 401) {
+			window.$message?.warning?.('您需要先登录')
+			router.push('/login')
+		} else {
+			window.$message?.error?.('操作失败，请重试')
+		}
 	}
 }
 
 async function handleDeleteComment(commentId) {
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
 	if (!confirm('确定要删除这条评论吗？')) return
 	
 	try {
@@ -290,11 +336,16 @@ async function handleDeleteComment(commentId) {
 			// 更新评论数
 			post.value.comments_count = Math.max(0, (post.value.comments_count || 0) - 1)
 		} else {
-			alert(response.message || '删除失败')
+			window.$message?.error?.(response.message || '删除失败')
 		}
 	} catch (err) {
 		console.error('删除评论失败:', err)
-		alert('删除失败，请重试')
+		if (err?.response?.status === 401) {
+			window.$message?.warning?.('您需要先登录')
+			router.push('/login')
+		} else {
+			window.$message?.error?.('删除失败，请重试')
+		}
 	}
 }
 
@@ -325,26 +376,26 @@ onMounted(loadPost)
 </script>
 
 <style scoped>
-.page { background: #f5f7fb; padding: 20px 0; min-height: 100vh }
+.page { background: var(--color-bg); padding: 20px 0; min-height: 100vh }
 .top-actions { display:block; padding:12px 0; border-bottom:1px solid #eee; margin-bottom:12px }
 .top-actions .title { font-size:18px; font-weight:600; max-width:1200px; margin:8px auto 0; padding:0 20px; text-align:left }
 .content-wrap { display:flex; justify-content:flex-start; gap:20px; padding-left:20px }
-.card { width:720px; background:#fff; padding:18px; border-radius:8px; box-shadow:0 1px 4px rgba(16,24,40,0.06) }
+.card { width:720px; background:var(--color-surface); padding:18px; border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); border:1px solid var(--color-border) }
 .side-placeholder { width:260px }
 .toolbar { display:flex; gap:8px }
-.toolbar button { padding:8px 12px; border-radius:4px; border:none; background:#f5f5f5; cursor:pointer }
-.delete-btn { padding:8px 12px; border-radius:4px; border:none; background:#f56c6c; color:#fff; cursor:pointer; transition: all 0.3s }
+.toolbar-btn { padding:8px 12px; border-radius:var(--radius-xs); border:1px solid var(--color-border); background:var(--color-surface); cursor:pointer }
+.delete-btn { padding:8px 12px; border-radius:var(--radius-xs); border:none; background:#f56c6c; color:#fff; cursor:pointer; transition: all 0.3s }
 .delete-btn:hover { background:#f45454 }
 
-.loading, .error { text-align: center; padding: 40px 20px; color: #666; font-size: 14px }
+.loading, .error { text-align: center; padding: 40px 20px; color: var(--color-muted); font-size: 14px }
 .error { color: #f56c6c }
 
 .post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0 }
 .author-info { display: flex; align-items: center; gap: 12px }
 .avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover }
 .author-details { display: flex; flex-direction: column }
-.author-name { font-weight: 600; font-size: 14px; color: #333 }
-.post-time { font-size: 12px; color: #999; margin-top: 4px }
+.author-name { font-weight: 600; font-size: 14px; color: var(--color-text) }
+.post-time { font-size: 12px; color: var(--color-muted); margin-top: 4px }
 .post-actions { display: flex; gap: 8px }
 .like-btn { 
 	padding: 6px 14px; 
@@ -356,8 +407,8 @@ onMounted(loadPost)
 	transition: all 0.3s;
 }
 .like-btn:hover:not(:disabled) { 
-	border-color: #409eff; 
-	color: #409eff 
+	border-color: var(--color-accent); 
+	color: var(--color-accent) 
 }
 .like-btn.liked { 
 	border-color: #f56c6c; 
@@ -372,7 +423,7 @@ onMounted(loadPost)
 .post-subject {
 	font-size: 24px;
 	font-weight: 700;
-	color: #1a1a1a;
+	color: var(--color-text);
 	margin: 20px 0 16px 0;
 	line-height: 1.4;
 }
@@ -382,7 +433,7 @@ onMounted(loadPost)
 	white-space: pre-wrap; 
 	line-height: 1.8; 
 	font-size: 15px; 
-	color: #333;
+	color: var(--color-text);
 	margin-bottom: 32px;
 }
 
@@ -392,19 +443,9 @@ onMounted(loadPost)
 	padding-top: 24px; 
 	border-top: 2px solid #f0f0f0 
 }
-.comments-header h3 { 
-	font-size: 16px; 
-	font-weight: 600; 
-	margin-bottom: 16px; 
-	color: #333 
-}
+.comments-header h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--color-text) }
 
-.comment-form { 
-	margin-bottom: 24px; 
-	background: #f9fafb; 
-	padding: 16px; 
-	border-radius: 8px 
-}
+.comment-form { margin-bottom: 24px; background: var(--color-surface); padding: 16px; border-radius: var(--radius-sm); border:1px solid var(--color-border) }
 .comment-input { 
 	width: 100%; 
 	min-height: 80px; 
@@ -416,45 +457,19 @@ onMounted(loadPost)
 	margin-bottom: 12px;
 	font-family: inherit;
 }
-.comment-input:focus { 
-	outline: none; 
-	border-color: #409eff 
-}
-.comment-btn { 
-	padding: 8px 20px; 
-	background: #409eff; 
-	color: #fff; 
-	border: none; 
-	border-radius: 4px; 
-	cursor: pointer; 
-	font-size: 14px;
-	transition: all 0.3s;
-}
-.comment-btn:hover:not(:disabled) { 
-	background: #66b1ff 
-}
+.comment-input:focus { outline: none; border-color: var(--color-accent) }
+.comment-btn { padding: 8px 20px; background: var(--color-accent); color: #fff; border: none; border-radius: var(--radius-xs); cursor: pointer; font-size: 14px; transition: all 0.3s; }
+.comment-btn:hover:not(:disabled) { background: var(--brand-700) }
 .comment-btn:disabled { 
 	background: #ccc; 
 	cursor: not-allowed 
 }
 
-.no-comments { 
-	text-align: center; 
-	padding: 40px 20px; 
-	color: #999; 
-	font-size: 14px 
-}
+.no-comments { text-align: center; padding: 40px 20px; color: var(--color-muted); font-size: 14px }
 
 .comments-list { display: flex; flex-direction: column; gap: 16px }
-.comment-item { 
-	padding: 16px; 
-	background: #f9fafb; 
-	border-radius: 8px;
-	transition: all 0.3s;
-}
-.comment-item:hover { 
-	background: #f5f7fa 
-}
+.comment-item { padding: 16px; background: var(--color-surface); border:1px solid var(--color-border); border-radius: var(--radius-sm); transition: all 0.3s; }
+.comment-item:hover { box-shadow: var(--shadow-sm) }
 .comment-header { 
 	display: flex; 
 	align-items: center; 
@@ -470,16 +485,8 @@ onMounted(loadPost)
 .comment-author-info { 
 	flex: 1 
 }
-.comment-author-name { 
-	font-weight: 600; 
-	font-size: 13px; 
-	color: #333 
-}
-.comment-time { 
-	font-size: 11px; 
-	color: #999; 
-	margin-top: 2px 
-}
+.comment-author-name { font-weight: 600; font-size: 13px; color: var(--color-text) }
+.comment-time { font-size: 11px; color: var(--color-muted); margin-top: 2px }
 .comment-actions { 
 	display: flex; 
 	gap: 8px 
@@ -493,10 +500,7 @@ onMounted(loadPost)
 	font-size: 12px;
 	transition: all 0.3s;
 }
-.comment-like-btn:hover { 
-	border-color: #409eff; 
-	color: #409eff 
-}
+.comment-like-btn:hover { border-color: var(--color-accent); color: var(--color-accent) }
 .comment-like-btn.liked { 
 	border-color: #f56c6c; 
 	color: #f56c6c; 
@@ -512,10 +516,7 @@ onMounted(loadPost)
 	color: #f56c6c;
 	transition: all 0.3s;
 }
-.comment-delete-btn:hover { 
-	background: #fef0f0; 
-	border-color: #f56c6c 
-}
+.comment-delete-btn:hover { background: #fef0f0; border-color: #f56c6c }
 .comment-content { 
 	white-space: pre-wrap; 
 	line-height: 1.6; 
