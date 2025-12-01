@@ -81,7 +81,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'author', 'subject', 'dish', 'created_at', 'updated_at', 
+        fields = ['id', 'author', 'subject', 'images', 'dish', 'created_at', 'updated_at', 
                   'likes_count', 'comments_count', 'is_liked']
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 
                             'likes_count', 'comments_count']
@@ -107,7 +107,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'author', 'subject', 'content', 'dish', 'created_at', 'updated_at', 
+        fields = ['id', 'author', 'subject', 'content', 'images', 'dish', 'created_at', 'updated_at', 
                   'likes_count', 'comments_count', 'is_liked', 'comments']
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 
                             'likes_count', 'comments_count']
@@ -145,7 +145,7 @@ class PostHomeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'subject', 'content_preview', 'author', 'created_at', 
+        fields = ['id', 'subject', 'content_preview', 'images', 'author', 'created_at', 
                   'updated_at', 'likes_count', 'comments_count', 'is_liked']
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 
                             'likes_count', 'comments_count']
@@ -172,7 +172,7 @@ class CreatePostSerializer(serializers.ModelSerializer):
     """创建帖子序列化器"""
     class Meta:
         model = Post
-        fields = ['subject', 'content', 'dish']
+        fields = ['subject', 'content', 'images', 'dish']
 
     def validate_subject(self, value):
         """验证帖子主题"""
@@ -188,6 +188,12 @@ class CreatePostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("帖子内容不能为空")
         if len(value) > 5000:
             raise serializers.ValidationError("帖子内容不能超过5000字符")
+        return value
+    
+    def validate_images(self, value):
+        """验证图片列表"""
+        if value and len(value) > 9:
+            raise serializers.ValidationError("每个帖子最多可上传9张图片")
         return value
     
     def validate_dish(self, value):
