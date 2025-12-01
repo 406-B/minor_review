@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "post",
     "login",  # 登录注册应用
     "profile",  # 用户个人资料应用 11/2 yyf
+    "canteen",  # 食堂消费数据应用
 ]
 
 REST_FRAMEWORK = {
