@@ -115,6 +115,7 @@ def create_post(request):
         user=request.user,
         subject=serializer.validated_data['subject'],
         content=serializer.validated_data['content'],
+        images=serializer.validated_data.get('images', []),  # 图片列表，默认为空
         dish=serializer.validated_data.get('dish')  # 菜品可为空
     )
     

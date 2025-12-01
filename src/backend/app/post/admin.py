@@ -2,6 +2,23 @@ from django.contrib import admin
 from .models import Post, Comment, Like
 
 
+class IsRootCommentFilter(admin.SimpleListFilter):
+    title = '评论类型'
+    parameter_name = 'is_root'
+    
+    def lookups(self, request, model_admin):
+        return (
+            ('1', '主评论'),
+            ('0', '回复'),
+        )
+    
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.filter(parent__isnull=True)
+        elif self.value() == '0':
+            return queryset.filter(parent__isnull=False)
+
+
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = ['id', 'author', 'subject', 'dish', 'likes_count', 'comments_count', 'created_at']
@@ -18,7 +35,7 @@ class PostAdmin(admin.ModelAdmin):
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
     list_display = ['id', 'author', 'post', 'parent', 'content_preview', 'has_images', 'likes_count', 'created_at']
-    list_filter = ['created_at', 'author', 'post', 'parent__isnull']
+    list_filter = ['created_at', 'author', 'post', IsRootCommentFilter]
     search_fields = ['content', 'author__username', 'post__subject']
     readonly_fields = ['created_at', 'updated_at', 'likes_count']
     date_hierarchy = 'created_at'
