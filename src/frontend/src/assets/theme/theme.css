@@ -1,0 +1,61 @@
+:root{
+  /* brand colors */
+  --brand-50:#fff8e1;
+  --brand-100:#ffecb3;
+  --brand-200:#ffe082;
+  --brand-300:#ffd54f;
+  --brand-400:#ffca28;
+  --brand-500:#ffb300;
+  --brand-600:#ffa000;
+  --brand-700:#ff8f00;
+  --brand-800:#ff6f00;
+  --brand-900:#e65100;
+
+  /* semantic colors */
+  --color-bg:#fff7ed;
+  --color-surface:#ffffff;
+  --color-text:#222222;
+  --color-muted:#6b7280;
+  --color-border:#f1f5f9;
+  --color-accent:var(--brand-600);
+  --color-accent-weak:var(--brand-100);
+
+  /* elevation & radius */
+  --radius-xs:6px;
+  --radius-sm:8px;
+  --radius-md:12px;
+  --radius-lg:16px;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 12px rgba(255,152,0,.18);
+  --shadow-lg:0 8px 24px rgba(255,152,0,.22);
+
+  /* spacing & size */
+  --gap-xs:6px; --gap-sm:10px; --gap-md:16px; --gap-lg:24px; --gap-xl:32px;
+  --container-max:1200px;
+
+  /* typography */
+  --font-sans:'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',Arial,sans-serif;
+  --text-sm:13px; --text-md:15px; --text-lg:18px; --text-xl:22px;
+}
+
+/* dark mode support */
+@media (prefers-color-scheme: dark){
+  :root{
+    --color-bg:#0b0b0b;
+    --color-surface:#151515;
+    --color-text:#e5e7eb;
+    --color-muted:#9ca3af;
+    --color-border:#1f2937;
+    --shadow-md:0 4px 12px rgba(255,152,0,.12);
+    --shadow-lg:0 8px 24px rgba(255,152,0,.16);
+  }
+}
+
+/* base reset hookups */
+html,body,#app{ background:var(--color-bg); color:var(--color-text); font-family:var(--font-sans); }
+
+/* element-plus primary color via css vars (partial) */
+:root{
+  --el-color-primary: var(--color-accent);
+  --el-border-radius-base: var(--radius-sm);
+}

@@ -5,6 +5,9 @@ urlpatterns = [
     # 论坛主页
     path('forum/home/', views.forum_home, name='forum_home'),
     
+    # 菜品相关帖子
+    path('dishes/<int:dish_id>/posts/', views.dish_posts, name='dish_posts'),
+    
     # 帖子相关
     path('posts/', views.post_list, name='post_list'),
     path('posts/create/', views.create_post, name='create_post'),
