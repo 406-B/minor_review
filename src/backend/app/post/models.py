@@ -15,6 +15,14 @@ class Post(models.Model):
     )
     subject = models.CharField(max_length=200, help_text="帖子主题/标题")
     content = models.TextField(help_text="帖子内容")
+    dish = models.ForeignKey(
+        'list.Dish',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='posts',
+        help_text="关联的菜品（可选）"
+    )
     created_at = models.DateTimeField(auto_now_add=True, help_text="创建时间")
     updated_at = models.DateTimeField(auto_now=True, help_text="更新时间")
     likes_count = models.IntegerField(default=0, help_text="点赞数")
@@ -51,6 +59,19 @@ class Comment(models.Model):
         help_text="评论作者"
     )
     content = models.TextField(help_text="评论内容")
+    images = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="评论图片URL列表"
+    )
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='replies',
+        help_text="父评论（用于回复功能）"
+    )
     created_at = models.DateTimeField(auto_now_add=True, help_text="创建时间")
     updated_at = models.DateTimeField(auto_now=True, help_text="更新时间")
     likes_count = models.IntegerField(default=0, help_text="点赞数")
