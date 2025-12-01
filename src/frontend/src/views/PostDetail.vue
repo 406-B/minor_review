@@ -47,6 +47,18 @@
 					<h2 class="post-subject">{{ post.subject || '无标题' }}</h2>
 					<div class="body">{{ post.content }}</div>
 					
+					<!-- 帖子图片 -->
+					<div v-if="post.images && post.images.length > 0" class="post-images">
+						<img 
+							v-for="(image, index) in post.images" 
+							:key="index"
+							:src="image"
+							class="post-image"
+							@click="previewImage(image)"
+							:alt="`图片${index + 1}`"
+						/>
+					</div>
+					
 					<!-- 评论区 -->
 					<div class="comments-section">
 						<div class="comments-header">
@@ -643,6 +655,28 @@ onMounted(loadPost)
 	font-size: 15px; 
 	color: var(--color-text);
 	margin-bottom: 32px;
+}
+
+/* 帖子图片样式 */
+.post-images {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 12px;
+	margin: 20px 0;
+}
+
+.post-image {
+	width: 100%;
+	height: 200px;
+	object-fit: cover;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.3s;
+}
+
+.post-image:hover {
+	transform: scale(1.02);
+	box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* 评论区样式 */

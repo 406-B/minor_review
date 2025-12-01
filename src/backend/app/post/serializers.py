@@ -86,6 +86,13 @@ class PostSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 
                             'likes_count', 'comments_count']
 
+    # TODO: 生产环境对帖子中的图片应注意：
+    # - 图片应上传至云存储（例如 OSS/COS/S3），数据库仅保存访问 URL
+    # - 强制校验图片类型（jpg/png/webp 等）与大小（如单张 <=5MB），并限制图片数量
+    # - 上传应考虑事务一致性或使用异步任务处理（避免阻塞主请求）
+    # - 为图片资源启用签名 URL、CDN 与防盗链策略，保护私有资源
+    # - 对上传文件做恶意内容/病毒扫描，并记录审计日志
+
     def get_is_liked(self, obj):
         """检查当前用户是否点赞了该帖子"""
         request = self.context.get('request')
@@ -111,6 +118,10 @@ class PostDetailSerializer(serializers.ModelSerializer):
                   'likes_count', 'comments_count', 'is_liked', 'comments']
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 
                             'likes_count', 'comments_count']
+    # TODO: 生产环境图片访问建议：
+    # - 对图片请求使用临时签名 URL，避免公开长期有效的直链
+    # - 前端应以分页或懒加载方式获取图片，避免一次性加载过多资源
+    # - 在高并发场景下，考虑将图片访问交由 CDN 缓存，减少源站压力
     
     def get_comments(self, obj):
         """获取顶级评论（不包括回复）"""
@@ -174,6 +185,13 @@ class CreatePostSerializer(serializers.ModelSerializer):
         model = Post
         fields = ['subject', 'content', 'dish']
 
+    # TODO: 生产环境创建帖子（若支持附带图片）应注意：
+    # - 接收的图片应先上传至专用上传接口/云存储，接口只接收图片 URL 或附件 ID
+    # - 严格校验图片数量与大小（例如最多 9 张，每张不超过 5MB）
+    # - 对图片上传过程需要异常回滚或补偿逻辑，防止部分数据残留
+    # - 校验用户的上传权限与速率限制，防止滥用
+    # - 建议把图片写入单独的表或对象存储，并在业务逻辑中保存引用
+
     def validate_subject(self, value):
         """验证帖子主题"""
         if not value or not value.strip():
@@ -230,6 +248,11 @@ class CreateCommentSerializer(serializers.ModelSerializer):
 
     def validate_images(self, value):
         """验证图片列表"""
+        # TODO: 生产环境图片处理建议：
+        # - 限制图片数量（如 <=9）并限制单张与总大小
+        # - 校验图片 MIME 类型和扩展名，防止恶意文件上传
+        # - 推荐异步上传与扫描（病毒/敏感内容检测），并在审核通过后展示
+        # - 若图片通过外部服务上传，前端应传回稳定的 URL 或文件 ID
         if value and len(value) > 9:
             raise serializers.ValidationError("每条评论最多可上传9张图片")
         return value
