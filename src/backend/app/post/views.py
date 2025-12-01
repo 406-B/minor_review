@@ -1,7 +1,8 @@
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
 import json
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status as http_status
 from utils.jwt import login_required
 from .serializers import (
     PostSerializer, PostDetailSerializer, CommentSerializer,
@@ -19,7 +20,7 @@ from . import controllers
     ],
     responses={200: PostSerializer(many=True)}
 )
-@require_http_methods(["GET"])
+@api_view(["GET"])
 @login_required
 def post_list(request):
     """获取帖子列表"""
@@ -30,7 +31,7 @@ def post_list(request):
     
     serializer = PostSerializer(result['posts'], many=True, context={'request': request})
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': '获取成功',
         'data': {
@@ -53,21 +54,21 @@ def post_list(request):
     ],
     responses={200: PostDetailSerializer}
 )
-@require_http_methods(["GET"])
+@api_view(["GET"])
 @login_required
 def post_detail(request, post_id):
     """获取帖子详情"""
     post = controllers.get_post_detail(post_id)
     
     if not post:
-        return JsonResponse({
+        return Response({
             'code': 404,
             'message': '帖子不存在'
-        }, status=404)
+        }, status=http_status.HTTP_404_NOT_FOUND)
     
     serializer = PostDetailSerializer(post, context={'request': request})
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': '获取成功',
         'data': serializer.data
@@ -80,7 +81,7 @@ def post_detail(request, post_id):
     request=CreatePostSerializer,
     responses={200: PostSerializer}
 )
-@require_http_methods(["POST"])
+@api_view(["POST"])
 @login_required
 def create_post(request):
     """创建帖子"""
@@ -88,19 +89,19 @@ def create_post(request):
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
-        return JsonResponse({
+        return Response({
             'code': 400,
             'message': '无效的 JSON 数据'
-        }, status=400)
+        }, status=http_status.HTTP_400_BAD_REQUEST)
     
     serializer = CreatePostSerializer(data=data)
     
     if not serializer.is_valid():
-        return JsonResponse({
+        return Response({
             'code': 400,
             'message': '数据验证失败',
             'errors': serializer.errors
-        }, status=400)
+        }, status=http_status.HTTP_400_BAD_REQUEST)
     
     post = controllers.create_post(
         user=request.user,
@@ -110,7 +111,7 @@ def create_post(request):
     
     result_serializer = PostSerializer(post, context={'request': request})
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': '发布成功',
         'data': result_serializer.data
@@ -125,19 +126,19 @@ def create_post(request):
     ],
     responses={200: dict}
 )
-@require_http_methods(["DELETE"])
+@api_view(["DELETE"])
 @login_required
 def delete_post(request, post_id):
     """删除帖子"""
     success, message = controllers.delete_post(request.user, post_id)
     
     if not success:
-        return JsonResponse({
+        return Response({
             'code': 403,
             'message': message
-        }, status=403)
+        }, status=http_status.HTTP_403_FORBIDDEN)
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': message
     })
@@ -151,19 +152,19 @@ def delete_post(request, post_id):
     ],
     responses={200: dict}
 )
-@require_http_methods(["POST"])
+@api_view(["POST"])
 @login_required
 def toggle_post_like(request, post_id):
     """切换帖子点赞状态"""
     result, message = controllers.toggle_post_like(request.user, post_id)
     
     if result is None:
-        return JsonResponse({
+        return Response({
             'code': 404,
             'message': message
-        }, status=404)
+        }, status=http_status.HTTP_404_NOT_FOUND)
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': message,
         'data': {
@@ -178,7 +179,7 @@ def toggle_post_like(request, post_id):
     request=CreateCommentSerializer,
     responses={200: CommentSerializer}
 )
-@require_http_methods(["POST"])
+@api_view(["POST"])
 @login_required
 def create_comment(request):
     """创建评论"""
@@ -186,19 +187,19 @@ def create_comment(request):
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
-        return JsonResponse({
+        return Response({
             'code': 400,
             'message': '无效的 JSON 数据'
-        }, status=400)
+        }, status=http_status.HTTP_400_BAD_REQUEST)
     
     serializer = CreateCommentSerializer(data=data)
     
     if not serializer.is_valid():
-        return JsonResponse({
+        return Response({
             'code': 400,
             'message': '数据验证失败',
             'errors': serializer.errors
-        }, status=400)
+        }, status=http_status.HTTP_400_BAD_REQUEST)
     
     comment, message = controllers.create_comment(
         user=request.user,
@@ -207,14 +208,14 @@ def create_comment(request):
     )
     
     if not comment:
-        return JsonResponse({
+        return Response({
             'code': 404,
             'message': message
-        }, status=404)
+        }, status=http_status.HTTP_404_NOT_FOUND)
     
     result_serializer = CommentSerializer(comment, context={'request': request})
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': message,
         'data': result_serializer.data
@@ -231,7 +232,7 @@ def create_comment(request):
     ],
     responses={200: CommentSerializer(many=True)}
 )
-@require_http_methods(["GET"])
+@api_view(["GET"])
 @login_required
 def comment_list(request, post_id):
     """获取帖子评论列表"""
@@ -241,14 +242,14 @@ def comment_list(request, post_id):
     result, error = controllers.get_post_comments(post_id, page=page, page_size=page_size)
     
     if error:
-        return JsonResponse({
+        return Response({
             'code': 404,
             'message': error
-        }, status=404)
+        }, status=http_status.HTTP_404_NOT_FOUND)
     
     serializer = CommentSerializer(result['comments'], many=True, context={'request': request})
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': '获取成功',
         'data': {
@@ -271,19 +272,19 @@ def comment_list(request, post_id):
     ],
     responses={200: dict}
 )
-@require_http_methods(["DELETE"])
+@api_view(["DELETE"])
 @login_required
 def delete_comment(request, comment_id):
     """删除评论"""
     success, message = controllers.delete_comment(request.user, comment_id)
     
     if not success:
-        return JsonResponse({
+        return Response({
             'code': 403,
             'message': message
-        }, status=403)
+        }, status=http_status.HTTP_403_FORBIDDEN)
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': message
     })
@@ -297,19 +298,19 @@ def delete_comment(request, comment_id):
     ],
     responses={200: dict}
 )
-@require_http_methods(["POST"])
+@api_view(["POST"])
 @login_required
 def toggle_comment_like(request, comment_id):
     """切换评论点赞状态"""
     result, message = controllers.toggle_comment_like(request.user, comment_id)
     
     if result is None:
-        return JsonResponse({
+        return Response({
             'code': 404,
             'message': message
-        }, status=404)
+        }, status=http_status.HTTP_404_NOT_FOUND)
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': message,
         'data': {
@@ -328,7 +329,7 @@ def toggle_comment_like(request, comment_id):
     ],
     responses={200: PostHomeSerializer(many=True)}
 )
-@require_http_methods(["GET"])
+@api_view(["GET"])
 @login_required
 def forum_home(request):
     """
@@ -346,16 +347,16 @@ def forum_home(request):
     
     # 验证排序参数
     if sort_by not in ['time', 'hot']:
-        return JsonResponse({
+        return Response({
             'code': 400,
             'message': '排序参数错误，仅支持 time 或 hot'
-        }, status=400)
+        }, status=http_status.HTTP_400_BAD_REQUEST)
     
     result = controllers.get_forum_home(sort_by=sort_by, page=page, page_size=page_size)
     
     serializer = PostHomeSerializer(result['posts'], many=True, context={'request': request})
     
-    return JsonResponse({
+    return Response({
         'code': 200,
         'message': '获取成功',
         'data': {
