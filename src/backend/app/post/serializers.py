@@ -42,7 +42,7 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_is_liked(self, obj):
         """检查当前用户是否点赞了该评论"""
         request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
+        if request and hasattr(request, 'user') and request.user and request.user.id:
             return Like.objects.filter(
                 user=request.user,
                 like_type='comment',
@@ -64,7 +64,7 @@ class CommentReplySerializer(serializers.ModelSerializer):
     def get_is_liked(self, obj):
         """检查当前用户是否点赞了该评论"""
         request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
+        if request and hasattr(request, 'user') and request.user and request.user.id:
             return Like.objects.filter(
                 user=request.user,
                 like_type='comment',
@@ -89,7 +89,7 @@ class PostSerializer(serializers.ModelSerializer):
     def get_is_liked(self, obj):
         """检查当前用户是否点赞了该帖子"""
         request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
+        if request and hasattr(request, 'user') and request.user and request.user.id:
             return Like.objects.filter(
                 user=request.user,
                 like_type='post',
@@ -120,7 +120,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
     def get_is_liked(self, obj):
         """检查当前用户是否点赞了该帖子"""
         request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
+        if request and hasattr(request, 'user') and request.user and request.user.id:
             return Like.objects.filter(
                 user=request.user,
                 like_type='post',
