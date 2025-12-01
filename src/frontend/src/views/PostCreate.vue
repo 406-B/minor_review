@@ -1,5 +1,9 @@
 <template>
-	<div class="page">
+	<PageContainer>
+		<template #header>
+			<AppTopBar />
+		</template>
+		<div class="page">
 			<div class="top-actions">
 				<PageActions>
 					<template #left>
@@ -57,7 +61,8 @@
 			</div>
 			<div class="side-placeholder"></div>
 		</div>
-	</div>
+		</div>
+	</PageContainer>
 </template>
 
 <script setup>
@@ -65,6 +70,8 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createPost } from '@/api/community'
 import PageActions from '../components/PageActions.vue'
+import PageContainer from '@/components/ui/PageContainer.vue'
+import AppTopBar from '@/components/ui/AppTopBar.vue'
 
 const router = useRouter()
 const subject = ref('')
@@ -87,25 +94,29 @@ function goBack() {
 // }
 
 async function publish() {
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
 	// 验证标题
 	if (!subject.value.trim()) {
-		alert('请填写标题')
+		window.$message?.warning?.('请填写标题')
 		return
 	}
 	
 	if (subject.value.length > 200) {
-		alert('标题长度不能超过 200 字符')
+		window.$message?.warning?.('标题长度不能超过 200 字符')
 		return
 	}
 	
 	// 验证内容
 	if (!content.value.trim()) {
-		alert('请填写内容')
+		window.$message?.warning?.('请填写内容')
 		return
 	}
 	
 	if (content.value.length > 5000) {
-		alert('内容长度不能超过 5000 字符')
+		window.$message?.warning?.('内容长度不能超过 5000 字符')
 		return
 	}
 	
@@ -115,22 +126,22 @@ async function publish() {
 		const response = await createPost(subject.value.trim(), content.value.trim())
 		
 		if (response.code === 200 && response.data) {
-			alert('发布成功！')
+			window.$message?.success?.('发布成功！')
 			// 跳转到帖子详情页
 			router.push({ name: 'PostDetail', params: { id: response.data.id } })
 		} else {
-			alert(response.message || '发布失败')
+			window.$message?.error?.(response.message || '发布失败')
 		}
 	} catch (err) {
 		console.error('发布帖子失败:', err)
 		
 		// 根据错误类型显示不同的提示
 		if (err.response?.status === 401) {
-			alert('请先登录')
+			window.$message?.warning?.('请先登录')
 		} else if (err.response?.status === 400) {
-			alert(err.response?.data?.message || '数据验证失败，请检查标题和内容')
+			window.$message?.error?.(err.response?.data?.message || '数据验证失败，请检查标题和内容')
 		} else {
-			alert('发布失败，请检查网络连接或稍后重试')
+			window.$message?.error?.('发布失败，请检查网络连接或稍后重试')
 		}
 	} finally {
 		publishing.value = false
