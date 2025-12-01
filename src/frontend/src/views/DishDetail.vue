@@ -76,6 +76,7 @@ const dishRatingNumber = ref(0)
 // 打分栏
 const userRating = ref(0)
 const ratingLoading = ref(false)
+const lastSavedUserScore = ref(null)
 const submitRating = async () => {
   if (!userRating.value) return;
   // 未登录拦截
@@ -87,10 +88,15 @@ const submitRating = async () => {
   }
   ratingLoading.value = true;
   try {
-    await rateDish(route.params.id, { rating: userRating.value });
+    const res = await rateDish(route.params.id, { rating: userRating.value });
+    // 后端返回 new_rating 与 user_score；保持本地评分不清零
+    if (res?.data?.user_score) {
+      lastSavedUserScore.value = Number(res.data.user_score)
+    }
+    // 更新菜品平均分展示
     await fetchDish();
-    userRating.value = 0;
-    window.$message?.success?.('评分成功！')
+    // 不将 userRating 清零，保持用户刚提交的分值在控件内
+    window.$message?.success?.(res?.message === '已更改评分' ? '已更改评分' : '评分成功')
   } catch (e) {
     if (e?.response?.status === 401) {
       window.$message?.warning?.('您需要先登录')
