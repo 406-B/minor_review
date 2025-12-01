@@ -11,7 +11,7 @@ from django.db import models
 #     total_likes = models.IntegerField(default=0)
 #     total_followers = models.IntegerField(default=0)
 #     last_active = models.DateTimeField(auto_now=True)
-    
+
 #     class Meta:
 #         db_table = 'profile_statistics'
 
@@ -21,6 +21,6 @@ from django.db import models
 #     theme = models.CharField(max_length=20, default='light')  # 主题
 #     language = models.CharField(max_length=10, default='zh-cn')  # 语言
 #     email_notification = models.BooleanField(default=True)  # 邮件通知
-    
+
 #     class Meta:
 #         db_table = 'profile_preferences'
