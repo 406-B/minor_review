@@ -93,6 +93,12 @@
 											{{ comment.is_liked ? '❤️' : '🤍' }} {{ comment.likes_count || 0 }}
 										</button>
 										<button 
+											@click="toggleReplyForm(comment.id)"
+											class="comment-reply-btn"
+										>
+											回复
+										</button>
+										<button 
 											v-if="canDeleteComment(comment)" 
 											@click="handleDeleteComment(comment.id)"
 											class="comment-delete-btn"
@@ -102,6 +108,93 @@
 									</div>
 								</div>
 								<div class="comment-content">{{ comment.content }}</div>
+								
+								<!-- 评论图片 -->
+								<div v-if="comment.images && comment.images.length > 0" class="comment-images">
+									<img 
+										v-for="(image, index) in comment.images" 
+										:key="index"
+										:src="image"
+										class="comment-image"
+										@click="previewImage(image)"
+									/>
+								</div>
+								
+								<!-- 回复表单 -->
+								<div v-if="replyingTo === comment.id" class="reply-form">
+									<textarea 
+										v-model="replyContent" 
+										:placeholder="`回复 ${comment.author?.nickname || comment.author?.username || '匿名用户'}...`"
+										class="reply-input"
+										:disabled="replying"
+									></textarea>
+									<div class="reply-actions">
+										<button 
+											@click="handleReply(comment.id)" 
+											class="reply-submit-btn"
+											:disabled="replying || !replyContent.trim()"
+										>
+											{{ replying ? '发送中...' : '发送' }}
+										</button>
+										<button 
+											@click="cancelReply" 
+											class="reply-cancel-btn"
+											:disabled="replying"
+										>
+											取消
+										</button>
+									</div>
+								</div>
+								
+								<!-- 回复列表 -->
+								<div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
+									<div v-for="reply in comment.replies" :key="reply.id" class="reply-item">
+										<div class="reply-header">
+											<img 
+												:src="reply.author?.avatar || '/default-avatar.png'" 
+												class="reply-avatar"
+												@error="handleAvatarError"
+											/>
+											<div class="reply-author-info">
+												<div class="reply-author-name">{{ reply.author?.nickname || reply.author?.username || '匿名用户' }}</div>
+												<div class="reply-time">{{ formatTime(reply.created_at) }}</div>
+											</div>
+											<div class="reply-actions">
+												<button 
+													@click="handleReplyLike(reply, comment)" 
+													:class="['reply-like-btn', { liked: reply.is_liked }]"
+												>
+													{{ reply.is_liked ? '❤️' : '🤍' }} {{ reply.likes_count || 0 }}
+												</button>
+												<button 
+													@click="replyToReply(comment.id, reply)"
+													class="reply-reply-btn"
+												>
+													回复
+												</button>
+												<button 
+													v-if="canDeleteComment(reply)" 
+													@click="handleDeleteReply(reply.id, comment)"
+													class="reply-delete-btn"
+												>
+													删除
+												</button>
+											</div>
+										</div>
+										<div class="reply-content">{{ reply.content }}</div>
+										
+										<!-- 回复图片 -->
+										<div v-if="reply.images && reply.images.length > 0" class="reply-images">
+											<img 
+												v-for="(image, index) in reply.images" 
+												:key="index"
+												:src="image"
+												class="reply-image"
+												@click="previewImage(image)"
+											/>
+										</div>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -137,6 +230,10 @@ const error = ref(null)
 const liking = ref(false)
 const commenting = ref(false)
 const newComment = ref('')
+const replyingTo = ref(null)
+const replyContent = ref('')
+const replying = ref(false)
+const replyTargetUser = ref(null) // 记录要@的用户
 
 import PageActions from '../components/PageActions.vue'
 import PageContainer from '@/components/ui/PageContainer.vue'
@@ -349,6 +446,117 @@ async function handleDeleteComment(commentId) {
 	}
 }
 
+// 切换回复表单
+function toggleReplyForm(commentId) {
+	if (replyingTo.value === commentId) {
+		replyingTo.value = null
+		replyContent.value = ''
+		replyTargetUser.value = null
+	} else {
+		replyingTo.value = commentId
+		replyContent.value = ''
+		replyTargetUser.value = null
+	}
+}
+
+// 回复其他回复（实际是回复顶级评论，但@提及被回复的用户）
+function replyToReply(topCommentId, replyData) {
+	replyingTo.value = topCommentId
+	replyTargetUser.value = replyData.author
+	// 自动在输入框中添加@用户名
+	const mentionText = `@${replyData.author?.nickname || replyData.author?.username || '用户'} `
+	replyContent.value = mentionText
+}
+
+// 取消回复
+function cancelReply() {
+	replyingTo.value = null
+	replyContent.value = ''
+	replyTargetUser.value = null
+}
+
+// 处理回复
+async function handleReply(parentCommentId) {
+	if (!replyContent.value.trim() || replying.value) return
+	replying.value = true
+	
+	try {
+		const response = await createComment(post.value.id, replyContent.value, [], parentCommentId)
+		
+		if (response.code === 200 && response.data) {
+			// 找到父评论并添加回复
+			const parentComment = comments.value.find(c => c.id === parentCommentId)
+			if (parentComment) {
+				if (!parentComment.replies) {
+					parentComment.replies = []
+				}
+				parentComment.replies.push(response.data)
+			}
+			// 更新评论总数
+			post.value.comments_count = (post.value.comments_count || 0) + 1
+			// 清空输入并关闭表单
+			replyContent.value = ''
+			replyingTo.value = null
+		} else {
+			alert(response.message || '回复失败')
+		}
+	} catch (err) {
+		console.error('回复评论失败:', err)
+		alert('回复失败，请重试')
+	} finally {
+		replying.value = false
+	}
+}
+
+// 处理回复点赞
+async function handleReplyLike(reply, parentComment) {
+	try {
+		const response = await toggleCommentLike(reply.id)
+		
+		if (response.code === 200 && response.data) {
+			reply.is_liked = response.data.is_liked
+			// 更新点赞数
+			if (response.data.is_liked) {
+				reply.likes_count = (reply.likes_count || 0) + 1
+			} else {
+				reply.likes_count = Math.max(0, (reply.likes_count || 0) - 1)
+			}
+		}
+	} catch (err) {
+		console.error('回复点赞操作失败:', err)
+		alert('操作失败，请重试')
+	}
+}
+
+// 删除回复
+async function handleDeleteReply(replyId, parentComment) {
+	if (!confirm('确定要删除这条回复吗？')) return
+	
+	try {
+		const response = await deleteComment(replyId)
+		
+		if (response.code === 200) {
+			// 从父评论的回复列表中移除
+			if (parentComment.replies) {
+				parentComment.replies = parentComment.replies.filter(r => r.id !== replyId)
+			}
+			// 更新评论总数
+			post.value.comments_count = Math.max(0, (post.value.comments_count || 0) - 1)
+		} else {
+			alert(response.message || '删除失败')
+		}
+	} catch (err) {
+		console.error('删除回复失败:', err)
+		alert('删除失败，请重试')
+	}
+}
+
+// 预览图片
+function previewImage(imageUrl) {
+	// 简单实现：在新窗口打开图片
+	window.open(imageUrl, '_blank')
+}
+
 function formatTime(timestamp) {
 	if (!timestamp) return ''
 	const date = new Date(timestamp)
@@ -522,6 +730,226 @@ onMounted(loadPost)
 	line-height: 1.6; 
 	font-size: 14px; 
 	color: #555 
+}
+
+/* 评论图片样式 */
+.comment-images {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 12px;
+}
+.comment-image {
+	width: 100px;
+	height: 100px;
+	object-fit: cover;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.3s;
+}
+.comment-image:hover {
+	transform: scale(1.05);
+	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* 回复按钮样式 */
+.comment-reply-btn {
+	padding: 4px 10px;
+	border: 1px solid #dcdfe6;
+	background: #fff;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 12px;
+	color: #409eff;
+	transition: all 0.3s;
+}
+.comment-reply-btn:hover {
+	background: #ecf5ff;
+	border-color: #409eff;
+}
+
+/* 回复表单样式 */
+.reply-form {
+	margin-top: 12px;
+	padding: 12px;
+	background: #f0f2f5;
+	border-radius: 6px;
+}
+.reply-input {
+	width: 100%;
+	min-height: 60px;
+	padding: 10px;
+	border: 1px solid #dcdfe6;
+	border-radius: 4px;
+	font-size: 13px;
+	resize: vertical;
+	margin-bottom: 8px;
+	font-family: inherit;
+}
+.reply-input:focus {
+	outline: none;
+	border-color: #409eff;
+}
+.reply-actions {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+}
+.reply-submit-btn {
+	padding: 6px 16px;
+	background: #409eff;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 13px;
+	transition: all 0.3s;
+}
+.reply-submit-btn:hover:not(:disabled) {
+	background: #66b1ff;
+}
+.reply-submit-btn:disabled {
+	background: #ccc;
+	cursor: not-allowed;
+}
+.reply-cancel-btn {
+	padding: 6px 16px;
+	background: #fff;
+	color: #606266;
+	border: 1px solid #dcdfe6;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 13px;
+	transition: all 0.3s;
+}
+.reply-cancel-btn:hover:not(:disabled) {
+	border-color: #409eff;
+	color: #409eff;
+}
+.reply-cancel-btn:disabled {
+	cursor: not-allowed;
+	opacity: 0.6;
+}
+
+/* 回复列表样式 */
+.replies-list {
+	margin-top: 16px;
+	padding-left: 24px;
+	border-left: 2px solid #e4e7ed;
+}
+.reply-item {
+	padding: 12px;
+	margin-bottom: 12px;
+	background: #fff;
+	border-radius: 6px;
+	transition: all 0.3s;
+}
+.reply-item:hover {
+	background: #fafbfc;
+}
+.reply-item:last-child {
+	margin-bottom: 0;
+}
+.reply-header {
+	display: flex;
+	align-items: center;
+	margin-bottom: 10px;
+}
+.reply-avatar {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	object-fit: cover;
+	margin-right: 10px;
+}
+.reply-author-info {
+	flex: 1;
+}
+.reply-author-name {
+	font-weight: 600;
+	font-size: 12px;
+	color: #333;
+}
+.reply-time {
+	font-size: 11px;
+	color: #999;
+	margin-top: 2px;
+}
+.reply-actions {
+	display: flex;
+	gap: 6px;
+}
+.reply-like-btn {
+	padding: 3px 8px;
+	border: 1px solid #dcdfe6;
+	background: #fff;
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 11px;
+	transition: all 0.3s;
+}
+.reply-like-btn:hover {
+	border-color: #409eff;
+	color: #409eff;
+}
+.reply-like-btn.liked {
+	border-color: #f56c6c;
+	color: #f56c6c;
+	background: #fef0f0;
+}
+.reply-reply-btn {
+	padding: 3px 8px;
+	border: 1px solid #dcdfe6;
+	background: #fff;
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 11px;
+	color: #409eff;
+	transition: all 0.3s;
+}
+.reply-reply-btn:hover {
+	background: #ecf5ff;
+	border-color: #409eff;
+}
+.reply-delete-btn {
+	padding: 3px 8px;
+	border: 1px solid #dcdfe6;
+	background: #fff;
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 11px;
+	color: #f56c6c;
+	transition: all 0.3s;
+}
+.reply-delete-btn:hover {
+	background: #fef0f0;
+	border-color: #f56c6c;
+}
+.reply-content {
+	white-space: pre-wrap;
+	line-height: 1.5;
+	font-size: 13px;
+	color: #555;
+}
+
+/* 回复图片样式 */
+.reply-images {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 10px;
+}
+.reply-image {
+	width: 80px;
+	height: 80px;
+	object-fit: cover;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.3s;
+}
+.reply-image:hover {
+	transform: scale(1.05);
+	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 @media (max-width:900px) {
