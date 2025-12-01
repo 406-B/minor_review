@@ -45,6 +45,7 @@
           <el-button type="primary" @click="handleSave" :disabled="saving || !!nicknameError">
             {{ saving ? '保存中...' : '保存' }}
           </el-button>
+          <el-button @click="goEditTags" type="success" plain>修改偏好tag</el-button>
         </div>
   </div>
 
@@ -200,6 +201,10 @@ const handleSave = async () => {
 onMounted(() => {
   loadProfile()
 })
+
+const goEditTags = () => {
+  router.push('/onboarding/tags')
+}
 </script>
 
 <style scoped>
