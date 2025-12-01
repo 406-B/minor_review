@@ -18,7 +18,7 @@ class PostAdmin(admin.ModelAdmin):
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
     list_display = ['id', 'author', 'post', 'parent', 'content_preview', 'has_images', 'likes_count', 'created_at']
-    list_filter = ['created_at', 'author', 'post', 'parent__isnull']
+    list_filter = ['created_at', 'author', 'post']
     search_fields = ['content', 'author__username', 'post__subject']
     readonly_fields = ['created_at', 'updated_at', 'likes_count']
     date_hierarchy = 'created_at'
