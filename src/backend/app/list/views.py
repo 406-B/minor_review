@@ -24,11 +24,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.db.models import Q, Avg, Count
-from .models import Canteen, Dish, Tag, Rating, Review
+from .models import Canteen, Dish, Tag, Rating, Review, UserDishHistory
 from django.contrib.auth.models import User as AuthUser
 from .serializers import (
     CanteenSerializer, DishSerializer, DishListSerializer, TagSerializer,
-    RatingSerializer, ReviewSerializer, ReviewListSerializer
+    RatingSerializer, ReviewSerializer, ReviewListSerializer,
+    UserDishHistorySerializer, UserDishHistoryListSerializer
 )
 
 # ==================== 我的评论视图 ====================
@@ -754,3 +755,162 @@ def like_review(request, review_id):
             'liked': True,
             'likes_count': review.likes_count
         })
+
+
+# ==================== 用户菜品历史（打卡功能） ====================
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def check_in_dish(request, dish_id):
+    """
+    打卡菜品（记录用户吃过这道菜）
+    每次调用会增加该菜品的打卡次数
+    """
+    dish = get_object_or_404(Dish, id=dish_id)
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user and getattr(request.user, 'username', None):
+            user = AuthUser.objects.create(username=request.user.username)
+
+    # 获取或创建历史记录
+    history, created = UserDishHistory.objects.get_or_create(
+        user=user,
+        dish=dish,
+        defaults={'count': 0}
+    )
+
+    # 增加打卡次数
+    history.increment_count()
+
+    # 序列化返回
+    serializer = UserDishHistorySerializer(history)
+
+    message = f'打卡成功！这是您第 {history.count} 次品尝"{dish.name}"'
+    if created or history.count == 1:
+        message += f'，恭喜获得【{history.level_display}】称号！'
+    elif history.count in [3, 10, 100]:
+        message += f'，恭喜晋升为【{history.level_display}】！'
+
+    return Response({
+        'code': 200,
+        'message': message,
+        'data': serializer.data
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_user_dish_history(request):
+    """
+    获取用户的菜品历史记录
+    支持筛选和排序
+    """
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user:
+            return Response({
+                'code': 404,
+                'message': '用户不存在',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    histories = UserDishHistory.objects.filter(user=user)
+
+    # 按级别筛选
+    level = request.query_params.get('level', None)
+    if level:
+        # 根据级别筛选
+        if level == 'academician':
+            histories = histories.filter(count__gte=100)
+        elif level == 'doctor':
+            histories = histories.filter(count__gte=10, count__lt=100)
+        elif level == 'master':
+            histories = histories.filter(count__gte=3, count__lt=10)
+        elif level == 'undergraduate':
+            histories = histories.filter(count__gte=1, count__lt=3)
+
+    # 排序
+    ordering = request.query_params.get('ordering', '-count')
+    if ordering in ['count', '-count', 'last_tried_at', '-last_tried_at']:
+        histories = histories.order_by(ordering)
+
+    # 分页
+    page = int(request.query_params.get('page', 1))
+    page_size = int(request.query_params.get('page_size', 20))
+    start = (page - 1) * page_size
+    end = start + page_size
+    paged_histories = histories[start:end]
+
+    serializer = UserDishHistoryListSerializer(paged_histories, many=True)
+    return Response({
+        'code': 200,
+        'message': '获取历史记录成功',
+        'data': {
+            'histories': serializer.data,
+            'total': histories.count(),
+            'page': page,
+            'page_size': page_size
+        }
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_user_dish_stats(request):
+    """
+    获取用户的菜品打卡统计信息
+    包括各级别菜品数量、总打卡次数等
+    """
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user:
+            return Response({
+                'code': 404,
+                'message': '用户不存在',
+                'data': None
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    histories = UserDishHistory.objects.filter(user=user)
+
+    # 统计各级别菜品数量
+    total_dishes = histories.count()
+    total_check_ins = histories.aggregate(total=Count('count'))['total'] or 0
+
+    # 计算实际的打卡总次数（所有count的和）
+    total_check_ins_sum = sum(h.count for h in histories)
+
+    academician_count = histories.filter(count__gte=100).count()
+    doctor_count = histories.filter(count__gte=10, count__lt=100).count()
+    master_count = histories.filter(count__gte=3, count__lt=10).count()
+    undergraduate_count = histories.filter(count__gte=1, count__lt=3).count()
+
+    # 获取最爱的菜品（打卡次数最多的前5个）
+    favorite_dishes = histories.order_by('-count')[:5]
+    favorite_dishes_data = UserDishHistoryListSerializer(favorite_dishes, many=True).data
+
+    # 最近打卡的菜品
+    recent_dishes = histories.order_by('-last_tried_at')[:5]
+    recent_dishes_data = UserDishHistoryListSerializer(recent_dishes, many=True).data
+
+    return Response({
+        'code': 200,
+        'message': '获取统计信息成功',
+        'data': {
+            'total_dishes': total_dishes,
+            'total_check_ins': total_check_ins_sum,
+            'level_distribution': {
+                'academician': academician_count,
+                'doctor': doctor_count,
+                'master': master_count,
+                'undergraduate': undergraduate_count
+            },
+            'favorite_dishes': favorite_dishes_data,
+            'recent_dishes': recent_dishes_data
+        }
+    })

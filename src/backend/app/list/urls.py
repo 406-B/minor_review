@@ -57,5 +57,13 @@ urlpatterns = [
     path('reviews/<int:review_id>/like/', views.like_review, name='like-review'),
     # GET /api/reviews/my/ - 获取我的评论（需登录）
     path('reviews/my/', views.my_reviews, name='my-reviews'),
+
+    # ==================== 用户菜品历史（打卡功能） ====================
+    # POST /api/dishes/<id>/check-in/ - 打卡菜品（需登录）
+    path('dishes/<int:dish_id>/check-in/', views.check_in_dish, name='check-in-dish'),
+    # GET /api/user/dish-history/ - 获取用户的菜品历史记录（需登录）
+    path('user/dish-history/', views.get_user_dish_history, name='user-dish-history'),
+    # GET /api/user/dish-stats/ - 获取用户的菜品统计信息（需登录）
+    path('user/dish-stats/', views.get_user_dish_stats, name='user-dish-stats'),
 ]
 
