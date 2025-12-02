@@ -65,5 +65,11 @@ urlpatterns = [
     path('user/dish-history/', views.get_user_dish_history, name='user-dish-history'),
     # GET /api/user/dish-stats/ - 获取用户的菜品统计信息（需登录）
     path('user/dish-stats/', views.get_user_dish_stats, name='user-dish-stats'),
+
+    # ==================== 美食日历 ====================
+    # GET /api/user/food-calendar/ - 获取美食日历（需登录）
+    path('user/food-calendar/', views.get_food_calendar, name='food-calendar'),
+    # GET /api/user/day-dishes/ - 获取指定日期的菜品（需登录）
+    path('user/day-dishes/', views.get_day_dishes, name='day-dishes'),
 ]
 

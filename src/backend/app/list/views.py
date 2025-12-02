@@ -24,7 +24,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.db.models import Q, Avg, Count
-from .models import Canteen, Dish, Tag, Rating, Review, UserDishHistory
+from .models import Canteen, Dish, Tag, Rating, Review, UserDishHistory, DishCheckInRecord
 from django.contrib.auth.models import User as AuthUser
 from .serializers import (
     CanteenSerializer, DishSerializer, DishListSerializer, TagSerializer,
@@ -774,7 +774,17 @@ def check_in_dish(request, dish_id):
         if not user and getattr(request.user, 'username', None):
             user = AuthUser.objects.create(username=request.user.username)
 
-    # 获取或创建历史记录
+    # 获取打卡备注（可选）
+    notes = request.data.get('notes', '')
+
+    # 创建打卡记录（用于美食日历）
+    check_in_record = DishCheckInRecord.objects.create(
+        user=user,
+        dish=dish,
+        notes=notes
+    )
+
+    # 获取或创建历史记录（用于统计）
     history, created = UserDishHistory.objects.get_or_create(
         user=user,
         dish=dish,
@@ -796,7 +806,11 @@ def check_in_dish(request, dish_id):
     return Response({
         'code': 200,
         'message': message,
-        'data': serializer.data
+        'data': {
+            **serializer.data,
+            'check_in_record_id': check_in_record.id,
+            'checked_in_at': check_in_record.checked_in_at
+        }
     })
 
 
@@ -912,5 +926,154 @@ def get_user_dish_stats(request):
             },
             'favorite_dishes': favorite_dishes_data,
             'recent_dishes': recent_dishes_data
+        }
+    })
+
+
+# ==================== 美食日历 ====================
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_food_calendar(request):
+    """
+    获取用户的美食日历数据
+    返回指定月份每天吃过的菜品
+    """
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user:
+            return Response({
+                'code': 404,
+                'message': '用户不存在',
+                'data': None
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    # 获取年月参数（默认当前月）
+    from datetime import datetime, timedelta
+    import calendar as cal
+
+    year = int(request.query_params.get('year', datetime.now().year))
+    month = int(request.query_params.get('month', datetime.now().month))
+
+    # 计算月份的第一天和最后一天
+    first_day = datetime(year, month, 1)
+    last_day = datetime(year, month, cal.monthrange(year, month)[1], 23, 59, 59)
+
+    # 获取该月的所有打卡记录
+    records = DishCheckInRecord.objects.filter(
+        user=user,
+        checked_in_at__gte=first_day,
+        checked_in_at__lte=last_day
+    ).select_related('dish').order_by('checked_in_at')
+
+    # 按日期分组
+    calendar_data = {}
+    for record in records:
+        date_str = record.date.strftime('%Y-%m-%d')
+
+        if date_str not in calendar_data:
+            calendar_data[date_str] = {
+                'date': date_str,
+                'dishes': [],
+                'count': 0
+            }
+
+        calendar_data[date_str]['dishes'].append({
+            'id': record.dish.id,
+            'name': record.dish.name,
+            'image': request.build_absolute_uri(record.dish.image.url) if record.dish.image else None,
+            'canteen_name': record.dish.canteen.name,
+            'checked_in_at': record.checked_in_at.strftime('%H:%M'),
+            'notes': record.notes
+        })
+        calendar_data[date_str]['count'] += 1
+
+    # 转换为列表并排序
+    calendar_list = list(calendar_data.values())
+    calendar_list.sort(key=lambda x: x['date'])
+
+    return Response({
+        'code': 200,
+        'message': '获取美食日历成功',
+        'data': {
+            'year': year,
+            'month': month,
+            'calendar': calendar_list,
+            'total_days': len(calendar_list),
+            'total_check_ins': sum(day['count'] for day in calendar_list)
+        }
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_day_dishes(request):
+    """
+    获取指定日期吃过的菜品详情
+    """
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user:
+            return Response({
+                'code': 404,
+                'message': '用户不存在',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    # 获取日期参数
+    from datetime import datetime
+    date_str = request.query_params.get('date')  # 格式：YYYY-MM-DD
+
+    if not date_str:
+        return Response({
+            'code': 400,
+            'message': '请提供日期参数（格式：YYYY-MM-DD）',
+            'data': None
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return Response({
+            'code': 400,
+            'message': '日期格式错误，应为：YYYY-MM-DD',
+            'data': None
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # 获取该日期的所有打卡记录
+    records = DishCheckInRecord.objects.filter(
+        user=user,
+        checked_in_at__date=target_date
+    ).select_related('dish', 'dish__canteen').order_by('checked_in_at')
+
+    # 序列化返回
+    dishes_data = []
+    for record in records:
+        dishes_data.append({
+            'id': record.id,
+            'dish': {
+                'id': record.dish.id,
+                'name': record.dish.name,
+                'image': request.build_absolute_uri(record.dish.image.url) if record.dish.image else None,
+                'price': str(record.dish.price),
+                'canteen_name': record.dish.canteen.name,
+                'rating': str(record.dish.rating)
+            },
+            'checked_in_at': record.checked_in_at,
+            'time': record.checked_in_at.strftime('%H:%M'),
+            'notes': record.notes
+        })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'date': date_str,
+            'dishes': dishes_data,
+            'count': len(dishes_data)
         }
     })
