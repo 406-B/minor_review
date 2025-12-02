@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Canteen, Tag, Dish, Rating, Review, Floor, Window
+from .models import Canteen, Tag, Dish, Rating, Review, Floor, Window, UserDishHistory
 class WindowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Window
@@ -201,3 +201,41 @@ class ReviewListSerializer(serializers.ModelSerializer):
         if obj.rating:
             return obj.rating.score
         return None
+
+
+class UserDishHistorySerializer(serializers.ModelSerializer):
+    """用户菜品历史序列化器"""
+    username = serializers.CharField(source='user.username', read_only=True)
+    dish_name = serializers.CharField(source='dish.name', read_only=True)
+    dish_image = serializers.ImageField(source='dish.image', read_only=True)
+    canteen_name = serializers.CharField(source='dish.canteen.name', read_only=True)
+    level = serializers.CharField(source='level', read_only=True)
+    level_display = serializers.CharField(source='level_display', read_only=True)
+    level_progress = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserDishHistory
+        fields = [
+            'id', 'user', 'username', 'dish', 'dish_name', 'dish_image', 'canteen_name',
+            'count', 'level', 'level_display', 'level_progress',
+            'first_tried_at', 'last_tried_at'
+        ]
+        read_only_fields = ['user', 'count', 'first_tried_at', 'last_tried_at']
+
+    def get_level_progress(self, obj):
+        """获取级别进度信息"""
+        return obj.level_progress
+
+
+class UserDishHistoryListSerializer(serializers.ModelSerializer):
+    """用户菜品历史列表序列化器（简化版）"""
+    dish_name = serializers.CharField(source='dish.name', read_only=True)
+    dish_image = serializers.ImageField(source='dish.image', read_only=True)
+    level_display = serializers.CharField(source='level_display', read_only=True)
+
+    class Meta:
+        model = UserDishHistory
+        fields = [
+            'id', 'dish', 'dish_name', 'dish_image',
+            'count', 'level_display', 'last_tried_at'
+        ]
