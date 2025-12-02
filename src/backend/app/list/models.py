@@ -346,3 +346,45 @@ class UserDishHistory(models.Model):
         """增加打卡次数"""
         self.count += 1
         self.save(update_fields=['count', 'last_tried_at'])
+
+
+class DishCheckInRecord(models.Model):
+    """菜品打卡记录（每次打卡的详细记录，用于美食日历）"""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='dish_check_in_records',
+        help_text="用户"
+    )
+    dish = models.ForeignKey(
+        Dish,
+        on_delete=models.CASCADE,
+        related_name='check_in_records',
+        help_text="菜品"
+    )
+    checked_in_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="打卡时间"
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="打卡备注（可选）"
+    )
+
+    class Meta:
+        ordering = ['-checked_in_at']
+        verbose_name = 'Dish Check-in Record'
+        verbose_name_plural = 'Dish Check-in Records'
+        indexes = [
+            models.Index(fields=['user', '-checked_in_at']),
+            models.Index(fields=['dish', '-checked_in_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.dish.name} @ {self.checked_in_at.strftime('%Y-%m-%d %H:%M')}"
+
+    @property
+    def date(self):
+        """获取打卡日期（YYYY-MM-DD）"""
+        return self.checked_in_at.date()
