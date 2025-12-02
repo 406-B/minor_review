@@ -35,6 +35,10 @@
     {
       "name": "Reviews",
       "description": "评论相关接口"
+    },
+    {
+      "name": "Profile",
+      "description": "用户个人资料和偏好相关接口"
     }
   ],
   "paths": {
@@ -1005,6 +1009,313 @@
           }
         }
       }
+    },
+    "/profile/preference-tags": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "获取用户偏好标签",
+        "operationId": "getPreferenceTags",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenceTagsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile/preference-tags/set": {
+      "post": {
+        "tags": ["Profile"],
+        "summary": "设置用户偏好标签（覆盖模式）",
+        "operationId": "setPreferenceTags",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "example": [1, 2, 3, 5]
+                  }
+                },
+                "required": ["tag_ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "设置成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenceTagsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile/preference-tags/add": {
+      "post": {
+        "tags": ["Profile"],
+        "summary": "添加用户偏好标签（追加模式）",
+        "operationId": "addPreferenceTags",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "example": [6, 7]
+                  }
+                },
+                "required": ["tag_ids"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferenceTagsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile/recommended-dishes": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "获取个性化推荐菜品",
+        "description": "根据用户偏好标签和位置（可选）综合推荐菜品，优先推荐距离近且匹配偏好的菜品",
+        "operationId": "getRecommendedDishes",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "用户纬度（可选，提供后按距离优先排序）"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "用户经度（可选，提供后按距离优先排序）"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "页码"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "每页数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendedDishesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "description": "用户未设置偏好标签",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "用户未设置偏好标签，请先设置偏好标签"
+                    },
+                    "data": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile/nearby-dishes": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "获取附近推荐菜品",
+        "description": "根据用户位置找到最近的食堂，推荐该食堂中匹配用户偏好的菜品",
+        "operationId": "getNearbyRecommendedDishes",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "latitude",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "用户纬度"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "用户经度"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "页码"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "每页数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NearbyDishesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "description": "暂无食堂位置信息",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 404
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "暂无食堂位置信息"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1027,6 +1338,32 @@
           "name": {
             "type": "string",
             "example": "第一食堂"
+          },
+          "latitude": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "example": 39.9042,
+            "description": "纬度"
+          },
+          "longitude": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "example": 116.4074,
+            "description": "经度"
+          },
+          "address": {
+            "type": "string",
+            "example": "校园东区",
+            "description": "食堂地址"
+          },
+          "distance": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "example": 523.5,
+            "description": "距离用户的距离（米），仅在提供位置信息时返回"
           },
           "created_at": {
             "type": "string",
@@ -1164,6 +1501,17 @@
           },
           "view_count": {
             "type": "integer"
+          },
+          "distance": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "description": "距离用户的距离（米），仅在个性化推荐中返回"
+          },
+          "matched_tags_count": {
+            "type": "integer",
+            "nullable": true,
+            "description": "匹配的标签数量，仅在个性化推荐中返回"
           }
         }
       },
@@ -1406,6 +1754,169 @@
           "errors": {
             "type": "object",
             "description": "字段验证错误详情"
+          }
+        }
+      },
+      "PreferenceTagsResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "获取偏好标签成功"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            }
+          }
+        }
+      },
+      "RecommendedDishesResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "获取推荐菜品成功"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "dishes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DishListItem"
+                }
+              },
+              "total": {
+                "type": "integer",
+                "example": 50
+              },
+              "page": {
+                "type": "integer",
+                "example": 1
+              },
+              "page_size": {
+                "type": "integer",
+                "example": 20
+              },
+              "user_tags": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Tag"
+                }
+              },
+              "location_enabled": {
+                "type": "boolean",
+                "example": true,
+                "description": "是否启用了位置排序"
+              }
+            }
+          }
+        }
+      },
+      "NearbyDishesResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "获取附近推荐菜品成功"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "nearest_canteen": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "name": {
+                    "type": "string",
+                    "example": "第一食堂"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "校园东区"
+                  },
+                  "distance": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 523.5,
+                    "description": "距离用户的距离（米）"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 39.9042
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 116.4074
+                  }
+                }
+              },
+              "nearby_canteens": {
+                "type": "array",
+                "description": "附近的食堂列表（前5个）",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "address": {
+                      "type": "string"
+                    },
+                    "distance": {
+                      "type": "number",
+                      "format": "float"
+                    }
+                  }
+                }
+              },
+              "dishes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DishListItem"
+                }
+              },
+              "total": {
+                "type": "integer",
+                "example": 30
+              },
+              "page": {
+                "type": "integer",
+                "example": 1
+              },
+              "page_size": {
+                "type": "integer",
+                "example": 20
+              },
+              "user_tags": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Tag"
+                }
+              }
+            }
           }
         }
       }
