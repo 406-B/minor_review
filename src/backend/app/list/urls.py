@@ -71,5 +71,9 @@ urlpatterns = [
     path('user/food-calendar/', views.get_food_calendar, name='food-calendar'),
     # GET /api/user/day-dishes/ - 获取指定日期的菜品（需登录）
     path('user/day-dishes/', views.get_day_dishes, name='day-dishes'),
+
+    # ==================== 用户成就系统 ====================
+    # GET /api/user/achievements/ - 获取用户成就列表（需登录）
+    path('user/achievements/', views.get_user_achievements, name='user-achievements'),
 ]
 
