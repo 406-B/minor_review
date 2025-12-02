@@ -1077,3 +1077,344 @@ def get_day_dishes(request):
             'count': len(dishes_data)
         }
     })
+
+
+# ==================== 用户成就系统 ====================
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_user_achievements(request):
+    """
+    获取用户的成就列表
+    包括学术成就、探索成就、打卡成就等
+    """
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user:
+            return Response({
+                'code': 404,
+                'message': '用户不存在',
+                'data': None
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    from datetime import datetime, timedelta
+    from django.db.models import Count, Q
+
+    histories = UserDishHistory.objects.filter(user=user)
+    check_in_records = DishCheckInRecord.objects.filter(user=user)
+
+    # 统计数据
+    total_dishes = histories.count()
+    total_check_ins = sum(h.count for h in histories)
+    academician_count = histories.filter(count__gte=100).count()
+    doctor_count = histories.filter(count__gte=10, count__lt=100).count()
+    master_count = histories.filter(count__gte=3, count__lt=10).count()
+    undergraduate_count = histories.filter(count__gte=1, count__lt=3).count()
+
+    # 不同食堂数量
+    unique_canteens = Dish.objects.filter(
+        id__in=histories.values_list('dish_id', flat=True)
+    ).values('canteen').distinct().count()
+
+    # 不同标签数量
+    unique_tags = Tag.objects.filter(
+        dishes__id__in=histories.values_list('dish_id', flat=True)
+    ).distinct().count()
+
+    # 连续打卡天数（最长记录）
+    def calculate_max_streak():
+        if not check_in_records.exists():
+            return 0
+
+        dates = set()
+        for record in check_in_records:
+            dates.add(record.date)
+
+        if not dates:
+            return 0
+
+        sorted_dates = sorted(dates)
+        max_streak = 1
+        current_streak = 1
+
+        for i in range(1, len(sorted_dates)):
+            if (sorted_dates[i] - sorted_dates[i-1]).days == 1:
+                current_streak += 1
+                max_streak = max(max_streak, current_streak)
+            else:
+                current_streak = 1
+
+        return max_streak
+
+    max_streak_days = calculate_max_streak()
+
+    # 当前连续打卡天数
+    def calculate_current_streak():
+        if not check_in_records.exists():
+            return 0
+
+        today = datetime.now().date()
+        current_streak = 0
+        check_date = today
+
+        while True:
+            if check_in_records.filter(checked_in_at__date=check_date).exists():
+                current_streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
+
+        return current_streak
+
+    current_streak_days = calculate_current_streak()
+
+    # 定义成就列表
+    achievements = []
+
+    # ==================== 学术成就 ====================
+    academic_achievements = {
+        'category': 'academic',
+        'category_name': '学术成就',
+        'icon': '🎓',
+        'achievements': []
+    }
+
+    # 本科生
+    if undergraduate_count > 0:
+        academic_achievements['achievements'].append({
+            'id': 'undergraduate_1',
+            'name': '入门学者',
+            'description': f'获得 {undergraduate_count} 个本科称号',
+            'icon': '🎓',
+            'level': 'undergraduate',
+            'unlocked': True,
+            'progress': undergraduate_count,
+            'requirement': undergraduate_count
+        })
+
+    # 硕士
+    if master_count >= 1:
+        academic_achievements['achievements'].append({
+            'id': 'master_1',
+            'name': '进阶学者',
+            'description': f'获得 {master_count} 个硕士称号',
+            'icon': '🎓',
+            'level': 'master',
+            'unlocked': True,
+            'progress': master_count,
+            'requirement': master_count
+        })
+
+    if master_count >= 5:
+        academic_achievements['achievements'].append({
+            'id': 'master_5',
+            'name': '硕士导师',
+            'description': '获得 5 个硕士称号',
+            'icon': '🎓',
+            'level': 'master',
+            'unlocked': True,
+            'progress': master_count,
+            'requirement': 5
+        })
+    elif master_count > 0:
+        academic_achievements['achievements'].append({
+            'id': 'master_5',
+            'name': '硕士导师',
+            'description': '获得 5 个硕士称号',
+            'icon': '🎓',
+            'level': 'master',
+            'unlocked': False,
+            'progress': master_count,
+            'requirement': 5
+        })
+
+    # 博士
+    if doctor_count >= 1:
+        academic_achievements['achievements'].append({
+            'id': 'doctor_1',
+            'name': '博学之士',
+            'description': f'获得 {doctor_count} 个博士称号',
+            'icon': '🎓',
+            'level': 'doctor',
+            'unlocked': True,
+            'progress': doctor_count,
+            'requirement': doctor_count
+        })
+
+    if doctor_count >= 3:
+        academic_achievements['achievements'].append({
+            'id': 'doctor_3',
+            'name': '博士导师',
+            'description': '获得 3 个博士称号',
+            'icon': '🎓',
+            'level': 'doctor',
+            'unlocked': True,
+            'progress': doctor_count,
+            'requirement': 3
+        })
+    elif doctor_count > 0:
+        academic_achievements['achievements'].append({
+            'id': 'doctor_3',
+            'name': '博士导师',
+            'description': '获得 3 个博士称号',
+            'icon': '🎓',
+            'level': 'doctor',
+            'unlocked': False,
+            'progress': doctor_count,
+            'requirement': 3
+        })
+
+    # 院士
+    if academician_count >= 1:
+        academic_achievements['achievements'].append({
+            'id': 'academician_1',
+            'name': '学术泰斗',
+            'description': f'获得 {academician_count} 个院士称号',
+            'icon': '🏆',
+            'level': 'academician',
+            'unlocked': True,
+            'progress': academician_count,
+            'requirement': academician_count
+        })
+
+    if academician_count >= 5:
+        academic_achievements['achievements'].append({
+            'id': 'academician_5',
+            'name': '美食院士',
+            'description': '获得 5 个院士称号',
+            'icon': '🏆',
+            'level': 'academician',
+            'unlocked': True,
+            'progress': academician_count,
+            'requirement': 5
+        })
+
+    achievements.append(academic_achievements)
+
+    # ==================== 探索成就 ====================
+    exploration_achievements = {
+        'category': 'exploration',
+        'category_name': '探索成就',
+        'icon': '🗺️',
+        'achievements': []
+    }
+
+    # 菜品数量
+    dish_milestones = [1, 5, 10, 20, 50, 100]
+    dish_names = ['初尝美食', '美食爱好者', '美食达人', '美食专家', '美食大师', '美食鉴赏家']
+
+    for i, milestone in enumerate(dish_milestones):
+        if total_dishes >= milestone:
+            exploration_achievements['achievements'].append({
+                'id': f'dishes_{milestone}',
+                'name': dish_names[i],
+                'description': f'品尝过 {milestone} 种不同的菜品',
+                'icon': '🍽️',
+                'unlocked': True,
+                'progress': total_dishes,
+                'requirement': milestone
+            })
+        elif total_dishes > 0 and i > 0 and total_dishes >= dish_milestones[i-1]:
+            exploration_achievements['achievements'].append({
+                'id': f'dishes_{milestone}',
+                'name': dish_names[i],
+                'description': f'品尝过 {milestone} 种不同的菜品',
+                'icon': '🍽️',
+                'unlocked': False,
+                'progress': total_dishes,
+                'requirement': milestone
+            })
+
+    # 食堂探索
+    canteen_milestones = [1, 3, 5]
+    canteen_names = ['食堂探险者', '食堂游侠', '食堂大师']
+
+    for i, milestone in enumerate(canteen_milestones):
+        if unique_canteens >= milestone:
+            exploration_achievements['achievements'].append({
+                'id': f'canteens_{milestone}',
+                'name': canteen_names[i],
+                'description': f'在 {milestone} 个不同的食堂打过卡',
+                'icon': '🏢',
+                'unlocked': True,
+                'progress': unique_canteens,
+                'requirement': milestone
+            })
+
+    achievements.append(exploration_achievements)
+
+    # ==================== 打卡成就 ====================
+    checkin_achievements = {
+        'category': 'checkin',
+        'category_name': '打卡成就',
+        'icon': '✅',
+        'achievements': []
+    }
+
+    # 总打卡次数
+    checkin_milestones = [1, 10, 50, 100, 500, 1000]
+    checkin_names = ['打卡新手', '打卡达人', '打卡专家', '打卡大师', '打卡宗师', '打卡传说']
+
+    for i, milestone in enumerate(checkin_milestones):
+        if total_check_ins >= milestone:
+            checkin_achievements['achievements'].append({
+                'id': f'checkins_{milestone}',
+                'name': checkin_names[i],
+                'description': f'累计打卡 {milestone} 次',
+                'icon': '✅',
+                'unlocked': True,
+                'progress': total_check_ins,
+                'requirement': milestone
+            })
+        elif total_check_ins > 0 and i > 0 and total_check_ins >= checkin_milestones[i-1]:
+            checkin_achievements['achievements'].append({
+                'id': f'checkins_{milestone}',
+                'name': checkin_names[i],
+                'description': f'累计打卡 {milestone} 次',
+                'icon': '✅',
+                'unlocked': False,
+                'progress': total_check_ins,
+                'requirement': milestone
+            })
+
+    # 连续打卡
+    streak_milestones = [3, 7, 14, 30, 100]
+    streak_names = ['三天坚持', '一周达人', '两周坚持', '月度冠军', '百日打卡']
+
+    for i, milestone in enumerate(streak_milestones):
+        if max_streak_days >= milestone:
+            checkin_achievements['achievements'].append({
+                'id': f'streak_{milestone}',
+                'name': streak_names[i],
+                'description': f'连续打卡 {milestone} 天',
+                'icon': '🔥',
+                'unlocked': True,
+                'progress': max_streak_days,
+                'requirement': milestone
+            })
+
+    achievements.append(checkin_achievements)
+
+    # 统计已解锁和总数
+    total_unlocked = sum(
+        len([a for a in cat['achievements'] if a['unlocked']])
+        for cat in achievements
+    )
+    total_achievements = sum(len(cat['achievements']) for cat in achievements)
+
+    return Response({
+        'code': 200,
+        'message': '获取成就列表成功',
+        'data': {
+            'achievements': achievements,
+            'summary': {
+                'total_unlocked': total_unlocked,
+                'total_achievements': total_achievements,
+                'unlock_rate': round(total_unlocked / total_achievements * 100, 1) if total_achievements > 0 else 0,
+                'current_streak': current_streak_days,
+                'max_streak': max_streak_days
+            }
+        }
+    })
