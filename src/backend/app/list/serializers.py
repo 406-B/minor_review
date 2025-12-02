@@ -138,6 +138,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     dish_name = serializers.CharField(source='dish.name', read_only=True)
     user_rating = serializers.SerializerMethodField()
+    published_score = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
     # 显式声明只读外键，避免创建时要求客户端提交
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     dish = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -147,14 +148,17 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = [
             'id', 'user', 'username', 'dish', 'dish_name',
-            'content', 'images', 'rating', 'user_rating',
+            'content', 'images', 'rating', 'user_rating', 'published_score',
             'likes_count', 'created_at', 'updated_at'
         ]
     # dish 与 rating 在视图中通过上下文注入，不要求客户端提交
     read_only_fields = ['user', 'dish', 'rating', 'likes_count', 'created_at', 'updated_at']
 
     def get_user_rating(self, obj):
-        """获取用户对该菜品的评分"""
+        """显示评论发布时的评分快照，不随后续评分变化"""
+        if obj.published_score is not None:
+            return obj.published_score
+        # 兼容旧数据：若无快照但有关联评分，则暂时显示关联评分
         if obj.rating:
             return obj.rating.score
         return None
@@ -182,17 +186,20 @@ class ReviewListSerializer(serializers.ModelSerializer):
     """评论列表序列化器（简化版）"""
     username = serializers.CharField(source='user.username', read_only=True)
     user_rating = serializers.SerializerMethodField()
+    published_score = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
 
     class Meta:
         model = Review
         fields = [
             'id', 'user', 'username', 'content', 'images',
-            'user_rating', 'likes_count', 'created_at'
+            'user_rating', 'published_score', 'likes_count', 'created_at'
         ]
 
     def get_user_rating(self, obj):
-        # 优先关联的rating外键，否则尝试查找用户对该菜品的评分
+        # 优先评论发布时的评分快照
+        if obj.published_score is not None:
+            return obj.published_score
+        # 兼容旧数据：若无快照但有关联评分，则暂时显示关联评分
         if obj.rating:
             return obj.rating.score
-        rating = Rating.objects.filter(user=obj.user, dish=obj.dish).first()
-        return rating.score if rating else None
+        return None
