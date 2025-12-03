@@ -52,14 +52,26 @@ export const getPostDetail = async (postId) => {
  * 创建帖子
  * @param {string} subject - 帖子标题
  * @param {string} content - 帖子内容
+ * @param {Array<string>} images - 图片URL列表，可选，最多9张
+ * @param {number} dish - 关联菜品ID，可选
  * @returns {Promise}
  */
-export const createPost = async (subject, content) => {
+export const createPost = async (subject, content, images = [], dish = null) => {
   try {
     const token = getToken()
+    const data = { subject, content }
+    
+    // 添加可选参数
+    if (images && images.length > 0) {
+      data.images = images
+    }
+    if (dish) {
+      data.dish = dish
+    }
+    
     const response = await request.post(
       `${BASE_URL}/posts/create/`,
-      { subject, content },
+      data,
       { headers: { Authorization: token } }
     )
     return response
@@ -132,14 +144,26 @@ export const getCommentList = async (postId, page = 1, page_size = 20) => {
  * 创建评论
  * @param {number} postId - 帖子ID
  * @param {string} content - 评论内容
+ * @param {Array<string>} images - 图片URL列表，可选，最多9张
+ * @param {number} parent - 父评论ID，可选（用于回复）
  * @returns {Promise}
  */
-export const createComment = async (postId, content) => {
+export const createComment = async (postId, content, images = [], parent = null) => {
   try {
     const token = getToken()
+    const data = { post: postId, content }
+    
+    // 添加可选参数
+    if (images && images.length > 0) {
+      data.images = images
+    }
+    if (parent) {
+      data.parent = parent
+    }
+    
     const response = await request.post(
       `${BASE_URL}/comments/create/`,
-      { post: postId, content },
+      data,
       { headers: { Authorization: token } }
     )
     return response

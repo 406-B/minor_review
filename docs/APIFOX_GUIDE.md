@@ -188,6 +188,58 @@ const response = await axios.get('http://localhost:8000/api/canteens/', {
   }
   ```
 
+### 5. 获取用户偏好标签（需登录）
+
+- 接口：`GET /api/profile/preference-tags`
+- 认证：需要 Bearer Token
+- 参数：无
+
+### 6. 设置用户偏好标签（需登录）
+
+- 接口：`POST /api/profile/preference-tags/set`
+- 认证：需要 Bearer Token
+- Body：
+  ```json
+  {
+    "tag_ids": [1, 2, 3, 5]
+  }
+  ```
+- 说明：会覆盖原有偏好标签
+
+### 7. 添加用户偏好标签（需登录）
+
+- 接口：`POST /api/profile/preference-tags/add`
+- 认证：需要 Bearer Token
+- Body：
+  ```json
+  {
+    "tag_ids": [6, 7]
+  }
+  ```
+- 说明：追加到原有偏好标签
+
+### 8. 获取个性化推荐菜品（需登录）
+
+- 接口：`GET /api/profile/recommended-dishes`
+- 认证：需要 Bearer Token
+- 参数：
+  - `latitude`: 用户纬度（可选）
+  - `longitude`: 用户经度（可选）
+  - `page`: 页码，默认 1
+  - `page_size`: 每页数量，默认 20
+- 示例：`GET /api/profile/recommended-dishes?latitude=39.9042&longitude=116.4074&page=1&page_size=20`
+
+### 9. 获取附近推荐菜品（需登录）
+
+- 接口：`GET /api/profile/nearby-dishes`
+- 认证：需要 Bearer Token
+- 参数：
+  - `latitude`: 用户纬度（必需）
+  - `longitude`: 用户经度（必需）
+  - `page`: 页码，默认 1
+  - `page_size`: 每页数量，默认 20
+- 示例：`GET /api/profile/nearby-dishes?latitude=39.9042&longitude=116.4074`
+
 ## 八、注意事项
 
 1. **Token 获取**：需要先通过登录接口获取 token，然后设置到环境变量中

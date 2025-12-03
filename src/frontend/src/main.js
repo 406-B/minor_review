@@ -10,6 +10,8 @@ import router from './router/index.js'
 const app = createApp(App)
 app.use(ElementPlus)
 app.use(router)
+// 暴露全局路由引用（用于个别组件的延迟跳转场景）
+window.appRouter = router
 
 // 全局消息封装
 window.$message = {

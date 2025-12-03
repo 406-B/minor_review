@@ -73,6 +73,9 @@ def my_reviews(request):
         }
     })
 
+
+# ==================== 食堂列表与详情 ====================
+
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def canteen_list(request):
@@ -307,7 +310,7 @@ def rate_dish(request, dish_id):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     # 创建或更新用户对该菜品的评分（Rating表字段为 score，不是 rating）
-    rating_obj, _ = Rating.objects.update_or_create(dish=dish, user=auth_user, defaults={'score': rating_value})
+    rating_obj, created = Rating.objects.update_or_create(dish=dish, user=auth_user, defaults={'score': rating_value})
 
     # 重新计算平均分，聚合字段应为 'score'
     avg_score = Rating.objects.filter(dish=dish).aggregate(avg=Avg('score'))['avg']
@@ -316,7 +319,7 @@ def rate_dish(request, dish_id):
 
     return Response({
         'code': 200,
-        'message': '评分成功',
+        'message': '评分成功' if created else '已更改评分',
         'data': {
             'dish_id': dish.id,
             'user_score': float(rating_obj.score),
@@ -591,55 +594,13 @@ def create_review(request, dish_id):
         if not user and getattr(request.user, 'username', None):
             user = AuthUser.objects.create(username=request.user.username)
 
-    # 检查用户是否已经评论过
-    existing_review = Review.objects.filter(user=user, dish=dish).first()
-    if existing_review:
+    # 评论前必须已完成评分；取当前评分作为评分快照
+    rating_obj = Rating.objects.filter(user=user, dish=dish).first()
+    if not rating_obj:
         return Response({
             'code': 400,
-            'message': '您已经评论过该菜品，请编辑现有评论',
-            'data': {'review_id': existing_review.id}
+            'message': '您需要先完成评分'
         }, status=status.HTTP_400_BAD_REQUEST)
-
-    # 处理评分（如果提供）
-    # 兼容多种前端可能传入的评分字段名称
-    rating_score = (
-        request.data.get('rating_score') or
-        request.data.get('score') or
-        request.data.get('rating')
-    )
-    rating_obj = None
-
-    if rating_score:
-        try:
-            rating_score = float(rating_score)
-            if rating_score < 1.0 or rating_score > 5.0:
-                return Response({
-                    'code': 400,
-                    'message': '评分必须在 1.0-5.0 之间'
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-            # 创建或更新评分
-            rating_obj, created = Rating.objects.update_or_create(
-                user=user,
-                dish=dish,
-                defaults={'score': rating_score}
-            )
-
-            # 重新计算菜品平均分
-            avg_rating = Rating.objects.filter(dish=dish).aggregate(Avg('score'))['score__avg']
-            dish.rating = round(avg_rating, 2) if avg_rating else 0
-            dish.save(update_fields=['rating'])
-
-        except ValueError:
-            return Response({
-                'code': 400,
-                'message': '评分格式不正确'
-            }, status=status.HTTP_400_BAD_REQUEST)
-    else:
-        # 未提供评分但已有评分时关联
-        existing_rating = Rating.objects.filter(user=user, dish=dish).first()
-        if existing_rating:
-            rating_obj = existing_rating
 
     # 创建评论
     # 若前端未传 images，设为空列表避免验证错误
@@ -648,7 +609,7 @@ def create_review(request, dish_id):
         incoming_data['images'] = []
     serializer = ReviewSerializer(data=incoming_data, context={'request': request})
     if serializer.is_valid():
-        review = serializer.save(user=user, dish=dish, rating=rating_obj)
+        review = serializer.save(user=user, dish=dish, rating=rating_obj, published_score=rating_obj.score)
 
         return Response({
             'code': 201,

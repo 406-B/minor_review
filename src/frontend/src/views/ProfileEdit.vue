@@ -1,11 +1,11 @@
 <template>
-  <div class="profile-edit">
-    <TopBar />
-    
-    <div class="container">
-      <div class="header">
-        <h1 class="page-title">编辑个人资料</h1>
-      </div>
+  <PageContainer>
+    <template #header>
+      <AppTopBar />
+    </template>
+    <div class="header">
+      <h1 class="page-title">编辑个人资料</h1>
+    </div>
 
       <div v-if="loading" class="loading">加载中...</div>
 
@@ -17,9 +17,7 @@
             <div class="avatar-preview">
               <img :src="avatarPreview" alt="头像" class="avatar-img" />
             </div>
-            <button class="change-avatar-btn" @click="showCropper = true">
-              更换头像
-            </button>
+            <el-button type="primary" @click="showCropper = true">更换头像</el-button>
           </div>
         </div>
 
@@ -43,30 +41,27 @@
 
         <!-- 操作按钮 -->
         <div class="form-actions">
-          <button class="action-btn cancel" @click="handleCancel">返回</button>
-          <button 
-            class="action-btn save" 
-            @click="handleSave"
-            :disabled="saving || !!nicknameError"
-          >
+          <el-button @click="handleCancel">返回</el-button>
+          <el-button type="primary" @click="handleSave" :disabled="saving || !!nicknameError">
             {{ saving ? '保存中...' : '保存' }}
-          </button>
+          </el-button>
+          <el-button @click="goEditTags" type="success" plain>修改偏好tag</el-button>
         </div>
-      </div>
-    </div>
+  </div>
 
     <!-- 头像裁剪弹窗 -->
     <AvatarCropper
       v-model:visible="showCropper"
       @cropped="handleAvatarCropped"
     />
-  </div>
+  </PageContainer>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import TopBar from '@/components/TopBar.vue'
+import PageContainer from '@/components/ui/PageContainer.vue'
+import AppTopBar from '@/components/ui/AppTopBar.vue'
 import AvatarCropper from '@/components/AvatarCropper.vue'
 import { getProfile, updateProfile } from '@/api/profile'
 
@@ -206,19 +201,14 @@ const handleSave = async () => {
 onMounted(() => {
   loadProfile()
 })
+
+const goEditTags = () => {
+  router.push('/onboarding/tags')
+}
 </script>
 
 <style scoped>
-.profile-edit {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 1.5rem;
-}
+/* PageContainer 承载背景与容器，这里精简 */
 
 .header {
   margin-bottom: 1.5rem;
@@ -279,20 +269,6 @@ onMounted(() => {
   object-fit: cover;
 }
 
-.change-avatar-btn {
-  padding: 0.6rem 1.5rem;
-  background-color: #2b8aef;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.2s;
-}
-
-.change-avatar-btn:hover {
-  background-color: #1a73d9;
-}
 
 /* 昵称编辑 */
 .nickname-edit {
@@ -342,42 +318,10 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--color-border);
 }
 
-.action-btn {
-  padding: 0.7rem 2rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.action-btn.cancel {
-  background-color: white;
-  color: #666;
-  border: 1px solid #ddd;
-}
-
-.action-btn.cancel:hover {
-  background-color: #f5f5f5;
-  border-color: #999;
-}
-
-.action-btn.save {
-  background-color: #2b8aef;
-  color: white;
-}
-
-.action-btn.save:hover:not(:disabled) {
-  background-color: #1a73d9;
-}
-
-.action-btn.save:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
+/* 按钮采用 Element Plus 默认样式 */
 
 @media (max-width: 768px) {
   .container {
