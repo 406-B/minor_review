@@ -26,13 +26,17 @@ const onClick = () => {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
-  background: #f7f9fc;
-  margin: 0.25rem;
-  min-width: 90px;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f4f6f8;
+  border: 1px solid rgba(0,0,0,0.06);
+  margin: 6px;
+  min-width: 110px;
   cursor: pointer;
+  transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
 }
-.num { font-weight: 600; font-size: 1.1rem; }
-.label { font-size: 0.85rem; color: #555 }
+.interaction-stat:hover { border-color: var(--color-accent); box-shadow: 0 4px 14px rgba(0,0,0,0.06); transform: translateY(-1px) }
+.num { font-weight: 700; font-size: 1.1rem; color: #222 }
+.label { font-size: 0.85rem; color: #555; margin-top: 2px }
 </style>
