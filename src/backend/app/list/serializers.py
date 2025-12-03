@@ -209,10 +209,10 @@ class UserDishHistorySerializer(serializers.ModelSerializer):
     """用户菜品历史序列化器"""
     username = serializers.CharField(source='user.username', read_only=True)
     dish_name = serializers.CharField(source='dish.name', read_only=True)
-    dish_image = serializers.ImageField(source='dish.image', read_only=True)
+    dish_image = serializers.SerializerMethodField()
     canteen_name = serializers.CharField(source='dish.canteen.name', read_only=True)
-    level = serializers.CharField(source='level', read_only=True)
-    level_display = serializers.CharField(source='level_display', read_only=True)
+    level = serializers.CharField(read_only=True)
+    level_display = serializers.CharField(read_only=True)
     level_progress = serializers.SerializerMethodField()
 
     class Meta:
@@ -228,12 +228,22 @@ class UserDishHistorySerializer(serializers.ModelSerializer):
         """获取级别进度信息"""
         return obj.level_progress
 
+    def get_dish_image(self, obj):
+        """安全返回菜品图片URL，避免空文件或缺失文件导致异常"""
+        try:
+            image = getattr(obj.dish, 'image', None)
+            if not image:
+                return None
+            return image.url
+        except Exception:
+            return None
+
 
 class UserDishHistoryListSerializer(serializers.ModelSerializer):
     """用户菜品历史列表序列化器（简化版）"""
     dish_name = serializers.CharField(source='dish.name', read_only=True)
-    dish_image = serializers.ImageField(source='dish.image', read_only=True)
-    level_display = serializers.CharField(source='level_display', read_only=True)
+    dish_image = serializers.SerializerMethodField()
+    level_display = serializers.CharField(read_only=True)
 
     class Meta:
         model = UserDishHistory
@@ -241,3 +251,12 @@ class UserDishHistoryListSerializer(serializers.ModelSerializer):
             'id', 'dish', 'dish_name', 'dish_image',
             'count', 'level_display', 'last_tried_at'
         ]
+
+    def get_dish_image(self, obj):
+        try:
+            image = getattr(obj.dish, 'image', None)
+            if not image:
+                return None
+            return image.url
+        except Exception:
+            return None

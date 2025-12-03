@@ -14,8 +14,8 @@ const emit = defineEmits(['logged-out'])
 
 const onLogout = async () => {
   try {
-    // 调用后端登出接口
-    await request.post('/login/logout')
+    // 调用后端登出接口（后端挂载在 /api/v1/ 下）
+    await request.post('/v1/logout')
   } catch (error) {
     console.error('登出接口调用失败:', error)
     // 即使后端调用失败，也继续清理本地状态

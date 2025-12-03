@@ -309,3 +309,36 @@ export const getMyReviews = () => {
 
 // 导出默认 axios 实例，方便直接使用
 export default api;
+
+// ==================== 成就 / 打卡相关 API ====================
+
+/**
+ * 菜品打卡（需登录）
+ * POST /dishes/{dishId}/check-in/
+ * @param {number} dishId - 菜品ID
+ * @param {Object} data - 可选参数，如 { notes: '好吃' }
+ * @returns {Promise<{code:number, message:string, data:Object}>}
+ */
+export const checkInDish = (dishId, data = {}) => {
+	return api.post(`/dishes/${dishId}/check-in/`, data);
+};
+
+/**
+ * 获取用户菜品历史（需登录）
+ * GET /user/dish-history/
+ * @param {Object} params - { page, page_size, level, ordering }
+ * @returns {Promise<{code:number, message:string, data:{histories:Array, total:number}}>} 
+ */
+export const getUserDishHistory = (params = {}) => {
+	return api.get('/user/dish-history/', { params });
+};
+
+/** 可选：用户成就统计（需登录） */
+export const getUserDishStats = () => {
+	return api.get('/user/dish-stats/');
+};
+
+/** 可选：美食日历（需登录） */
+export const getFoodCalendar = (params = {}) => {
+	return api.get('/user/food-calendar/', { params });
+};
