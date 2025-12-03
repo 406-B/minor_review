@@ -4,11 +4,17 @@
     <div v-else class="grid">
       <el-card v-for="d in dishes" :key="d.id" class="dish" @click="$router.push('/dish/' + d.id)">
         <div class="thumb">
-          <el-image :src="imageUrl(d.image)" fit="cover">
-            <template #error>
+          <AchievementImage
+            :dish-id="d.id"
+            :src="imageUrl(d.image)"
+            :width="'100%'"
+            :height="'100%'"
+            :radius="6"
+          >
+            <template #placeholder>
               <div class="thumb placeholder">{{ d.name?.[0] || '图' }}</div>
             </template>
-          </el-image>
+          </AchievementImage>
         </div>
         <div class="row between">
           <div class="name">{{ d.name }}</div>
@@ -22,6 +28,7 @@
 </template>
 
 <script setup>
+import AchievementImage from '@/components/common/AchievementImage.vue'
 defineProps({
   dishes: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
