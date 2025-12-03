@@ -34,6 +34,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import AchievementImage from '@/components/common/AchievementImage.vue'
 
 const props = defineProps({
   post: {
@@ -66,6 +67,16 @@ const handleClick = () => {
     router.push(`/community/${props.post.id}`)
   }
 }
+
+// 菜品关联：post.dish 或 post.dish_id
+const dishId = computed(() => props.post.dish?.id || props.post.dish_id || null)
+const dishImage = computed(() => {
+  const img = props.post.dish?.image || props.post.dish_image
+  if (!img) return ''
+  if (/^(https?:|data:|blob:)/.test(img)) return img
+  if (String(img).startsWith('/media/')) return img
+  return '/media/' + String(img).replace(/^\/+/, '')
+})
 </script>
 
 <style scoped>
@@ -92,6 +103,7 @@ const handleClick = () => {
   flex: 1;
   min-width: 0;
 }
+.post-item:hover { border-color: var(--color-accent); box-shadow: 0 4px 14px rgba(0,0,0,0.06); transform: translateY(-1px) }
 
 .post-title {
   font-weight: 600;
