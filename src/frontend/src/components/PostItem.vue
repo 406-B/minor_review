@@ -127,7 +127,6 @@ const handleClick = () => {
   padding: 2px 6px;
   border-radius: 4px;
 }
-}
 
 .post-meta {
   display: flex;
