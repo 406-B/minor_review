@@ -15,6 +15,11 @@ class Post(models.Model):
     )
     subject = models.CharField(max_length=200, help_text="帖子主题/标题")
     content = models.TextField(help_text="帖子内容")
+    images = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="帖子图片URL列表（最多9张）"
+    )
     dish = models.ForeignKey(
         'list.Dish',
         on_delete=models.SET_NULL,

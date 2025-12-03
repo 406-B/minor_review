@@ -1,28 +1,30 @@
 <template>
   <div class="post-item" @click="handleClick">
-    <div class="head">
-      <div class="thumb" v-if="dishId">
-        <AchievementImage :dish-id="dishId" :src="dishImage" :width="64" :height="64" :radius="8">
-          <template #placeholder>
-            <div class="thumb ph">{{ (post.dish_name || post.subject || '图')[0] }}</div>
-          </template>
-        </AchievementImage>
-      </div>
-      <div class="title-wrap">
-        <div class="post-title">{{ post.title || post.subject || '无标题' }}</div>
-        <div class="post-meta">
-          <span class="post-time">{{ formattedTime }}</span>
-          <span v-if="showStats" class="post-stats">
-            <span class="stat-item">
-              <span class="icon">👍</span>
-              {{ post.likes_count || 0 }}
-            </span>
-            <span class="stat-item">
-              <span class="icon">💬</span>
-              {{ post.comments_count || 0 }}
-            </span>
+    <div class="post-content">
+      <div class="post-title">{{ post.title || post.subject || '无标题' }}</div>
+      <div class="post-meta">
+        <span class="post-time">{{ formattedTime }}</span>
+        <span v-if="showStats" class="post-stats">
+          <span class="stat-item">
+            <span class="icon">👍</span>
+            {{ post.likes_count || 0 }}
           </span>
-        </div>
+          <span class="stat-item">
+            <span class="icon">💬</span>
+            {{ post.comments_count || 0 }}
+          </span>
+        </span>
+      </div>
+    </div>
+    <!-- 图片缩略图 -->
+    <div v-if="post.images && post.images.length > 0" class="post-thumbnail">
+      <img 
+        :src="post.images[0]" 
+        :alt="post.subject"
+        class="thumbnail-image"
+      />
+      <div v-if="post.images.length > 1" class="image-count">
+        +{{ post.images.length - 1 }}
       </div>
     </div>
   </div>
@@ -85,7 +87,21 @@ const dishImage = computed(() => {
   border-radius: 10px;
   background: #fff;
   cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.post-item:last-child {
+  border-bottom: none;
   transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+}
+.post-item:hover { border-color: var(--color-accent); box-shadow: 0 4px 14px rgba(0,0,0,0.06); transform: translateY(-1px) }
+
+.post-content {
+  flex: 1;
+  min-width: 0;
 }
 .post-item:hover { border-color: var(--color-accent); box-shadow: 0 4px 14px rgba(0,0,0,0.06); transform: translateY(-1px) }
 
@@ -100,6 +116,32 @@ const dishImage = computed(() => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.35;
+}
+
+.post-thumbnail {
+  position: relative;
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.thumbnail-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-count {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .post-meta {
