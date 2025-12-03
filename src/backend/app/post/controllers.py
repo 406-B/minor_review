@@ -2,19 +2,21 @@ from django.db import transaction
 from .models import Post, Comment, Like
 
 
-def create_post(user, subject, content, dish=None):
+def create_post(user, subject, content, images=None, dish=None):
     """
     创建帖子
     参数:
         user: 用户对象
         subject: 帖子标题
         content: 帖子内容
+        images: 图片列表（可选，最多9张）
         dish: 关联的菜品对象（可选）
     """
     post = Post.objects.create(
         author=user,
         subject=subject,
         content=content,
+        images=images or [],
         dish=dish
     )
     return post

@@ -52,14 +52,26 @@ export const getPostDetail = async (postId) => {
  * 创建帖子
  * @param {string} subject - 帖子标题
  * @param {string} content - 帖子内容
+ * @param {Array<string>} images - 图片URL列表，可选，最多9张
+ * @param {number} dish - 关联菜品ID，可选
  * @returns {Promise}
  */
-export const createPost = async (subject, content) => {
+export const createPost = async (subject, content, images = [], dish = null) => {
   try {
     const token = getToken()
+    const data = { subject, content }
+    
+    // 添加可选参数
+    if (images && images.length > 0) {
+      data.images = images
+    }
+    if (dish) {
+      data.dish = dish
+    }
+    
     const response = await request.post(
       `${BASE_URL}/posts/create/`,
-      { subject, content },
+      data,
       { headers: { Authorization: token } }
     )
     return response

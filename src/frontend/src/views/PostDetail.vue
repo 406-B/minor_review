@@ -47,6 +47,18 @@
 					<h2 class="post-subject">{{ post.subject || '无标题' }}</h2>
 					<div class="body">{{ post.content }}</div>
 					
+					<!-- 帖子图片 -->
+					<div v-if="post.images && post.images.length > 0" class="post-images">
+						<img 
+							v-for="(image, index) in post.images" 
+							:key="index"
+							:src="image"
+							class="post-image"
+							@click="previewImage(image)"
+							:alt="`图片${index + 1}`"
+						/>
+					</div>
+					
 					<!-- 评论区 -->
 					<div class="comments-section">
 						<div class="comments-header">
@@ -61,6 +73,11 @@
 								class="comment-input"
 								:disabled="commenting"
 							></textarea>
+							<ImageUploader 
+								v-model="commentImages" 
+								:max-count="9"
+								class="comment-image-uploader"
+							/>
 							<button 
 								@click="handleComment" 
 								class="comment-btn"
@@ -128,6 +145,11 @@
 										class="reply-input"
 										:disabled="replying"
 									></textarea>
+									<ImageUploader 
+										v-model="replyImages" 
+										:max-count="9"
+										class="reply-image-uploader"
+									/>
 									<div class="reply-actions">
 										<button 
 											@click="handleReply(comment.id)" 
@@ -230,8 +252,10 @@ const error = ref(null)
 const liking = ref(false)
 const commenting = ref(false)
 const newComment = ref('')
+const commentImages = ref([]) // 评论图片
 const replyingTo = ref(null)
 const replyContent = ref('')
+const replyImages = ref([]) // 回复图片
 const replying = ref(false)
 const replyTargetUser = ref(null) // 记录要@的用户
 
@@ -240,6 +264,7 @@ import PageContainer from '@/components/ui/PageContainer.vue'
 import SectionTitle from '@/components/ui/SectionTitle.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
+import ImageUploader from '@/components/ImageUploader.vue'
 
 // 计算当前用户ID（从 localStorage 或其他地方获取）
 const currentUserId = computed(() => {
@@ -364,15 +389,17 @@ async function handleComment() {
 	commenting.value = true
 	
 	try {
-		const response = await createComment(post.value.id, newComment.value)
+		const response = await createComment(post.value.id, newComment.value, commentImages.value)
 		
 		if (response.code === 200 && response.data) {
 			// 将新评论添加到列表顶部
 			comments.value.unshift(response.data)
 			// 更新评论数
 			post.value.comments_count = (post.value.comments_count || 0) + 1
-			// 清空输入框
+			// 清空输入框和图片
 			newComment.value = ''
+			commentImages.value = []
+			window.$message?.success?.('评论成功')
 		} else {
 			window.$message?.error?.(response.message || '评论失败')
 		}
@@ -451,10 +478,12 @@ function toggleReplyForm(commentId) {
 	if (replyingTo.value === commentId) {
 		replyingTo.value = null
 		replyContent.value = ''
+		replyImages.value = []
 		replyTargetUser.value = null
 	} else {
 		replyingTo.value = commentId
 		replyContent.value = ''
+		replyImages.value = []
 		replyTargetUser.value = null
 	}
 }
@@ -478,10 +507,14 @@ function cancelReply() {
 // 处理回复
 async function handleReply(parentCommentId) {
 	if (!replyContent.value.trim() || replying.value) return
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
 	replying.value = true
 	
 	try {
-		const response = await createComment(post.value.id, replyContent.value, [], parentCommentId)
+		const response = await createComment(post.value.id, replyContent.value, replyImages.value, parentCommentId)
 		
 		if (response.code === 200 && response.data) {
 			// 找到父评论并添加回复
@@ -494,15 +527,22 @@ async function handleReply(parentCommentId) {
 			}
 			// 更新评论总数
 			post.value.comments_count = (post.value.comments_count || 0) + 1
-			// 清空输入并关闭表单
+			// 清空输入、图片并关闭表单
 			replyContent.value = ''
+			replyImages.value = []
 			replyingTo.value = null
+			window.$message?.success?.('回复成功')
 		} else {
-			alert(response.message || '回复失败')
+			window.$message?.error?.(response.message || '回复失败')
 		}
 	} catch (err) {
 		console.error('回复评论失败:', err)
-		alert('回复失败，请重试')
+		if (err?.response?.status === 401) {
+			window.$message?.warning?.('您需要先登录')
+			router.push('/login')
+		} else {
+			window.$message?.error?.('回复失败，请重试')
+		}
 	} finally {
 		replying.value = false
 	}
@@ -643,6 +683,28 @@ onMounted(loadPost)
 	font-size: 15px; 
 	color: var(--color-text);
 	margin-bottom: 32px;
+}
+
+/* 帖子图片样式 */
+.post-images {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 12px;
+	margin: 20px 0;
+}
+
+.post-image {
+	width: 100%;
+	height: 200px;
+	object-fit: cover;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.3s;
+}
+
+.post-image:hover {
+	transform: scale(1.02);
+	box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* 评论区样式 */
@@ -930,6 +992,30 @@ onMounted(loadPost)
 	line-height: 1.5;
 	font-size: 13px;
 	color: #555;
+}
+
+/* 评论和回复的图片上传器样式 */
+.comment-image-uploader,
+.reply-image-uploader {
+	margin: 12px 0;
+}
+
+.comment-image-uploader :deep(.upload-container),
+.reply-image-uploader :deep(.upload-container) {
+	gap: 8px;
+}
+
+.comment-image-uploader :deep(.image-preview),
+.reply-image-uploader :deep(.image-preview) {
+	width: 80px;
+	height: 80px;
+}
+
+.comment-image-uploader :deep(.upload-trigger),
+.reply-image-uploader :deep(.upload-trigger) {
+	width: 80px;
+	height: 80px;
+	font-size: 12px;
 }
 
 /* 回复图片样式 */
