@@ -1,18 +1,29 @@
 <template>
   <div class="post-item" @click="handleClick">
-    <div class="post-title">{{ post.title || post.subject || '无标题' }}</div>
-    <div class="post-meta">
-      <span class="post-time">{{ formattedTime }}</span>
-      <span v-if="showStats" class="post-stats">
-        <span class="stat-item">
-          <span class="icon">👍</span>
-          {{ post.likes_count || 0 }}
-        </span>
-        <span class="stat-item">
-          <span class="icon">💬</span>
-          {{ post.comments_count || 0 }}
-        </span>
-      </span>
+    <div class="head">
+      <div class="thumb" v-if="dishId">
+        <AchievementImage :dish-id="dishId" :src="dishImage" :width="64" :height="64" :radius="8">
+          <template #placeholder>
+            <div class="thumb ph">{{ (post.dish_name || post.subject || '图')[0] }}</div>
+          </template>
+        </AchievementImage>
+      </div>
+      <div class="title-wrap">
+        <div class="post-title">{{ post.title || post.subject || '无标题' }}</div>
+        <div class="post-meta">
+          <span class="post-time">{{ formattedTime }}</span>
+          <span v-if="showStats" class="post-stats">
+            <span class="stat-item">
+              <span class="icon">👍</span>
+              {{ post.likes_count || 0 }}
+            </span>
+            <span class="stat-item">
+              <span class="icon">💬</span>
+              {{ post.comments_count || 0 }}
+            </span>
+          </span>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -21,6 +32,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import AchievementImage from '@/components/common/AchievementImage.vue'
 
 const props = defineProps({
   post: {
@@ -53,6 +65,16 @@ const handleClick = () => {
     router.push(`/community/${props.post.id}`)
   }
 }
+
+// 菜品关联：post.dish 或 post.dish_id
+const dishId = computed(() => props.post.dish?.id || props.post.dish_id || null)
+const dishImage = computed(() => {
+  const img = props.post.dish?.image || props.post.dish_image
+  if (!img) return ''
+  if (/^(https?:|data:|blob:)/.test(img)) return img
+  if (String(img).startsWith('/media/')) return img
+  return '/media/' + String(img).replace(/^\/+/, '')
+})
 </script>
 
 <style scoped>

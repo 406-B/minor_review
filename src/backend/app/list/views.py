@@ -32,6 +32,22 @@ from .serializers import (
     UserDishHistorySerializer, UserDishHistoryListSerializer
 )
 
+# ============== 辅助方法：确保获取到 Django AuthUser ==============
+def _get_or_create_auth_user(request):
+    """将自定义登录用户统一映射到 Django 内置 AuthUser。
+    返回 AuthUser 或 None（当拿不到用户名时）。
+    """
+    try:
+        if isinstance(request.user, AuthUser):
+            return request.user
+        username = getattr(request.user, 'username', None)
+        if not username:
+            return None
+        user, _created = AuthUser.objects.get_or_create(username=username, defaults={"password": ""})
+        return user
+    except Exception:
+        return None
+
 # ==================== 我的评论视图 ====================
 
 @api_view(['GET'])
@@ -767,12 +783,12 @@ def check_in_dish(request, dish_id):
     每次调用会增加该菜品的打卡次数
     """
     dish = get_object_or_404(Dish, id=dish_id)
-    if isinstance(request.user, AuthUser):
-        user = request.user
-    else:
-        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
-        if not user and getattr(request.user, 'username', None):
-            user = AuthUser.objects.create(username=request.user.username)
+    user = _get_or_create_auth_user(request)
+    if not user:
+        return Response({
+            'code': 401,
+            'message': '未登录或无效用户'
+        }, status=status.HTTP_401_UNAUTHORIZED)
 
     # 获取打卡备注（可选）
     notes = request.data.get('notes', '')
@@ -821,16 +837,13 @@ def get_user_dish_history(request):
     获取用户的菜品历史记录
     支持筛选和排序
     """
-    if isinstance(request.user, AuthUser):
-        user = request.user
-    else:
-        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
-        if not user:
-            return Response({
-                'code': 404,
-                'message': '用户不存在',
-                'data': []
-            }, status=status.HTTP_404_NOT_FOUND)
+    user = _get_or_create_auth_user(request)
+    if not user:
+        return Response({
+            'code': 404,
+            'message': '用户不存在',
+            'data': []
+        }, status=status.HTTP_404_NOT_FOUND)
 
     histories = UserDishHistory.objects.filter(user=user)
 

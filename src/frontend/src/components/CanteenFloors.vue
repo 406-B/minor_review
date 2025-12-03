@@ -16,7 +16,16 @@
             <div class="window-title">{{ window.name }}</div>
             <div class="dish-card-list">
               <div v-for="dish in window.dishes" :key="dish.id" class="dish-card" @click="goToDish && goToDish(dish.id)">
-                <img v-if="dish.image" :src="getImageUrl(dish.image)" alt="菜品图片" class="dish-card-img" />
+                <AchievementImage
+                  v-if="dish.image"
+                  :dish-id="dish.id"
+                  :src="getImageUrl(dish.image)"
+                  :width="100"
+                  :height="72"
+                  :radius="6"
+                  alt="菜品图片"
+                  class="dish-card-img"
+                />
                 <div class="dish-card-info">
                   <div class="dish-card-name">{{ dish.name }}</div>
                   <div class="dish-card-price">￥{{ dish.price }}</div>
@@ -31,6 +40,7 @@
 </template>
 
 <script setup>
+import AchievementImage from '@/components/common/AchievementImage.vue'
 function getImageUrl(image) {
   if (!image) return ''
   if (image.startsWith('http://') || image.startsWith('https://')) return image
