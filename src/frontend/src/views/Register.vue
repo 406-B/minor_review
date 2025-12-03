@@ -35,7 +35,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { register } from '@/api/listApi';
+import { register, login } from '@/api/listApi';
 import PageContainer from '@/components/ui/PageContainer.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
 import { ElMessageBox } from 'element-plus'
@@ -84,9 +84,15 @@ const onRegister = async () => {
     return
   }
   try {
-    const res = await register(registerForm.value);
-    window.$message?.success?.('注册成功！请登录。')
-    router.push('/login');
+    await register(registerForm.value);
+    // 注册成功后自动登录，节省一步
+    const loginRes = await login({ username: registerForm.value.username, password: registerForm.value.password })
+    const jwt = loginRes?.jwt || loginRes?.data?.jwt
+    if (jwt) {
+      localStorage.setItem('jwt', jwt)
+    }
+    window.$message?.success?.('注册成功，已为你登录')
+    router.push('/onboarding/tags');
   } catch (err) {
     // 提取后端错误
     const data = err?.response?.data || {}

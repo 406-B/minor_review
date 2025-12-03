@@ -84,4 +84,27 @@ export const getProfileSections = async () => {
   }
 }
 
-export default { getProfile, updateProfile, getProfileStats, getProfileSections }
+// ==================== 偏好标签与推荐相关 ====================
+
+// 获取当前登录用户的偏好标签
+export const getPreferenceTags = () => request.get('/v1/profile/preference-tags')
+
+// 设置用户偏好标签（覆盖）
+export const setPreferenceTags = (tagIds = []) => request.post('/v1/profile/preference-tags/set', { tag_ids: tagIds })
+
+// 追加用户偏好标签
+export const addPreferenceTags = (tagIds = []) => request.post('/v1/profile/preference-tags/add', { tag_ids: tagIds })
+
+// 获取个性化推荐菜品（按偏好；若提供经纬度则为综合）
+// params: { page?, page_size?, latitude?, longitude? }
+export const getRecommendedDishes = (params = {}) => request.get('/v1/profile/recommended-dishes', { params })
+
+// 获取附近推荐菜品（按位置）
+// params: { latitude, longitude, page?, page_size? }
+export const getNearbyRecommendedDishes = (params) => request.get('/v1/profile/nearby-dishes', { params })
+
+export default { 
+  getProfile, updateProfile, getProfileStats, getProfileSections,
+  getPreferenceTags, setPreferenceTags, addPreferenceTags,
+  getRecommendedDishes, getNearbyRecommendedDishes,
+}

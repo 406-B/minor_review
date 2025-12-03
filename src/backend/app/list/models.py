@@ -29,6 +29,17 @@ class Window(models.Model):
 class Canteen(models.Model):
 
     name = models.CharField(max_length=100, unique=True, help_text="Name of the canteen")
+    # 地理位置信息
+    latitude = models.DecimalField(
+        max_digits=10, decimal_places=7, null=True, blank=True,
+        help_text="纬度"
+    )
+    longitude = models.DecimalField(
+        max_digits=10, decimal_places=7, null=True, blank=True,
+        help_text="经度"
+    )
+    address = models.CharField(max_length=255, blank=True, help_text="食堂地址")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -188,6 +199,14 @@ class Review(models.Model):
         blank=True,
         related_name='review',
         help_text="关联的评分（可选）"
+    )
+    # 发表时的评分快照（与Rating表独立，后续评分变更不影响已发布评论显示）
+    published_score = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="评论发布时的评分快照"
     )
     likes_count = models.IntegerField(default=0, help_text="点赞数")
     created_at = models.DateTimeField(auto_now_add=True)
