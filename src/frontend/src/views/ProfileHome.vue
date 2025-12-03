@@ -102,6 +102,14 @@
         </SectionCard>
       </div>
     </div>
+
+    <!-- 食堂消费记录 -->
+    <div class="grid consumption-grid">
+      <div class="col">
+        <ConsumptionCard class="equal-card" />
+      </div>
+    </div>
+
     <!-- 控制组件板块（在底部） -->
     <ControlPanel />
   </PageContainer>
@@ -121,6 +129,7 @@ import PostItem from '@/components/PostItem.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import InteractionStat from '@/components/InteractionStat.vue'
 import ControlPanel from '@/components/ControlPanel.vue'
+import ConsumptionCard from '@/components/ConsumptionCard.vue'
 
 const router = useRouter()
 const published = ref([])
