@@ -28,7 +28,13 @@
       <el-row :gutter="24">
         <el-col v-for="dish in dishes" :key="dish.id" :span="6">
           <el-card class="dish-card" shadow="hover" @click="goToDish(dish.id)">
-            <img :src="dish.image" alt="菜品图片" class="dish-img" />
+            <AchievementImage
+              :dish-id="dish.id"
+              :src="dish.image"
+              :width="'100%'"
+              :height="140"
+              :radius="varRadiusSm"
+            />
             <div class="dish-info">
               <div class="dish-title">{{ dish.name }}</div>
               <div class="dish-tags">
@@ -50,6 +56,7 @@ import { getDishes, getTags } from '@/utils/api/listApi'
 import PageContainer from '@/components/ui/PageContainer.vue'
 import SectionTitle from '@/components/ui/SectionTitle.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
+import AchievementImage from '@/components/common/AchievementImage.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -62,6 +69,7 @@ const searchForm = ref({
 const dishes = ref([])
 const tags = ref([])
 const loading = ref(false)
+const varRadiusSm = 'var(--radius-sm)'
 
 const fetchTags = async () => {
   const res = await getTags()
