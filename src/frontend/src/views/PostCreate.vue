@@ -50,13 +50,11 @@
 						<span class="hint">支持最多 5000 字符</span>
 					</div>
 
-					<!-- TODO：暂时隐藏图片上传功能，因为后端 API 文档中未提供图片上传接口 -->
-					<!-- <div class="upload">
-						<input type="file" accept="image/*" @change="onFileChange" />
-						<div v-if="preview" class="preview-wrap">
-							<img :src="preview" class="preview" />
-						</div>
-					</div> -->
+					<!-- 图片上传区域 -->
+					<div class="images-section">
+						<div class="section-label">添加图片（可选，最多9张）</div>
+						<ImageUploader v-model="imageUrls" :max-images="9" />
+					</div>
 				</div>
 			</div>
 			<div class="side-placeholder"></div>
@@ -72,13 +70,13 @@ import { createPost } from '@/api/community'
 import PageActions from '../components/PageActions.vue'
 import PageContainer from '@/components/ui/PageContainer.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
+import ImageUploader from '../components/ImageUploader.vue'
 
 const router = useRouter()
 const subject = ref('')
 const content = ref('')
+const imageUrls = ref([])
 const publishing = ref(false)
-// const preview = ref(null)
-// const imageFile = ref(null)
 
 function goBack() {
 	router.push({ name: 'CommunityHome' })
@@ -123,7 +121,11 @@ async function publish() {
 	publishing.value = true
 	
 	try {
-		const response = await createPost(subject.value.trim(), content.value.trim())
+		const response = await createPost(
+			subject.value.trim(), 
+			content.value.trim(),
+			imageUrls.value  // 传递图片URL数组
+		)
 		
 		if (response.code === 200 && response.data) {
 			window.$message?.success?.('发布成功！')
@@ -227,8 +229,18 @@ async function publish() {
 	color: #c0c4cc 
 }
 
-.upload { margin-top:12px }
-.preview { width:240px; height:160px; object-fit:cover; margin-top:8px; border-radius: 8px }
+.images-section {
+	margin-top: 24px;
+	padding-top: 24px;
+	border-top: 1px solid #f0f0f0;
+}
+
+.section-label {
+	font-size: 14px;
+	font-weight: 600;
+	color: #333;
+	margin-bottom: 12px;
+}
 
 @media (max-width:900px) {
 	.card { width:100%; padding:12px }
