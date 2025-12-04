@@ -113,6 +113,9 @@ class Dish(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(5)],
         help_text="Average rating from 0 to 5",
     )
+    rating_count = models.IntegerField(
+        default=0, help_text="Number of ratings this dish has received"
+    )
     view_count = models.IntegerField(
         default=0, help_text="Number of times this dish has been viewed"
     )
