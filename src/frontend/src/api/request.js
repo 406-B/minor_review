@@ -32,7 +32,7 @@ service.interceptors.request.use(
 
 // 响应拦截器
 service.interceptors.response.use(
-  response => response.data,
+  response => response, // 返回完整的 response 对象，让调用方决定如何处理
   error => {
     // 处理错误响应
     if (error.response) {

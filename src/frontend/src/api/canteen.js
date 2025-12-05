@@ -3,7 +3,7 @@
  */
 import request from './request'
 
-const BASE_URL = '/api/v1/canteen'
+const BASE_URL = '/v1/canteen'
 
 /**
  * 获取消费数据
@@ -26,9 +26,12 @@ export const getConsumption = async () => {
  */
 export const bindAccount = async (idserial, browserType = 'chrome') => {
   try {
+    // 绑定操作需要等待用户手动登录，设置5分钟超时
     const response = await request.post(`${BASE_URL}/bind/`, {
       idserial,
       browser_type: browserType
+    }, {
+      timeout: 300000 // 5分钟 = 300秒 = 300000毫秒
     })
     return response.data
   } catch (err) {
@@ -51,7 +54,10 @@ export const refreshConsumption = async (servicehall = null, browserType = 'chro
     if (browserType) {
       data.browser_type = browserType
     }
-    const response = await request.post(`${BASE_URL}/refresh/`, data)
+    // 刷新时如果cookie失效可能需要重新登录，设置5分钟超时
+    const response = await request.post(`${BASE_URL}/refresh/`, data, {
+      timeout: 300000 // 5分钟
+    })
     return response.data
   } catch (err) {
     throw err
