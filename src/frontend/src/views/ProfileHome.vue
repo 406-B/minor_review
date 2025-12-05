@@ -63,9 +63,9 @@
       </div>
     </div>
 
-    <!-- 个性化推荐入口（与上面两卡同风格） -->
-    <div class="grid recommend-grid">
-      <div class="col">
+    <!-- 个性化推荐 & 食堂消费记录 同行 -->
+    <div class="grid bottom-grid">
+      <div class="col left">
         <SectionCard class="equal-card" title="个性化推荐">
           <template #actions>
             <el-select v-model="recoSource" size="small" style="width: 120px; margin-right: 8px">
@@ -101,11 +101,8 @@
           </template>
         </SectionCard>
       </div>
-    </div>
 
-    <!-- 食堂消费记录 -->
-    <div class="grid consumption-grid">
-      <div class="col">
+      <div class="col right">
         <ConsumptionCard class="equal-card" />
       </div>
     </div>
@@ -399,14 +396,10 @@ watch(() => reco.value?.dishes, () => {
 <style scoped>
 .title { font-size: 1.4rem; margin-bottom: 0.75rem }
 .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem }
-.recommend-grid { grid-template-columns: 1fr; }
 .col { display: flex; flex-direction: column; gap: 1rem }
 /* 让列内的卡片等高 */
 .equal-card { height: 100%; min-height: 220px; display: flex; flex-direction: column }
 .equal-card :deep(.content) { flex: 1; display: flex; flex-direction: column }
-
-/* 推荐卡片自适应内容高度，避免多余留白 */
-.recommend-grid .equal-card { min-height: auto; }
 
 .posts { list-style: none; padding: 0; margin: 0; max-height: 380px; overflow: auto }
 .post { padding: 0.5rem 0; border-bottom: 1px dashed rgba(0,0,0,0.04) }
@@ -461,11 +454,9 @@ watch(() => reco.value?.dishes, () => {
 
 @media (min-width: 1024px) {
   .grid { grid-template-columns: 1fr 1fr }
-  .recommend-grid { grid-template-columns: 1fr 1fr; justify-items: center; }
-  .recommend-grid .col { width: 100%; max-width: 680px; }
-  /* 限制上方两张卡片的最大宽度，减少卡内留白 */
-  .top-grid { justify-items: center; }
-  .top-grid .col { width: 100%; max-width: 680px; }
+  /* 限制卡片的最大宽度，减少卡内留白 */
+  .top-grid, .bottom-grid { justify-items: center; }
+  .top-grid .col, .bottom-grid .col { width: 100%; max-width: 680px; }
   /* 固定等高：两列时卡片充满列高 */
   .col { align-items: stretch }
   .equal-card { height: 100%; min-height: 240px }
