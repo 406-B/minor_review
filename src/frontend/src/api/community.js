@@ -209,7 +209,45 @@ export const toggleCommentLike = async (commentId) => {
   }
 }
 
-// ============ 用户资料相关接口 ============
+// ============ 菜品相关接口 ============
+
+/**
+ * 搜索菜品
+ * @param {string} keyword - 搜索关键词
+ * @param {number} page - 页码，默认 1
+ * @param {number} page_size - 每页数量，默认 10
+ * @returns {Promise}
+ */
+export const searchDishes = async (keyword, page = 1, page_size = 10) => {
+  try {
+    const response = await request.get(`${BASE_URL}/dishes/`, {
+      params: {
+        search: keyword,
+        page,
+        page_size
+      }
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 获取菜品详情
+ * @param {number} dishId - 菜品ID
+ * @returns {Promise}
+ */
+export const getDishDetail = async (dishId) => {
+  try {
+    const response = await request.get(`${BASE_URL}/dishes/${dishId}/`)
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+// ============ 导出所有函数 ============
 
 /**
  * 获取用户统计信息
