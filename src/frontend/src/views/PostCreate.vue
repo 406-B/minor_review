@@ -221,14 +221,25 @@ async function handleDishSearch() {
 	searchTimeout = setTimeout(async () => {
 		searchingDishes.value = true
 		try {
+			console.log('🔍 开始搜索菜品，关键词:', dishSearchKeyword.value)
 			const response = await searchDishes(dishSearchKeyword.value.trim(), 1, 20)
+			console.log('🔍 搜索菜品响应:', response)
+			console.log('📊 响应代码:', response?.code)
+			console.log('📦 响应数据类型:', typeof response?.data)
+			console.log('📦 响应数据:', response?.data)
+			
 			if (response.code === 200 && response.data) {
-				dishResults.value = response.data.dishes || []
+				// 后端直接返回菜品数组在 data 字段中
+				dishResults.value = Array.isArray(response.data) ? response.data : []
+				console.log('✅ 搜索到菜品数量:', dishResults.value.length)
+				console.log('✅ 菜品列表:', dishResults.value)
 			} else {
+				console.warn('⚠️ 响应格式异常')
 				dishResults.value = []
 			}
 		} catch (err) {
-			console.error('搜索菜品失败:', err)
+			console.error('❌ 搜索菜品失败:', err)
+			console.error('❌ 错误详情:', err.response?.data || err.message)
 			dishResults.value = []
 		} finally {
 			searchingDishes.value = false
