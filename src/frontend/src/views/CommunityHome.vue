@@ -15,13 +15,19 @@
 					<div v-if="loading" class="loading">加载中...</div>
 					<!-- 错误通过弹窗提示，不再在页面显示 -->
 					<EmptyState v-else-if="posts.length === 0" text="暂无帖子" />
-					<div v-else v-for="post in posts" :key="post.id" class="post-card">
-						<div class="post-left" @click="goDetail(post.id)">
-							<h3 class="post-title">{{ post.subject || '无标题' }}</h3>
-							<div class="post-content-preview" v-if="post.content_preview">
-								{{ post.content_preview }}
-							</div>
-							<div class="post-info">
+				<div v-else v-for="post in posts" :key="post.id" class="post-card">
+					<div class="post-left" @click="goDetail(post.id)">
+						<h3 class="post-title">{{ post.subject || '无标题' }}</h3>
+						<div class="post-content-preview" v-if="post.content_preview">
+							{{ post.content_preview }}
+						</div>
+						<!-- 关联菜品标签 -->
+						<div v-if="post.dish" class="dish-tag">
+							<span class="dish-icon">🍽️</span>
+							<span class="dish-name">{{ post.dish.name }}</span>
+							<span class="dish-price">¥{{ post.dish.price }}</span>
+						</div>
+						<div class="post-info">
 								<span class="post-author">{{ post.author?.nickname || post.author?.username || '匿名用户' }}</span>
 								<span class="post-stats">
 									<span class="stat-item">❤️ {{ post.likes_count || 0 }}</span>
@@ -144,6 +150,39 @@ onMounted(() => loadPosts())
 .post-author { color: var(--color-accent) }
 .post-stats { display: flex; gap: 12px }
 .stat-item { display: inline-flex; align-items: center; gap: 4px }
+
+/* 菜品标签样式 */
+.dish-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	background: linear-gradient(135deg, #fff5f0 0%, #ffe8e0 100%);
+	border: 1px solid #ffd4c4;
+	border-radius: 12px;
+	font-size: 12px;
+	margin-bottom: 8px;
+	color: #333;
+}
+
+.dish-tag .dish-icon {
+	font-size: 14px;
+}
+
+.dish-tag .dish-name {
+	font-weight: 600;
+	color: #303133;
+	max-width: 150px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dish-tag .dish-price {
+	font-weight: 700;
+	color: #f56c6c;
+	margin-left: 4px;
+}
 
 .loading, .error, .empty { 
 	text-align: center; 
