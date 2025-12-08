@@ -56,6 +56,24 @@
 					<h2 class="post-subject">{{ post.subject || '无标题' }}</h2>
 					<div class="body">{{ post.content }}</div>
 					
+					<!-- 关联的菜品卡片 -->
+					<div v-if="post.dish" class="dish-card-section">
+						<div class="dish-card" @click="goToDishDetail(post.dish.id)">
+							<img 
+								:src="post.dish.image || '/default-dish.png'" 
+								:alt="post.dish.name"
+								class="dish-image"
+								@error="handleDishImageError"
+							/>
+							<div class="dish-info">
+								<h4 class="dish-name">{{ post.dish.name }}</h4>
+								<p class="dish-price">¥{{ post.dish.price }}</p>
+								<p class="dish-canteen">{{ post.dish.canteen_name }}</p>
+							</div>
+							<div class="dish-arrow">→</div>
+						</div>
+					</div>
+					
 					<!-- 帖子图片 -->
 					<div v-if="post.images && post.images.length > 0" class="post-images">
 						<img 
@@ -661,6 +679,16 @@ function handleAvatarError(e) {
 	e.target.src = '/default-avatar.png'
 }
 
+// 处理菜品图片加载错误
+function handleDishImageError(e) {
+	e.target.src = '/default-dish.png'
+}
+
+// 跳转到菜品详情页
+function goToDishDetail(dishId) {
+	router.push({ name: 'DishDetail', params: { id: dishId } })
+}
+
 // 切换帖子菜单
 function togglePostMenu() {
 	showPostMenu.value = !showPostMenu.value
@@ -792,6 +820,81 @@ onUnmounted(() => {
 	font-size: 15px; 
 	color: var(--color-text);
 	margin-bottom: 32px;
+}
+
+/* 关联菜品卡片样式 */
+.dish-card-section {
+	margin: 24px 0;
+	padding: 16px;
+	background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+	border-radius: 12px;
+	border: 1px solid #e4e7ed;
+}
+
+.dish-card {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 16px;
+	background: white;
+	border-radius: 10px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dish-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 16px rgba(64, 158, 255, 0.15);
+	border-color: #409eff;
+}
+
+.dish-card .dish-image {
+	width: 80px;
+	height: 80px;
+	border-radius: 8px;
+	object-fit: cover;
+	flex-shrink: 0;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dish-card .dish-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.dish-card .dish-name {
+	font-size: 16px;
+	font-weight: 600;
+	color: #303133;
+	margin: 0 0 8px 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dish-card .dish-price {
+	font-size: 18px;
+	font-weight: 700;
+	color: #f56c6c;
+	margin: 4px 0;
+}
+
+.dish-card .dish-canteen {
+	font-size: 14px;
+	color: #909399;
+	margin: 4px 0 0 0;
+}
+
+.dish-card .dish-arrow {
+	font-size: 24px;
+	color: #409eff;
+	flex-shrink: 0;
+	transition: transform 0.3s ease;
+}
+
+.dish-card:hover .dish-arrow {
+	transform: translateX(4px);
 }
 
 /* 帖子图片样式 */
