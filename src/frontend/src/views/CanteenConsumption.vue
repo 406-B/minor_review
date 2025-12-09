@@ -107,30 +107,21 @@
     <!-- 绑定弹窗 -->
     <div v-if="bindDialogVisible" class="dialog-overlay" @click="closeBindDialog">
       <div class="dialog-content" @click.stop>
-        <h3>绑定学号</h3>
-        <div class="form-group">
-          <label>学号</label>
-          <input 
-            v-model="idserial" 
-            type="text" 
-            placeholder="请输入清华学号"
-            :disabled="binding"
-          />
-        </div>
+        <h3>绑定食堂消费</h3>
         <div class="dialog-tip">
-          <p>📝 绑定说明：</p>
+          <p>📝 绑定说明:</p>
           <ul>
-            <li>系统将自动打开您当前使用的浏览器</li>
+            <li>系统将自动打开浏览器</li>
             <li>请在浏览器中登录清华一卡通系统</li>
-            <li>登录成功后，系统会自动获取数据</li>
-            <li>请耐心等待，此过程可能需要几分钟</li>
+            <li>登录成功后,系统会自动提取学号并获取近3个月的食堂消费数据</li>
+            <li>请耐心等待,此过程可能需要几分钟</li>
           </ul>
         </div>
         <div class="dialog-actions">
-          <button class="cancel-btn" @click="closeBindDialog" :disabled="binding">取消</button>
-          <button class="confirm-btn" @click="handleBind" :disabled="binding || !idserial">
-            {{ binding ? '绑定中...' : '确认绑定' }}
-          </button>
+        <button class="cancel-btn" @click="closeBindDialog" :disabled="binding">取消</button>
+        <button class="confirm-btn" @click="handleBind" :disabled="binding">
+          {{ binding ? '绑定中...' : '确认绑定' }}
+        </button>
         </div>
       </div>
     </div>
@@ -151,7 +142,6 @@ const loading = ref(false)
 const refreshing = ref(false)
 const consumptionData = ref(null)
 const bindDialogVisible = ref(false)
-const idserial = ref('')
 const binding = ref(false)
 
 const hasData = computed(() => !!consumptionData.value)
@@ -389,7 +379,6 @@ const handleUnbind = async () => {
 // 显示绑定弹窗
 const showBindDialog = () => {
   bindDialogVisible.value = true
-  idserial.value = ''
 }
 
 // 关闭绑定弹窗
@@ -400,32 +389,29 @@ const closeBindDialog = () => {
 
 // 处理绑定
 const handleBind = async () => {
-  if (!idserial.value || binding.value) return
-  
-  // 验证学号格式
-  if (!/^\d{10,11}$/.test(idserial.value)) {
-    window.$message?.warning?.('请输入正确的学号格式（10-11位数字）')
-    return
-  }
+  if (binding.value) return
   
   // 自动检测浏览器类型
   const browserType = detectBrowser()
   
   binding.value = true
-  console.log('[CanteenConsumption] 开始绑定学号:', {
-    idserial: idserial.value,
-    browserType: browserType
-  })
+  console.log('[CanteenConsumption] 开始绑定,浏览器类型:', browserType)
   
   // 提示用户等待浏览器打开
   window.$message?.info?.('正在打开浏览器，请在浏览器中完成登录（最多等待5分钟）...')
   
   try {
-    const response = await bindAccount(idserial.value, browserType)
+    // 系统自动提取学号
+    const response = await bindAccount(null, browserType)
     
     if (response.code === 200) {
       console.log('[CanteenConsumption] 绑定成功:', response.data)
-      window.$message?.success?.('绑定成功！正在获取完整数据...')
+      const extractedId = response.data?.idserial
+      if (extractedId) {
+        window.$message?.success?.(`绑定成功！已自动识别学号: ${extractedId}`)
+      } else {
+        window.$message?.success?.('绑定成功！正在获取完整数据...')
+      }
       bindDialogVisible.value = false
       
       // 绑定成功后，重新获取完整的序列化数据
@@ -769,6 +755,13 @@ onMounted(() => {
 .form-group select:focus {
   outline: none;
   border-color: #409EFF;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
 }
 
 .dialog-tip {

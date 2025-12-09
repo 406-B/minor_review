@@ -26,7 +26,7 @@ def get_user_consumption(user: User) -> Optional[CanteenConsumption]:
 
 def bind_idserial_and_fetch(
     user: User,
-    idserial: str,
+    idserial: Optional[str] = None,
     browser_type: str = 'chrome'
 ) -> Tuple[bool, str, Optional[Dict]]:
     """
@@ -34,14 +34,14 @@ def bind_idserial_and_fetch(
     
     Args:
         user: 用户对象
-        idserial: 学号
+        idserial: 学号(可选,不填则自动提取)
         browser_type: 浏览器类型
         
     Returns:
         (成功标志, 消息, 数据字典或None)
     """
     try:
-        # 获取消费数据（会自动打开浏览器获取cookie）
+        # 获取消费数据（会自动打开浏览器获取cookie，如果未提供学号则自动提取）
         result = fetch_and_parse_consumption(
             idserial=idserial,
             browser_type=browser_type
@@ -50,12 +50,15 @@ def bind_idserial_and_fetch(
         if not result["success"]:
             return False, result["error"], None
         
+        # 使用返回的学号（可能是传入的，也可能是自动提取的）
+        actual_idserial = result["idserial"]
+        
         # 保存或更新消费记录
         with transaction.atomic():
             consumption, created = CanteenConsumption.objects.update_or_create(
                 user=user,
                 defaults={
-                    'idserial': idserial,
+                    'idserial': actual_idserial,  # 使用实际获取的学号
                     'servicehall_cookie': result["servicehall"],
                     'total_amount': result["data"]["total_amount"],
                     'canteen_count': result["data"]["canteen_count"],
@@ -64,7 +67,12 @@ def bind_idserial_and_fetch(
             )
         
         action = "绑定" if created else "更新"
-        return True, f"{action}成功", result["data"]
+        # 在返回的数据中包含学号信息
+        return_data = {
+            **result["data"],
+            "idserial": actual_idserial
+        }
+        return True, f"{action}成功", return_data
         
     except Exception as e:
         return False, f"操作失败: {str(e)}", None
