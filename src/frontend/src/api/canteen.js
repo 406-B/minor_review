@@ -20,17 +20,18 @@ export const getConsumption = async () => {
 
 /**
  * 绑定学号
- * @param {string} idserial - 学号
+ * @param {string|null} idserial - 学号(可选,不填则系统自动提取)
  * @param {string} browserType - 浏览器类型 (chrome/firefox/edge/safari)
  * @returns {Promise}
  */
-export const bindAccount = async (idserial, browserType = 'chrome') => {
+export const bindAccount = async (idserial = null, browserType = 'chrome') => {
   try {
+    const data = { browser_type: browserType }
+    if (idserial) {
+      data.idserial = idserial
+    }
     // 绑定操作需要等待用户手动登录，设置5分钟超时
-    const response = await request.post(`${BASE_URL}/bind/`, {
-      idserial,
-      browser_type: browserType
-    }, {
+    const response = await request.post(`${BASE_URL}/bind/`, data, {
       timeout: 300000 // 5分钟 = 300秒 = 300000毫秒
     })
     return response.data

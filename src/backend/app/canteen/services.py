@@ -53,11 +53,20 @@ def fetch_canteen_data(idserial: str, servicehall: str) -> Dict:
         }
     """
     try:
-        # 发送请求到清华一卡通系统
+        from datetime import datetime, timedelta
+        
+        # 计算近三个月的日期范围
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=90)  # 近三个月
+        
+        start_time = start_date.strftime('%Y-%m-%d')
+        end_time = end_date.strftime('%Y-%m-%d')
+        
+        # 发送请求到清华一卡通系统（近三个月数据）
         url = (
             f"https://card.tsinghua.edu.cn/business/querySelfTradeList"
             f"?pageNumber=0&pageSize=5000"
-            f"&starttime=2024-01-01&endtime=2024-12-31"
+            f"&starttime={start_time}&endtime={end_time}"
             f"&idserial={idserial}&tradetype=-1"
         )
         cookie = {"servicehall": servicehall}
@@ -94,7 +103,7 @@ def fetch_canteen_data(idserial: str, servicehall: str) -> Dict:
                 "error": "解密后数据格式错误，缺少resultData或rows字段"
             }
         
-        # 按食堂统计消费金额
+        # 按食堂统计消费金额（只统计食堂，即名称以"园"结尾的）
         canteen_data = {}
         for item in data["resultData"]["rows"]:
             try:
@@ -106,6 +115,10 @@ def fetch_canteen_data(idserial: str, servicehall: str) -> Dict:
                     canteen_name = mername.split("-")[0]
                 else:
                     canteen_name = mername
+                
+                # 只统计食堂（以"园"结尾的商户，如"紫荆园"、"桃李园"等）
+                if not canteen_name.endswith("园"):
+                    continue
                 
                 # 累加该食堂的消费金额
                 if canteen_name in canteen_data:
@@ -211,15 +224,15 @@ def get_browser_driver(browser_type: str = 'chrome'):
 
 
 def fetch_servicehall_cookie(
-    idserial: str,
+    idserial: Optional[str] = None,
     browser_type: str = 'chrome',
     max_wait_time: int = 300
 ) -> Dict:
     """
-    打开浏览器，等待用户手动登录，自动获取servicehall cookie
+    打开浏览器，等待用户手动登录，自动获取servicehall cookie和学号
     
     Args:
-        idserial: 学号
+        idserial: 学号（可选，如果为None则从网页自动获取）
         browser_type: 浏览器类型 ('chrome', 'firefox', 'edge', 'safari')
         max_wait_time: 最大等待时间（秒），默认300秒（5分钟）
         
@@ -227,10 +240,14 @@ def fetch_servicehall_cookie(
         {
             "success": bool,
             "servicehall": str 或 None,
+            "idserial": str 或 None,  # 新增：自动获取的学号
             "error": str 或 None
         }
     """
     import time
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
     
     driver = None
     try:
@@ -243,6 +260,7 @@ def fetch_servicehall_cookie(
         # 等待用户登录并检测cookie
         start_time = time.time()
         servicehall = None
+        extracted_idserial = idserial  # 保存传入的学号或提取的学号
         
         while time.time() - start_time < max_wait_time:
             # 每2秒检查一次cookie
@@ -264,12 +282,57 @@ def fetch_servicehall_cookie(
             return {
                 "success": False,
                 "servicehall": None,
+                "idserial": None,
                 "error": "超时：未能获取servicehall cookie，请确保已成功登录网站"
             }
+        
+        # 如果未提供学号，尝试从 userinfo 页面自动获取
+        if not extracted_idserial:
+            try:
+                # 访问 userinfo 页面
+                driver.get("https://card.tsinghua.edu.cn/userinfo")
+                
+                # 等待页面加载完成并查找学号元素
+                # 使用WebDriverWait等待元素出现（最多等待10秒）
+                wait = WebDriverWait(driver, 10)
+                idserial_element = wait.until(
+                    EC.presence_of_element_located((By.ID, "idserial"))
+                )
+                
+                # 等待页面渲染完成
+                import time
+                # time.sleep(1)
+                
+                # 获取学号文本
+                extracted_idserial = idserial_element.text.strip()
+                
+                # 如果.text为空,尝试其他方式
+                if not extracted_idserial:
+                    extracted_idserial = idserial_element.get_attribute('textContent').strip()
+                
+                if not extracted_idserial:
+                    extracted_idserial = idserial_element.get_attribute('innerHTML').strip()
+                
+                if not extracted_idserial:
+                    return {
+                        "success": False,
+                        "servicehall": None,
+                        "idserial": None,
+                        "error": "获取学号失败：页面中找到了学号元素但内容为空"
+                    }
+                    
+            except Exception as e:
+                return {
+                    "success": False,
+                    "servicehall": None,
+                    "idserial": None,
+                    "error": f"自动获取学号失败: {str(e)}"
+                }
         
         return {
             "success": True,
             "servicehall": servicehall,
+            "idserial": extracted_idserial,  # 返回提取的学号
             "error": None
         }
         
@@ -277,18 +340,21 @@ def fetch_servicehall_cookie(
         return {
             "success": False,
             "servicehall": None,
+            "idserial": None,
             "error": str(e)
         }
     except ImportError as e:
         return {
             "success": False,
             "servicehall": None,
+            "idserial": None,
             "error": str(e)
         }
     except Exception as e:
         return {
             "success": False,
             "servicehall": None,
+            "idserial": None,
             "error": f"浏览器操作失败: {str(e)}"
         }
     
@@ -298,16 +364,17 @@ def fetch_servicehall_cookie(
 
 
 def fetch_and_parse_consumption(
-    idserial: str,
+    idserial: Optional[str] = None,
     servicehall: Optional[str] = None,
     browser_type: str = 'chrome'
 ) -> Dict:
     """
     获取并解析食堂消费数据
     如果未提供servicehall，则自动打开浏览器获取
+    如果未提供学号，则从网页自动提取
     
     Args:
-        idserial: 学号
+        idserial: 学号（可选，如果为None则自动获取）
         servicehall: servicehall cookie（可选）
         browser_type: 浏览器类型（当需要获取cookie时使用）
         
@@ -316,10 +383,11 @@ def fetch_and_parse_consumption(
             "success": bool,
             "data": dict 或 None,
             "servicehall": str 或 None,
+            "idserial": str 或 None,  # 新增：返回使用的学号
             "error": str 或 None
         }
     """
-    # 如果没有提供servicehall，则通过浏览器获取
+    # 如果没有提供servicehall，则通过浏览器获取（同时也会获取学号）
     if not servicehall:
         cookie_result = fetch_servicehall_cookie(idserial, browser_type)
         if not cookie_result["success"]:
@@ -327,9 +395,23 @@ def fetch_and_parse_consumption(
                 "success": False,
                 "data": None,
                 "servicehall": None,
+                "idserial": None,
                 "error": cookie_result["error"]
             }
         servicehall = cookie_result["servicehall"]
+        # 如果没有提供学号，使用自动获取的学号
+        if not idserial:
+            idserial = cookie_result["idserial"]
+    
+    # 检查是否有学号
+    if not idserial:
+        return {
+            "success": False,
+            "data": None,
+            "servicehall": servicehall,
+            "idserial": None,
+            "error": "未能获取学号，请手动提供或确保网页中包含学号信息"
+        }
     
     # 获取消费数据
     data_result = fetch_canteen_data(idserial, servicehall)
@@ -338,5 +420,6 @@ def fetch_and_parse_consumption(
         "success": data_result["success"],
         "data": data_result["data"],
         "servicehall": servicehall if data_result["success"] else None,
+        "idserial": idserial if data_result["success"] else None,
         "error": data_result["error"]
     }

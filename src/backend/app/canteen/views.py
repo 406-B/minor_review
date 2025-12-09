@@ -88,15 +88,17 @@ def get_consumption(request):
         "application/json": {
             "type": "object",
             "properties": {
-                "idserial": {"type": "string", "description": "学号"},
+                "idserial": {
+                    "type": "string",
+                    "description": "学号(可选,不填则系统从一卡通userinfo页面自动提取)"
+                },
                 "browser_type": {
                     "type": "string",
                     "enum": ["chrome", "firefox", "edge", "safari"],
                     "default": "chrome",
                     "description": "浏览器类型"
                 }
-            },
-            "required": ["idserial"]
+            }
         }
     },
     responses={
@@ -129,7 +131,8 @@ def bind_idserial(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    idserial = serializer.validated_data.get("idserial")
+    # idserial可选,不填则由系统自动提取
+    idserial = serializer.validated_data.get("idserial") or None
     browser_type = serializer.validated_data.get("browser_type", "chrome")
     
     success, message, data = bind_idserial_and_fetch(

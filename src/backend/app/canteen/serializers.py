@@ -36,8 +36,10 @@ class BindIdserialSerializer(serializers.Serializer):
     """绑定学号序列化器"""
     idserial = serializers.CharField(
         max_length=32,
-        required=True,
-        help_text='清华大学学号'
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        help_text='清华大学学号(可选,不填则系统自动提取)'
     )
     browser_type = serializers.ChoiceField(
         choices=['chrome', 'firefox', 'edge', 'safari'],
