@@ -3,13 +3,6 @@ import request from './request'
 
 const BASE_URL = '/v1'
 
-// 获取 JWT Token
-const getToken = () => {
-  const token = localStorage.getItem('jwt') || ''
-  // 如果 token 存在且不包含 'Bearer' 前缀，则添加
-  return token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
-}
-
 // ============ 帖子相关接口 ============
 
 /**
@@ -20,11 +13,8 @@ const getToken = () => {
  */
 export const getPostList = async (page = 1, page_size = 20) => {
   try {
-    const token = getToken()
-    const config = token ? { headers: { Authorization: token } } : {}
     const response = await request.get(`${BASE_URL}/posts/`, {
-      params: { page, page_size },
-      ...config
+      params: { page, page_size }
     })
     return response
   } catch (err) {
@@ -39,9 +29,7 @@ export const getPostList = async (page = 1, page_size = 20) => {
  */
 export const getPostDetail = async (postId) => {
   try {
-    const token = getToken()
-    const config = token ? { headers: { Authorization: token } } : {}
-    const response = await request.get(`${BASE_URL}/posts/${postId}/`, config)
+    const response = await request.get(`${BASE_URL}/posts/${postId}/`)
     return response
   } catch (err) {
     throw err
@@ -58,7 +46,6 @@ export const getPostDetail = async (postId) => {
  */
 export const createPost = async (subject, content, images = [], dish = null) => {
   try {
-    const token = getToken()
     const data = { subject, content }
     
     // 添加可选参数
@@ -69,11 +56,7 @@ export const createPost = async (subject, content, images = [], dish = null) => 
       data.dish = dish
     }
     
-    const response = await request.post(
-      `${BASE_URL}/posts/create/`,
-      data,
-      { headers: { Authorization: token } }
-    )
+    const response = await request.post(`${BASE_URL}/posts/create/`, data)
     return response
   } catch (err) {
     throw err
@@ -87,11 +70,7 @@ export const createPost = async (subject, content, images = [], dish = null) => 
  */
 export const deletePost = async (postId) => {
   try {
-    const token = getToken()
-    const response = await request.delete(
-      `${BASE_URL}/posts/${postId}/delete/`,
-      { headers: { Authorization: token } }
-    )
+    const response = await request.delete(`${BASE_URL}/posts/${postId}/delete/`)
     return response
   } catch (err) {
     throw err
@@ -105,12 +84,7 @@ export const deletePost = async (postId) => {
  */
 export const togglePostLike = async (postId) => {
   try {
-    const token = getToken()
-    const response = await request.post(
-      `${BASE_URL}/posts/${postId}/like/`,
-      {},
-      { headers: { Authorization: token } }
-    )
+    const response = await request.post(`${BASE_URL}/posts/${postId}/like/`, {})
     return response
   } catch (err) {
     throw err
@@ -128,11 +102,8 @@ export const togglePostLike = async (postId) => {
  */
 export const getCommentList = async (postId, page = 1, page_size = 20) => {
   try {
-    const token = getToken()
-    const config = token ? { headers: { Authorization: token } } : {}
     const response = await request.get(`${BASE_URL}/posts/${postId}/comments/`, {
-      params: { page, page_size },
-      ...config
+      params: { page, page_size }
     })
     return response
   } catch (err) {
@@ -150,7 +121,6 @@ export const getCommentList = async (postId, page = 1, page_size = 20) => {
  */
 export const createComment = async (postId, content, images = [], parent = null) => {
   try {
-    const token = getToken()
     const data = { post: postId, content }
     
     // 添加可选参数
@@ -161,11 +131,7 @@ export const createComment = async (postId, content, images = [], parent = null)
       data.parent = parent
     }
     
-    const response = await request.post(
-      `${BASE_URL}/comments/create/`,
-      data,
-      { headers: { Authorization: token } }
-    )
+    const response = await request.post(`${BASE_URL}/comments/create/`, data)
     return response
   } catch (err) {
     throw err
@@ -179,11 +145,7 @@ export const createComment = async (postId, content, images = [], parent = null)
  */
 export const deleteComment = async (commentId) => {
   try {
-    const token = getToken()
-    const response = await request.delete(
-      `${BASE_URL}/comments/${commentId}/delete/`,
-      { headers: { Authorization: token } }
-    )
+    const response = await request.delete(`${BASE_URL}/comments/${commentId}/delete/`)
     return response
   } catch (err) {
     throw err
@@ -197,12 +159,7 @@ export const deleteComment = async (commentId) => {
  */
 export const toggleCommentLike = async (commentId) => {
   try {
-    const token = getToken()
-    const response = await request.post(
-      `${BASE_URL}/comments/${commentId}/like/`,
-      {},
-      { headers: { Authorization: token } }
-    )
+    const response = await request.post(`${BASE_URL}/comments/${commentId}/like/`, {})
     return response
   } catch (err) {
     throw err
@@ -217,10 +174,7 @@ export const toggleCommentLike = async (commentId) => {
  */
 export const getUserStats = async () => {
   try {
-    const token = getToken()
-    const response = await request.get(`${BASE_URL}/profile/stats`, {
-      headers: { Authorization: token }
-    })
+    const response = await request.get(`${BASE_URL}/profile/stats`)
     return response
   } catch (err) {
     throw err
@@ -235,10 +189,8 @@ export const getUserStats = async () => {
  */
 export const getMyPosts = async (page = 1, page_size = 20) => {
   try {
-    const token = getToken()
     const response = await request.get(`${BASE_URL}/profile/posts`, {
-      params: { page, page_size },
-      headers: { Authorization: token }
+      params: { page, page_size }
     })
     return response
   } catch (err) {

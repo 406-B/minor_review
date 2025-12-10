@@ -16,12 +16,11 @@ export const getProfile = async () => {
 
 // 更新用户个人资料（昵称、头像）
 export const updateProfile = async (formData) => {
-  const token = localStorage.getItem('jwt') || ''
   try {
     // API 文档: PUT /api/v1/profile/update
+    // multipart/form-data 请求，拦截器会自动注入 Authorization
     const data = await request.put('/v1/profile/update', formData, {
       headers: { 
-        Authorization: token,
         'Content-Type': 'multipart/form-data'
       }
     })
