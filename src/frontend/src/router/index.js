@@ -19,6 +19,7 @@ const routes = [
   { path: '/recommend', name: 'Recommend', component: Recommend, meta: { requiresAuth: true } },
   { path: '/profile/posts', name: 'MyPosts', component: () => import('../views/MyPosts.vue') },
   { path: '/profile/edit', name: 'ProfileEdit', component: () => import('../views/ProfileEdit.vue') },
+  { path: '/achievements', name: 'Achievements', component: () => import('../views/Achievements.vue'), meta: { requiresAuth: true } },
   { path: '/canteen-consumption', name: 'CanteenConsumption', component: () => import('../views/CanteenConsumption.vue'), meta: { requiresAuth: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFound.vue') },
   { path: '/', redirect: '/canteen' }

@@ -24,12 +24,29 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.db.models import Q, Avg, Count
-from .models import Canteen, Dish, Tag, Rating, Review
+from .models import Canteen, Dish, Tag, Rating, Review, UserDishHistory, DishCheckInRecord
 from django.contrib.auth.models import User as AuthUser
 from .serializers import (
     CanteenSerializer, DishSerializer, DishListSerializer, TagSerializer,
-    RatingSerializer, ReviewSerializer, ReviewListSerializer
+    RatingSerializer, ReviewSerializer, ReviewListSerializer,
+    UserDishHistorySerializer, UserDishHistoryListSerializer
 )
+
+# ============== 辅助方法：确保获取到 Django AuthUser ==============
+def _get_or_create_auth_user(request):
+    """将自定义登录用户统一映射到 Django 内置 AuthUser。
+    返回 AuthUser 或 None（当拿不到用户名时）。
+    """
+    try:
+        if isinstance(request.user, AuthUser):
+            return request.user
+        username = getattr(request.user, 'username', None)
+        if not username:
+            return None
+        user, _created = AuthUser.objects.get_or_create(username=username, defaults={"password": ""})
+        return user
+    except Exception:
+        return None
 
 # ==================== 我的评论视图 ====================
 
@@ -754,3 +771,663 @@ def like_review(request, review_id):
             'liked': True,
             'likes_count': review.likes_count
         })
+
+
+# ==================== 用户菜品历史（打卡功能） ====================
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def check_in_dish(request, dish_id):
+    """
+    打卡菜品（记录用户吃过这道菜）
+    每次调用会增加该菜品的打卡次数
+    """
+    dish = get_object_or_404(Dish, id=dish_id)
+    user = _get_or_create_auth_user(request)
+    if not user:
+        return Response({
+            'code': 401,
+            'message': '未登录或无效用户'
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
+    # 获取打卡备注（可选）
+    notes = request.data.get('notes', '')
+
+    # 创建打卡记录（用于美食日历）
+    check_in_record = DishCheckInRecord.objects.create(
+        user=user,
+        dish=dish,
+        notes=notes
+    )
+
+    # 获取或创建历史记录（用于统计）
+    history, created = UserDishHistory.objects.get_or_create(
+        user=user,
+        dish=dish,
+        defaults={'count': 0}
+    )
+
+    # 增加打卡次数
+    history.increment_count()
+
+    # 序列化返回
+    serializer = UserDishHistorySerializer(history)
+
+    message = f'打卡成功！这是您第 {history.count} 次品尝"{dish.name}"'
+    if created or history.count == 1:
+        message += f'，恭喜获得【{history.level_display}】称号！'
+    elif history.count in [3, 10, 100]:
+        message += f'，恭喜晋升为【{history.level_display}】！'
+
+    return Response({
+        'code': 200,
+        'message': message,
+        'data': {
+            **serializer.data,
+            'check_in_record_id': check_in_record.id,
+            'checked_in_at': check_in_record.checked_in_at
+        }
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_user_dish_history(request):
+    """
+    获取用户的菜品历史记录
+    支持筛选和排序
+    """
+    user = _get_or_create_auth_user(request)
+    if not user:
+        return Response({
+            'code': 404,
+            'message': '用户不存在',
+            'data': []
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    histories = UserDishHistory.objects.filter(user=user)
+
+    # 按级别筛选
+    level = request.query_params.get('level', None)
+    if level:
+        # 根据级别筛选
+        if level == 'academician':
+            histories = histories.filter(count__gte=100)
+        elif level == 'doctor':
+            histories = histories.filter(count__gte=10, count__lt=100)
+        elif level == 'master':
+            histories = histories.filter(count__gte=3, count__lt=10)
+        elif level == 'undergraduate':
+            histories = histories.filter(count__gte=1, count__lt=3)
+
+    # 排序
+    ordering = request.query_params.get('ordering', '-count')
+    if ordering in ['count', '-count', 'last_tried_at', '-last_tried_at']:
+        histories = histories.order_by(ordering)
+
+    # 分页
+    page = int(request.query_params.get('page', 1))
+    page_size = int(request.query_params.get('page_size', 20))
+    start = (page - 1) * page_size
+    end = start + page_size
+    paged_histories = histories[start:end]
+
+    serializer = UserDishHistoryListSerializer(paged_histories, many=True)
+    return Response({
+        'code': 200,
+        'message': '获取历史记录成功',
+        'data': {
+            'histories': serializer.data,
+            'total': histories.count(),
+            'page': page,
+            'page_size': page_size
+        }
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_user_dish_stats(request):
+    """
+    获取用户的菜品打卡统计信息
+    包括各级别菜品数量、总打卡次数等
+    """
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user:
+            return Response({
+                'code': 404,
+                'message': '用户不存在',
+                'data': None
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    histories = UserDishHistory.objects.filter(user=user)
+
+    # 统计各级别菜品数量
+    total_dishes = histories.count()
+    total_check_ins = histories.aggregate(total=Count('count'))['total'] or 0
+
+    # 计算实际的打卡总次数（所有count的和）
+    total_check_ins_sum = sum(h.count for h in histories)
+
+    academician_count = histories.filter(count__gte=100).count()
+    doctor_count = histories.filter(count__gte=10, count__lt=100).count()
+    master_count = histories.filter(count__gte=3, count__lt=10).count()
+    undergraduate_count = histories.filter(count__gte=1, count__lt=3).count()
+
+    # 获取最爱的菜品（打卡次数最多的前5个）
+    favorite_dishes = histories.order_by('-count')[:5]
+    favorite_dishes_data = UserDishHistoryListSerializer(favorite_dishes, many=True).data
+
+    # 最近打卡的菜品
+    recent_dishes = histories.order_by('-last_tried_at')[:5]
+    recent_dishes_data = UserDishHistoryListSerializer(recent_dishes, many=True).data
+
+    return Response({
+        'code': 200,
+        'message': '获取统计信息成功',
+        'data': {
+            'total_dishes': total_dishes,
+            'total_check_ins': total_check_ins_sum,
+            'level_distribution': {
+                'academician': academician_count,
+                'doctor': doctor_count,
+                'master': master_count,
+                'undergraduate': undergraduate_count
+            },
+            'favorite_dishes': favorite_dishes_data,
+            'recent_dishes': recent_dishes_data
+        }
+    })
+
+
+# ==================== 美食日历 ====================
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_food_calendar(request):
+    """
+    获取用户的美食日历数据
+    返回指定月份每天吃过的菜品
+    """
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user:
+            return Response({
+                'code': 404,
+                'message': '用户不存在',
+                'data': None
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    # 获取年月参数（默认当前月）
+    from datetime import datetime, timedelta
+    import calendar as cal
+
+    year = int(request.query_params.get('year', datetime.now().year))
+    month = int(request.query_params.get('month', datetime.now().month))
+
+    # 计算月份的第一天和最后一天
+    first_day = datetime(year, month, 1)
+    last_day = datetime(year, month, cal.monthrange(year, month)[1], 23, 59, 59)
+
+    # 获取该月的所有打卡记录
+    records = DishCheckInRecord.objects.filter(
+        user=user,
+        checked_in_at__gte=first_day,
+        checked_in_at__lte=last_day
+    ).select_related('dish').order_by('checked_in_at')
+
+    # 按日期分组
+    calendar_data = {}
+    for record in records:
+        date_str = record.date.strftime('%Y-%m-%d')
+
+        if date_str not in calendar_data:
+            calendar_data[date_str] = {
+                'date': date_str,
+                'dishes': [],
+                'count': 0
+            }
+
+        calendar_data[date_str]['dishes'].append({
+            'id': record.dish.id,
+            'name': record.dish.name,
+            'image': request.build_absolute_uri(record.dish.image.url) if record.dish.image else None,
+            'canteen_name': record.dish.canteen.name,
+            'checked_in_at': record.checked_in_at.strftime('%H:%M'),
+            'notes': record.notes
+        })
+        calendar_data[date_str]['count'] += 1
+
+    # 转换为列表并排序
+    calendar_list = list(calendar_data.values())
+    calendar_list.sort(key=lambda x: x['date'])
+
+    return Response({
+        'code': 200,
+        'message': '获取美食日历成功',
+        'data': {
+            'year': year,
+            'month': month,
+            'calendar': calendar_list,
+            'total_days': len(calendar_list),
+            'total_check_ins': sum(day['count'] for day in calendar_list)
+        }
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_day_dishes(request):
+    """
+    获取指定日期吃过的菜品详情
+    """
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user:
+            return Response({
+                'code': 404,
+                'message': '用户不存在',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    # 获取日期参数
+    from datetime import datetime
+    date_str = request.query_params.get('date')  # 格式：YYYY-MM-DD
+
+    if not date_str:
+        return Response({
+            'code': 400,
+            'message': '请提供日期参数（格式：YYYY-MM-DD）',
+            'data': None
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return Response({
+            'code': 400,
+            'message': '日期格式错误，应为：YYYY-MM-DD',
+            'data': None
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # 获取该日期的所有打卡记录
+    records = DishCheckInRecord.objects.filter(
+        user=user,
+        checked_in_at__date=target_date
+    ).select_related('dish', 'dish__canteen').order_by('checked_in_at')
+
+    # 序列化返回
+    dishes_data = []
+    for record in records:
+        dishes_data.append({
+            'id': record.id,
+            'dish': {
+                'id': record.dish.id,
+                'name': record.dish.name,
+                'image': request.build_absolute_uri(record.dish.image.url) if record.dish.image else None,
+                'price': str(record.dish.price),
+                'canteen_name': record.dish.canteen.name,
+                'rating': str(record.dish.rating)
+            },
+            'checked_in_at': record.checked_in_at,
+            'time': record.checked_in_at.strftime('%H:%M'),
+            'notes': record.notes
+        })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'date': date_str,
+            'dishes': dishes_data,
+            'count': len(dishes_data)
+        }
+    })
+
+
+# ==================== 用户成就系统 ====================
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_user_achievements(request):
+    """
+    获取用户的成就列表
+    包括学术成就、探索成就、打卡成就等
+    """
+    if isinstance(request.user, AuthUser):
+        user = request.user
+    else:
+        user = AuthUser.objects.filter(username=getattr(request.user, 'username', None)).first()
+        if not user:
+            return Response({
+                'code': 404,
+                'message': '用户不存在',
+                'data': None
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    from datetime import datetime, timedelta
+    from django.db.models import Count, Q
+
+    histories = UserDishHistory.objects.filter(user=user)
+    check_in_records = DishCheckInRecord.objects.filter(user=user)
+
+    # 统计数据
+    total_dishes = histories.count()
+    total_check_ins = sum(h.count for h in histories)
+    academician_count = histories.filter(count__gte=100).count()
+    doctor_count = histories.filter(count__gte=10, count__lt=100).count()
+    master_count = histories.filter(count__gte=3, count__lt=10).count()
+    undergraduate_count = histories.filter(count__gte=1, count__lt=3).count()
+
+    # 不同食堂数量
+    unique_canteens = Dish.objects.filter(
+        id__in=histories.values_list('dish_id', flat=True)
+    ).values('canteen').distinct().count()
+
+    # 不同标签数量
+    unique_tags = Tag.objects.filter(
+        dishes__id__in=histories.values_list('dish_id', flat=True)
+    ).distinct().count()
+
+    # 连续打卡天数（最长记录）
+    def calculate_max_streak():
+        if not check_in_records.exists():
+            return 0
+
+        dates = set()
+        for record in check_in_records:
+            dates.add(record.date)
+
+        if not dates:
+            return 0
+
+        sorted_dates = sorted(dates)
+        max_streak = 1
+        current_streak = 1
+
+        for i in range(1, len(sorted_dates)):
+            if (sorted_dates[i] - sorted_dates[i-1]).days == 1:
+                current_streak += 1
+                max_streak = max(max_streak, current_streak)
+            else:
+                current_streak = 1
+
+        return max_streak
+
+    max_streak_days = calculate_max_streak()
+
+    # 当前连续打卡天数
+    def calculate_current_streak():
+        if not check_in_records.exists():
+            return 0
+
+        today = datetime.now().date()
+        current_streak = 0
+        check_date = today
+
+        while True:
+            if check_in_records.filter(checked_in_at__date=check_date).exists():
+                current_streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
+
+        return current_streak
+
+    current_streak_days = calculate_current_streak()
+
+    # 定义成就列表
+    achievements = []
+
+    # ==================== 学术成就 ====================
+    academic_achievements = {
+        'category': 'academic',
+        'category_name': '学术成就',
+        'icon': '🎓',
+        'achievements': []
+    }
+
+    # 本科生
+    if undergraduate_count > 0:
+        academic_achievements['achievements'].append({
+            'id': 'undergraduate_1',
+            'name': '入门学者',
+            'description': f'获得 {undergraduate_count} 个本科称号',
+            'icon': '🎓',
+            'level': 'undergraduate',
+            'unlocked': True,
+            'progress': undergraduate_count,
+            'requirement': undergraduate_count
+        })
+
+    # 硕士
+    if master_count >= 1:
+        academic_achievements['achievements'].append({
+            'id': 'master_1',
+            'name': '进阶学者',
+            'description': f'获得 {master_count} 个硕士称号',
+            'icon': '🎓',
+            'level': 'master',
+            'unlocked': True,
+            'progress': master_count,
+            'requirement': master_count
+        })
+
+    if master_count >= 5:
+        academic_achievements['achievements'].append({
+            'id': 'master_5',
+            'name': '硕士导师',
+            'description': '获得 5 个硕士称号',
+            'icon': '🎓',
+            'level': 'master',
+            'unlocked': True,
+            'progress': master_count,
+            'requirement': 5
+        })
+    elif master_count > 0:
+        academic_achievements['achievements'].append({
+            'id': 'master_5',
+            'name': '硕士导师',
+            'description': '获得 5 个硕士称号',
+            'icon': '🎓',
+            'level': 'master',
+            'unlocked': False,
+            'progress': master_count,
+            'requirement': 5
+        })
+
+    # 博士
+    if doctor_count >= 1:
+        academic_achievements['achievements'].append({
+            'id': 'doctor_1',
+            'name': '博学之士',
+            'description': f'获得 {doctor_count} 个博士称号',
+            'icon': '🎓',
+            'level': 'doctor',
+            'unlocked': True,
+            'progress': doctor_count,
+            'requirement': doctor_count
+        })
+
+    if doctor_count >= 3:
+        academic_achievements['achievements'].append({
+            'id': 'doctor_3',
+            'name': '博士导师',
+            'description': '获得 3 个博士称号',
+            'icon': '🎓',
+            'level': 'doctor',
+            'unlocked': True,
+            'progress': doctor_count,
+            'requirement': 3
+        })
+    elif doctor_count > 0:
+        academic_achievements['achievements'].append({
+            'id': 'doctor_3',
+            'name': '博士导师',
+            'description': '获得 3 个博士称号',
+            'icon': '🎓',
+            'level': 'doctor',
+            'unlocked': False,
+            'progress': doctor_count,
+            'requirement': 3
+        })
+
+    # 院士
+    if academician_count >= 1:
+        academic_achievements['achievements'].append({
+            'id': 'academician_1',
+            'name': '学术泰斗',
+            'description': f'获得 {academician_count} 个院士称号',
+            'icon': '🏆',
+            'level': 'academician',
+            'unlocked': True,
+            'progress': academician_count,
+            'requirement': academician_count
+        })
+
+    if academician_count >= 5:
+        academic_achievements['achievements'].append({
+            'id': 'academician_5',
+            'name': '美食院士',
+            'description': '获得 5 个院士称号',
+            'icon': '🏆',
+            'level': 'academician',
+            'unlocked': True,
+            'progress': academician_count,
+            'requirement': 5
+        })
+
+    achievements.append(academic_achievements)
+
+    # ==================== 探索成就 ====================
+    exploration_achievements = {
+        'category': 'exploration',
+        'category_name': '探索成就',
+        'icon': '🗺️',
+        'achievements': []
+    }
+
+    # 菜品数量
+    dish_milestones = [1, 5, 10, 20, 50, 100]
+    dish_names = ['初尝美食', '美食爱好者', '美食达人', '美食专家', '美食大师', '美食鉴赏家']
+
+    for i, milestone in enumerate(dish_milestones):
+        if total_dishes >= milestone:
+            exploration_achievements['achievements'].append({
+                'id': f'dishes_{milestone}',
+                'name': dish_names[i],
+                'description': f'品尝过 {milestone} 种不同的菜品',
+                'icon': '🍽️',
+                'unlocked': True,
+                'progress': total_dishes,
+                'requirement': milestone
+            })
+        elif total_dishes > 0 and i > 0 and total_dishes >= dish_milestones[i-1]:
+            exploration_achievements['achievements'].append({
+                'id': f'dishes_{milestone}',
+                'name': dish_names[i],
+                'description': f'品尝过 {milestone} 种不同的菜品',
+                'icon': '🍽️',
+                'unlocked': False,
+                'progress': total_dishes,
+                'requirement': milestone
+            })
+
+    # 食堂探索
+    canteen_milestones = [1, 3, 5]
+    canteen_names = ['食堂探险者', '食堂游侠', '食堂大师']
+
+    for i, milestone in enumerate(canteen_milestones):
+        if unique_canteens >= milestone:
+            exploration_achievements['achievements'].append({
+                'id': f'canteens_{milestone}',
+                'name': canteen_names[i],
+                'description': f'在 {milestone} 个不同的食堂打过卡',
+                'icon': '🏢',
+                'unlocked': True,
+                'progress': unique_canteens,
+                'requirement': milestone
+            })
+
+    achievements.append(exploration_achievements)
+
+    # ==================== 打卡成就 ====================
+    checkin_achievements = {
+        'category': 'checkin',
+        'category_name': '打卡成就',
+        'icon': '✅',
+        'achievements': []
+    }
+
+    # 总打卡次数
+    checkin_milestones = [1, 10, 50, 100, 500, 1000]
+    checkin_names = ['打卡新手', '打卡达人', '打卡专家', '打卡大师', '打卡宗师', '打卡传说']
+
+    for i, milestone in enumerate(checkin_milestones):
+        if total_check_ins >= milestone:
+            checkin_achievements['achievements'].append({
+                'id': f'checkins_{milestone}',
+                'name': checkin_names[i],
+                'description': f'累计打卡 {milestone} 次',
+                'icon': '✅',
+                'unlocked': True,
+                'progress': total_check_ins,
+                'requirement': milestone
+            })
+        elif total_check_ins > 0 and i > 0 and total_check_ins >= checkin_milestones[i-1]:
+            checkin_achievements['achievements'].append({
+                'id': f'checkins_{milestone}',
+                'name': checkin_names[i],
+                'description': f'累计打卡 {milestone} 次',
+                'icon': '✅',
+                'unlocked': False,
+                'progress': total_check_ins,
+                'requirement': milestone
+            })
+
+    # 连续打卡
+    streak_milestones = [3, 7, 14, 30, 100]
+    streak_names = ['三天坚持', '一周达人', '两周坚持', '月度冠军', '百日打卡']
+
+    for i, milestone in enumerate(streak_milestones):
+        if max_streak_days >= milestone:
+            checkin_achievements['achievements'].append({
+                'id': f'streak_{milestone}',
+                'name': streak_names[i],
+                'description': f'连续打卡 {milestone} 天',
+                'icon': '🔥',
+                'unlocked': True,
+                'progress': max_streak_days,
+                'requirement': milestone
+            })
+
+    achievements.append(checkin_achievements)
+
+    # 统计已解锁和总数
+    total_unlocked = sum(
+        len([a for a in cat['achievements'] if a['unlocked']])
+        for cat in achievements
+    )
+    total_achievements = sum(len(cat['achievements']) for cat in achievements)
+
+    return Response({
+        'code': 200,
+        'message': '获取成就列表成功',
+        'data': {
+            'achievements': achievements,
+            'summary': {
+                'total_unlocked': total_unlocked,
+                'total_achievements': total_achievements,
+                'unlock_rate': round(total_unlocked / total_achievements * 100, 1) if total_achievements > 0 else 0,
+                'current_streak': current_streak_days,
+                'max_streak': max_streak_days
+            }
+        }
+    })
