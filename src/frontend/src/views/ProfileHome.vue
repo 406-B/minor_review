@@ -63,8 +63,8 @@
       </div>
     </div>
 
-    <!-- 我的成就 & 食堂消费记录 第一行 -->
-    <div class="grid top-second-grid">
+    <!-- 我的成就 与 个性化推荐 同行等宽 -->
+    <div class="grid recommend-grid">
       <div class="col">
         <SectionCard class="equal-card" title="我的成就">
           <template #actions>
@@ -106,13 +106,6 @@
       </div>
 
       <div class="col">
-        <ConsumptionCard class="equal-card" />
-      </div>
-    </div>
-
-    <!-- 个性化推荐 第二行 单独占一行 -->
-    <div class="grid bottom-grid">
-      <div class="col full-width">
         <SectionCard class="equal-card" title="个性化推荐">
           <template #actions>
             <el-select v-model="recoSource" size="small" style="width: 120px; margin-right: 8px">
@@ -148,6 +141,13 @@
           </template>
         </SectionCard>
       </div>
+<<<<<<< HEAD
+=======
+
+      <div class="col left">
+        <ConsumptionCard class="equal-card" />
+      </div>
+>>>>>>> origin/feature/price-record-linked
     </div>
 
     <!-- 控制组件板块（在底部） -->
@@ -169,9 +169,15 @@ import PostItem from '@/components/PostItem.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import InteractionStat from '@/components/InteractionStat.vue'
 import ControlPanel from '@/components/ControlPanel.vue'
+<<<<<<< HEAD
 import ConsumptionCard from '@/components/ConsumptionCard.vue'
 import AchievementImage from '@/components/common/AchievementImage.vue'
 import { ensureAchievementsLoaded, getAllAchievements, getAchievementByCount, onAchievementsUpdated, offAchievementsUpdated } from '@/utils/achievements'
+=======
+import AchievementImage from '@/components/common/AchievementImage.vue'
+import { ensureAchievementsLoaded, getAllAchievements, getAchievementByCount, onAchievementsUpdated, offAchievementsUpdated } from '@/utils/achievements'
+import ConsumptionCard from '@/components/ConsumptionCard.vue'
+>>>>>>> origin/feature/price-record-linked
 
 const router = useRouter()
 const published = ref([])
