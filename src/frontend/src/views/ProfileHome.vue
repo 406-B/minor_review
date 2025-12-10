@@ -26,7 +26,7 @@
   <!-- 已发布与 我的互动 同行 -->
   <div class="grid top-grid">
       <div class="col left">
-  <SectionCard class="equal-card" title="已发布内容">
+        <SectionCard class="equal-card" title="已发布内容">
           <template #actions>
             <button class="link" @click.prevent="viewAllPublished">查看全部</button>
           </template>
@@ -45,7 +45,7 @@
       </div>
 
       <div class="col right">
-  <SectionCard class="equal-card" title="我的互动">
+        <SectionCard class="equal-card" title="我的互动">
           <template #content>
             <div class="interactions">
               <InteractionStat
@@ -63,9 +63,48 @@
       </div>
     </div>
 
-    <!-- 个性化推荐 & 食堂消费记录 同行 -->
-    <div class="grid bottom-grid">
-      <div class="col left">
+    <!-- 我的成就 与 个性化推荐 同行等宽 -->
+    <div class="grid recommend-grid">
+      <div class="col">
+        <SectionCard class="equal-card" title="我的成就">
+          <template #actions>
+            <button class="link" @click.prevent="openAllAchievements">查看全部</button>
+          </template>
+          <template #content>
+            <div class="achi-cards">
+              <div class="achi-card bronze" @click="goAchievements('bronze')">
+                <div class="icon" aria-hidden="true">🥉</div>
+                <div class="achi-stack">
+                  <div class="achi-count">{{ achiCounts.bronze }}</div>
+                  <div class="achi-label">本科</div>
+                </div>
+              </div>
+              <div class="achi-card silver" @click="goAchievements('silver')">
+                <div class="icon" aria-hidden="true">🥈</div>
+                <div class="achi-stack">
+                  <div class="achi-count">{{ achiCounts.silver }}</div>
+                  <div class="achi-label">硕士</div>
+                </div>
+              </div>
+              <div class="achi-card gold" @click="goAchievements('gold')">
+                <div class="icon" aria-hidden="true">🥇</div>
+                <div class="achi-stack">
+                  <div class="achi-count">{{ achiCounts.gold }}</div>
+                  <div class="achi-label">博士</div>
+                </div>
+              </div>
+              <div class="achi-card rainbow" @click="goAchievements('rainbow')">
+                <div class="icon" aria-hidden="true">🏆</div>
+                <div class="achi-stack">
+                  <div class="achi-count">{{ achiCounts.rainbow }}</div>
+                  <div class="achi-label">院士</div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </SectionCard>
+      </div>
+      <div class="col">
         <SectionCard class="equal-card" title="个性化推荐">
           <template #actions>
             <el-select v-model="recoSource" size="small" style="width: 120px; margin-right: 8px">
@@ -82,11 +121,11 @@
                 <div class="page" v-for="(page, i) in extendedPages" :key="'p-'+i">
                   <div v-for="d in page" :key="d.id" class="dish-card" @click="goDish(d.id)">
                     <div class="thumb">
-                      <el-image :src="imageUrl(d.image)" fit="cover">
-                        <template #error>
+                      <AchievementImage :dish-id="d.id" :src="imageUrl(d.image)" :width="'100%'" :height="96" :radius="8">
+                        <template #placeholder>
                           <div class="thumb placeholder">{{ d.name?.[0] || '图' }}</div>
                         </template>
-                      </el-image>
+                      </AchievementImage>
                     </div>
                     <div class="dish-name" :title="d.name">{{ d.name }}</div>
                   </div>
@@ -102,7 +141,7 @@
         </SectionCard>
       </div>
 
-      <div class="col right">
+      <div class="col left">
         <ConsumptionCard class="equal-card" />
       </div>
     </div>
@@ -126,6 +165,8 @@ import PostItem from '@/components/PostItem.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import InteractionStat from '@/components/InteractionStat.vue'
 import ControlPanel from '@/components/ControlPanel.vue'
+import AchievementImage from '@/components/common/AchievementImage.vue'
+import { ensureAchievementsLoaded, getAllAchievements, getAchievementByCount, onAchievementsUpdated, offAchievementsUpdated } from '@/utils/achievements'
 import ConsumptionCard from '@/components/ConsumptionCard.vue'
 
 const router = useRouter()
@@ -188,6 +229,19 @@ const startAuto = () => {
 const stopAuto = () => { if (autoTimer) { clearInterval(autoTimer); autoTimer = null } }
 const pauseAuto = () => stopAuto()
 const resumeAuto = () => startAuto()
+
+// 成就统计
+const achiCounts = ref({ bronze: 0, silver: 0, gold: 0, rainbow: 0 })
+let achiHandler = null
+function computeAchi() {
+  const all = getAllAchievements()
+  const next = { bronze: 0, silver: 0, gold: 0, rainbow: 0 }
+  for (const { count } of all) {
+    const tier = getAchievementByCount(count).key
+    if (tier && next[tier] !== undefined) next[tier] += 1
+  }
+  achiCounts.value = next
+}
 
 const onNext = () => {
   if (pages.value.length <= 1) return
@@ -305,8 +359,12 @@ onMounted(async () => {
   // 初始到首个真实页：仅1页时用0，多页时用1（因首尾克隆）
   slideIndex.value = pages.value.length > 1 ? 1 : 0
   startAuto()
+  await ensureAchievementsLoaded()
+  computeAchi()
+  achiHandler = () => computeAchi()
+  onAchievementsUpdated(achiHandler)
 })
-onUnmounted(() => stopAuto())
+onUnmounted(() => { stopAuto(); if (achiHandler) offAchievementsUpdated(achiHandler) })
 
 const viewAllPublished = () => {
   router.push('/profile/posts')
@@ -328,6 +386,8 @@ const openRecommend = (tab) => {
 const editTags = () => router.push('/onboarding/tags')
 const goDish = (id) => router.push(`/dish/${id}`)
 const viewAllRecommend = () => router.push({ path: '/recommend', query: { tab: recoSource.value } })
+const goAchievements = (tab) => router.push({ path: '/achievements', query: { tab } })
+const openAllAchievements = () => router.push('/achievements')
 
 const loadRecommendPref = async () => {
   try {
@@ -461,5 +521,41 @@ watch(() => reco.value?.dishes, () => {
   .col { align-items: stretch }
   .equal-card { height: 100%; min-height: 240px }
   .posts { max-height: 460px }
+}
+
+/* 我的成就：类似“我的互动”的小卡片风格 */
+.achi-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 8px }
+.achi-card { display:flex; align-items:center; gap:12px; min-height: 72px; border: 2px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 12px 14px; cursor: pointer; background: #fff; transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease }
+.achi-card .icon { width: 40px; height: 40px; display:flex; align-items:center; justify-content:center; border-radius: 10px; font-size: 22px; background:#f5f7fa; flex-shrink: 0 }
+.achi-card .info { flex: 1; min-width: 0 }
+.achi-stack { display:flex; flex-direction: column; align-items: flex-start; gap: 2px }
+.achi-count { font-size: 18px; font-weight: 800; line-height: 1 }
+.achi-label { font-size: 12px; color: var(--color-muted); line-height: 1 }
+.achi-card:hover { border-color: var(--color-accent); box-shadow: 0 6px 18px rgba(0,0,0,0.10); transform: translateY(-1px) }
+.achi-card.bronze { border-color: rgba(205, 127, 50, 0.65) }
+.achi-card.silver { border-color: rgba(192, 192, 192, 0.75) }
+.achi-card.gold { border-color: rgba(255, 215, 0, 0.75) }
+/* 移除右侧徽章，改为竖排文案（数字在上、文字在下） */
+/* 不同等级的 icon 背景色微调 */
+.achi-card.bronze .icon { background: #fff6ef; box-shadow: inset 0 0 0 1px rgba(205,127,50,0.28); color: #b36a2e }
+.achi-card.silver .icon { background: #f7f9ff; box-shadow: inset 0 0 0 1px rgba(128,128,128,0.25); color: #6f6f6f }
+.achi-card.gold .icon { background: #fffbea; box-shadow: inset 0 0 0 1px rgba(255,215,0,0.35); color: #9c7b00 }
+.achi-card.rainbow .icon { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #aa4dc8; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06) }
+.achi-card.rainbow {
+  border: 1px solid transparent;
+  background-image: linear-gradient(#fff, #fff),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.75) 0%,
+      rgba(255, 102, 0, 0.75) 14%,
+      rgba(255, 165, 0, 0.75) 28%,
+      rgba(255, 230, 0, 0.75) 42%,
+      rgba(128, 255, 0, 0.75) 56%,
+      rgba(0, 255, 170, 0.75) 70%,
+      rgba(0, 128, 255, 0.75) 84%,
+      rgba(139, 0, 255, 0.75) 100%
+    );
+  background-origin: border-box;
+  background-clip: content-box, border-box;
 }
 </style>

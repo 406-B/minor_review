@@ -7,7 +7,13 @@
 
     <el-row :gutter="24" class="dish-layout">
       <el-col :xs="24" :md="10">
-        <img :src="getImageUrl(dish.image)" alt="菜品图片" class="dish-image" />
+        <AchievementImage
+          v-if="dish"
+          :dish-id="dish.id"
+          :src="getImageUrl(dish.image)"
+          alt="菜品图片"
+          class="dish-image"
+        />
       </el-col>
       <el-col :xs="24" :md="14">
         <div class="dish-info">
@@ -21,6 +27,23 @@
             <span class="dish-price">￥{{ dish.price }}</span>
           </div>
           <div class="dish-desc">{{ dish.description }}</div>
+          <!-- 打卡栏 -->
+          <div class="checkin-section">
+            <div class="checkin-left">
+              <span class="checkin-label">打卡：</span>
+              <span class="checkin-count" :class="tierClass">{{ checkinCount }} 次</span>
+              <span v-if="tierLabel" class="checkin-tier" :class="tierClass">（{{ tierLabel }}）</span>
+            </div>
+            <!-- 下一等级进度条：置于打卡计数与按钮之间 -->
+            <div class="checkin-progress" v-if="progressOf(checkinCount).next">
+              <div class="bar"><div class="fill" :style="{ width: progressOf(checkinCount).percent + '%' }"></div></div>
+              <div class="progress-text">{{ checkinCount }} / {{ progressOf(checkinCount).next }}</div>
+            </div>
+            <div class="checkin-progress done" v-else>
+              <div class="progress-text">已满级</div>
+            </div>
+            <el-button type="success" size="small" @click="onCheckIn" :loading="checkinLoading">+ 打卡一次</el-button>
+          </div>
           <!-- 打分栏 -->
           <div class="rate-section">
             <div class="rate-title">我要打分：</div>
@@ -61,17 +84,77 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getDishDetail, getReviews, rateDish, createReview } from '@/utils/api/listApi'
+import { getDishDetail, getReviews, rateDish, createReview, checkInDish } from '@/utils/api/listApi'
 import PageContainer from '@/components/ui/PageContainer.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
+import AchievementImage from '@/components/common/AchievementImage.vue'
+import { ensureAchievementsLoaded, getDishCheckinCount, getAchievementByCount, bumpDishCheckinCount } from '@/utils/achievements'
 
 const route = useRoute()
 const router = useRouter()
 const dish = ref(null)
 const reviews = ref([])
 const dishRatingNumber = ref(0)
+
+// 打卡栏
+const checkinCount = ref(0)
+const tierLabel = ref('')
+const tierKey = ref('')
+const checkinLoading = ref(false)
+
+function refreshCheckin() {
+  if (!dish.value) return
+  const cnt = getDishCheckinCount(dish.value.id)
+  checkinCount.value = cnt
+  const level = getAchievementByCount(cnt)
+  tierLabel.value = level.label
+  tierKey.value = level.key
+}
+
+const tierClass = computed(() => tierKey.value ? `achv-${tierKey.value}` : '')
+
+// 进度条计算：阈值 1/3/10/100，超过 100 视为满级
+const thresholds = [1, 3, 10, 100]
+function nextThreshold(count) {
+  for (const t of thresholds) { if (count < t) return t }
+  return null
+}
+function progressOf(count) {
+  const next = nextThreshold(Number(count) || 0)
+  if (!next) return { next: null, percent: 100 }
+  const percent = Math.max(0, Math.min(100, Math.round(((Number(count)||0) / next) * 100)))
+  return { next, percent }
+}
+
+async function onCheckIn() {
+  const token = localStorage.getItem('jwt')
+  if (!token) {
+    window.$message?.warning?.('您需要先登录')
+    return router.push('/login')
+  }
+  if (!dish.value) return
+  checkinLoading.value = true
+  try {
+    const res = await checkInDish(dish.value.id, {})
+    // 本地缓存 +1，并刷新展示
+    bumpDishCheckinCount(dish.value.id, 1)
+    refreshCheckin()
+    if (res?.message) window.$message?.success?.(res.message)
+  } catch (e) {
+    if (e?.code === 401) {
+      window.$message?.warning?.('您需要先登录')
+      router.push('/login')
+    } else if (e?.code === 403) {
+      window.$message?.error?.('没有权限打卡该菜品')
+    } else {
+      window.$message?.error?.(e?.message || '打卡失败')
+    }
+  } finally {
+    checkinLoading.value = false
+  }
+}
 
 // 打分栏
 const userRating = ref(0)
@@ -145,6 +228,8 @@ const fetchDish = async () => {
     dish.value = res.data
     // 保证评分为Number类型
     dishRatingNumber.value = Number(res.data.rating) || 0
+  await ensureAchievementsLoaded()
+  refreshCheckin()
   }
 }
 const fetchReviews = async () => {
@@ -261,4 +346,27 @@ function onEditTags() {
 
 /* 自定义滚动条（Webkit 浏览器） */
 /* 保留全局滚动条样式即可，无需局部覆盖 */
+
+/* 成就等级文本颜色（与边框主题对应） */
+.achv-bronze { color: #cd7f32; font-weight: 700; }
+.achv-silver { color: #909399; font-weight: 700; }
+.achv-gold { color: #d4a017; font-weight: 700; }
+.achv-rainbow { 
+  background: linear-gradient(90deg, #ff0000, #ffa500, #ffff00, #00ff00, #00ffff, #0000ff, #8b00ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+}
+.checkin-section { display:flex; align-items:center; justify-content:space-between; margin: 10px 0 6px; }
+.checkin-left { display:flex; align-items:center; gap: 8px; }
+.checkin-label { color:#666; }
+.checkin-count { font-size: 16px; }
+.checkin-tier { font-size: 14px; }
+/* 进度条：占据中间弹性空间 */
+.checkin-progress { flex: 1; display:flex; align-items: center; gap: 10px; margin: 0 12px; min-width: 120px; }
+.checkin-progress .bar { flex: 1; height: 6px; background: #eef0f3; border-radius: 999px; overflow: hidden }
+.checkin-progress .fill { height: 100%; background: linear-gradient(90deg, var(--color-accent), #8bd2ff); border-radius: 999px; transition: width .25s ease }
+.checkin-progress .progress-text { font-size: 12px; color: #666; white-space: nowrap }
+.checkin-progress.done .progress-text { color: var(--color-accent) }
 </style>
