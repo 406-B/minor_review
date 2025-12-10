@@ -40,7 +40,19 @@ const onLogin = async () => {
   try {
     const res = await login(loginForm.value);
     console.log('login response', res); // 调试：接口响应
-    localStorage.setItem('jwt', res.jwt); // 修正为 res.jwt
+    
+    // 保存 JWT token
+    localStorage.setItem('jwt', res.jwt);
+    
+    // 保存用户信息（重要！用于权限判断）
+    const userInfo = {
+      id: res.userId,
+      username: res.username,
+      nickname: res.nickname
+    };
+    localStorage.setItem('userInfo', JSON.stringify(userInfo));
+    console.log('✅ 用户信息已保存到 localStorage:', userInfo);
+    
     router.push('/home');
   } catch (err) {
     console.error('login error', err); // 调试：错误信息
