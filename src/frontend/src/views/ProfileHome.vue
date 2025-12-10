@@ -104,6 +104,7 @@
           </template>
         </SectionCard>
       </div>
+
       <div class="col">
         <SectionCard class="equal-card" title="个性化推荐">
           <template #actions>
@@ -140,7 +141,15 @@
           </template>
         </SectionCard>
       </div>
+<<<<<<< HEAD
+=======
+
+      <div class="col left">
+        <ConsumptionCard class="equal-card" />
+      </div>
+>>>>>>> origin/feature/price-record-linked
     </div>
+
     <!-- 控制组件板块（在底部） -->
     <ControlPanel />
   </PageContainer>
@@ -160,8 +169,15 @@ import PostItem from '@/components/PostItem.vue'
 import SectionCard from '@/components/SectionCard.vue'
 import InteractionStat from '@/components/InteractionStat.vue'
 import ControlPanel from '@/components/ControlPanel.vue'
+<<<<<<< HEAD
+import ConsumptionCard from '@/components/ConsumptionCard.vue'
 import AchievementImage from '@/components/common/AchievementImage.vue'
 import { ensureAchievementsLoaded, getAllAchievements, getAchievementByCount, onAchievementsUpdated, offAchievementsUpdated } from '@/utils/achievements'
+=======
+import AchievementImage from '@/components/common/AchievementImage.vue'
+import { ensureAchievementsLoaded, getAllAchievements, getAchievementByCount, onAchievementsUpdated, offAchievementsUpdated } from '@/utils/achievements'
+import ConsumptionCard from '@/components/ConsumptionCard.vue'
+>>>>>>> origin/feature/price-record-linked
 
 const router = useRouter()
 const published = ref([])
@@ -306,7 +322,8 @@ const load = async () => {
           }))
         }
       } catch (err) {
-        console.error('获取我的帖子失败:', err)
+        console.log('[ProfileHome] 获取我的帖子失败:', err?.response?.status || err.message)
+        // 失败时使用空数组,不显示错误提示
       }
       
       // 设置交互统计数据
@@ -316,8 +333,8 @@ const load = async () => {
         { name: '我发布的评论', count: stats.commented_posts_count || 0, to: '/community' }
       ]
     } catch (err) {
-      console.error('获取用户统计失败:', err)
-      // 使用默认值
+      console.log('[ProfileHome] 获取用户统计失败:', err?.response?.status || err.message)
+      // 使用默认值,不显示错误提示
       interactions.value = [
         { name: '我点赞的帖子', count: 0, to: '/community' },
         { name: '我收到的评论', count: 0, to: '/community' },
@@ -326,7 +343,8 @@ const load = async () => {
       published.value = res.published || []
     }
   } catch (e) {
-    console.error('加载个人主页数据失败', e)
+    console.log('[ProfileHome] 加载个人主页数据失败:', e?.response?.status || e.message)
+    // 静默失败,不影响用户体验
   } finally {
     loading.value = false
   }
@@ -388,11 +406,12 @@ const loadRecommendPref = async () => {
     const res = await getRecommendedDishes()
     reco.value = res?.data ?? res ?? { dishes: [] }
   } catch (err) {
-    // 无偏好标签时后端返回 404，尝试位置推荐作为回退
+    // 无偏好标签时后端返回 404，这是正常情况
     if (err?.response?.status === 404) {
+      console.log('[ProfileHome] 未设置偏好标签,尝试位置推荐')
       const ok = await ensureGeo()
       if (ok) { await loadRecommendGeo(); return }
-      window.$message?.info?.('请先设置偏好标签，或开启定位获取附近推荐')
+      // 静默处理,不显示提示
     }
     reco.value = { dishes: [] }
   }
@@ -407,9 +426,10 @@ const loadRecommendMix = async () => {
   } catch (err) {
     if (err?.response?.status === 404) {
       // 用户未设置偏好标签 -> 回退到附近推荐
+      console.log('[ProfileHome] 未设置偏好标签,尝试附近推荐')
       const ok = await ensureGeo()
       if (ok) { await loadRecommendGeo(); return }
-      window.$message?.info?.('请先设置偏好标签，或开启定位获取附近推荐')
+      // 静默处理,不显示提示
     }
     reco.value = { dishes: [] }
   }
@@ -419,7 +439,10 @@ const loadRecommendGeo = async () => {
   try {
     const res = await getNearbyRecommendedDishes({ latitude: geoPos.value.lat, longitude: geoPos.value.lng })
     reco.value = res?.data ?? res ?? { dishes: [] }
-  } catch { reco.value = { dishes: [] } }
+  } catch (err) { 
+    console.log('[ProfileHome] 附近推荐失败:', err?.response?.status || err.message)
+    reco.value = { dishes: [] }
+  }
 }
 
 const ensureGeo = () => new Promise((resolve) => {
@@ -450,14 +473,10 @@ watch(() => reco.value?.dishes, () => {
 <style scoped>
 .title { font-size: 1.4rem; margin-bottom: 0.75rem }
 .grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem }
-.recommend-grid { grid-template-columns: 1fr; }
 .col { display: flex; flex-direction: column; gap: 1rem }
 /* 让列内的卡片等高 */
 .equal-card { height: 100%; min-height: 220px; display: flex; flex-direction: column }
 .equal-card :deep(.content) { flex: 1; display: flex; flex-direction: column }
-
-/* 推荐卡片自适应内容高度，避免多余留白 */
-.recommend-grid .equal-card { min-height: auto; }
 
 .posts { list-style: none; padding: 0; margin: 0; max-height: 380px; overflow: auto }
 .post { padding: 0.5rem 0; border-bottom: 1px dashed rgba(0,0,0,0.04) }
@@ -512,11 +531,12 @@ watch(() => reco.value?.dishes, () => {
 
 @media (min-width: 1024px) {
   .grid { grid-template-columns: 1fr 1fr }
-  .recommend-grid { grid-template-columns: 1fr 1fr; justify-items: center; }
-  .recommend-grid .col { width: 100%; max-width: 680px; }
-  /* 限制上方两张卡片的最大宽度，减少卡内留白 */
-  .top-grid { justify-items: center; }
-  .top-grid .col { width: 100%; max-width: 680px; }
+  /* 限制卡片的最大宽度，减少卡内留白 */
+  .top-grid, .top-second-grid { justify-items: center; }
+  .top-grid .col, .top-second-grid .col { width: 100%; max-width: 680px; }
+  /* 个性化推荐单独占一行时全宽 */
+  .bottom-grid { grid-template-columns: 1fr; justify-items: center; }
+  .bottom-grid .col.full-width { width: 100%; max-width: 1400px; }
   /* 固定等高：两列时卡片充满列高 */
   .col { align-items: stretch }
   .equal-card { height: 100%; min-height: 240px }
