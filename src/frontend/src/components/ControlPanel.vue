@@ -14,8 +14,8 @@ const emit = defineEmits(['logged-out'])
 
 const onLogout = async () => {
   try {
-    // 调用后端登出接口
-    await request.post('/login/logout')
+    // 调用后端登出接口（后端挂载在 /api/v1/ 下）
+    await request.post('/v1/logout')
   } catch (error) {
     console.error('登出接口调用失败:', error)
     // 即使后端调用失败，也继续清理本地状态
@@ -24,6 +24,8 @@ const onLogout = async () => {
   // 清理本地 token / 用户信息
   try { localStorage.removeItem('jwt') } catch (e) { /* ignore */ }
   try { localStorage.removeItem('user') } catch (e) { /* ignore */ }
+  try { localStorage.removeItem('userInfo') } catch (e) { /* ignore */ }
+  console.log('✅ 已清除本地用户信息')
 
   // 通知父组件已登出
   emit('logged-out')

@@ -8,9 +8,6 @@
 					<template #left>
 						<button class="toolbar-btn" @click="goBack">返回</button>
 					</template>
-					<template #right>
-						<button v-if="canDelete" @click="handleDelete" class="delete-btn">删除</button>
-					</template>
 				</PageActions>
 
 				<SectionTitle>帖子详情</SectionTitle>
@@ -41,11 +38,41 @@
 							>
 								{{ post.is_liked ? '❤️' : '🤍' }} {{ post.likes_count || 0 }}
 							</button>
+							<div class="more-menu" @click.stop>
+								<button class="more-btn" @click="togglePostMenu">⋯</button>
+								<div v-if="showPostMenu" class="dropdown-menu">
+									<!-- 调试信息：canDelete={{ canDelete }} -->
+									<button v-if="canDelete" @click="handleDelete" class="menu-item delete-item">
+										删除
+									</button>
+									<button @click="handleReport('post', post.id)" class="menu-item">
+										举报
+									</button>
+								</div>
+							</div>
 						</div>
 					</div>
 					
 					<h2 class="post-subject">{{ post.subject || '无标题' }}</h2>
 					<div class="body">{{ post.content }}</div>
+					
+					<!-- 关联的菜品卡片 -->
+					<div v-if="post.dish" class="dish-card-section">
+						<div class="dish-card" @click="goToDishDetail(post.dish.id)">
+							<img 
+								:src="post.dish.image || '/default-dish.png'" 
+								:alt="post.dish.name"
+								class="dish-image"
+								@error="handleDishImageError"
+							/>
+							<div class="dish-info">
+								<h4 class="dish-name">{{ post.dish.name }}</h4>
+								<p class="dish-price">¥{{ post.dish.price }}</p>
+								<p class="dish-canteen">{{ post.dish.canteen_name }}</p>
+							</div>
+							<div class="dish-arrow">→</div>
+						</div>
+					</div>
 					
 					<!-- 帖子图片 -->
 					<div v-if="post.images && post.images.length > 0" class="post-images">
@@ -115,13 +142,17 @@
 										>
 											回复
 										</button>
-										<button 
-											v-if="canDeleteComment(comment)" 
-											@click="handleDeleteComment(comment.id)"
-											class="comment-delete-btn"
-										>
-											删除
-										</button>
+										<div class="more-menu" @click.stop>
+											<button class="more-btn" @click="toggleCommentMenu(comment.id)">⋯</button>
+											<div v-if="activeCommentMenu === comment.id" class="dropdown-menu">
+												<button v-if="canDeleteComment(comment)" @click="handleDeleteComment(comment.id)" class="menu-item delete-item">
+													删除
+												</button>
+												<button @click="handleReport('comment', comment.id)" class="menu-item">
+													举报
+												</button>
+											</div>
+										</div>
 									</div>
 								</div>
 								<div class="comment-content">{{ comment.content }}</div>
@@ -192,20 +223,22 @@
 													@click="replyToReply(comment.id, reply)"
 													class="reply-reply-btn"
 												>
-													回复
-												</button>
-												<button 
-													v-if="canDeleteComment(reply)" 
-													@click="handleDeleteReply(reply.id, comment)"
-													class="reply-delete-btn"
-												>
-													删除
-												</button>
+												回复
+											</button>
+											<div class="more-menu" @click.stop>
+												<button class="more-btn small" @click="toggleReplyMenu(reply.id)">⋯</button>
+												<div v-if="activeReplyMenu === reply.id" class="dropdown-menu">
+													<button v-if="canDeleteComment(reply)" @click="handleDeleteReply(reply.id, comment)" class="menu-item delete-item">
+														删除
+													</button>
+													<button @click="handleReport('reply', reply.id)" class="menu-item">
+														举报
+													</button>
+												</div>
 											</div>
 										</div>
-										<div class="reply-content">{{ reply.content }}</div>
-										
-										<!-- 回复图片 -->
+									</div>
+									<div class="reply-content">{{ reply.content }}</div>										<!-- 回复图片 -->
 										<div v-if="reply.images && reply.images.length > 0" class="reply-images">
 											<img 
 												v-for="(image, index) in reply.images" 
@@ -258,6 +291,9 @@ const replyContent = ref('')
 const replyImages = ref([]) // 回复图片
 const replying = ref(false)
 const replyTargetUser = ref(null) // 记录要@的用户
+const showPostMenu = ref(false) // 帖子更多菜单
+const activeCommentMenu = ref(null) // 当前激活的评论菜单ID
+const activeReplyMenu = ref(null) // 当前激活的回复菜单ID
 
 import PageActions from '../components/PageActions.vue'
 import PageContainer from '@/components/ui/PageContainer.vue'
@@ -271,25 +307,45 @@ const currentUserId = computed(() => {
 	// 这里需要根据实际情况获取当前用户ID
 	// 可以从 localStorage、Vuex 或其他状态管理中获取
 	const userInfo = localStorage.getItem('userInfo')
+	console.log('🔍 [权限调试] localStorage中的userInfo:', userInfo)
+	
 	if (userInfo) {
 		try {
 			const user = JSON.parse(userInfo)
+			console.log('✅ [权限调试] 解析后的用户信息:', user)
+			console.log('👤 [权限调试] 当前用户ID:', user.id)
 			return user.id
 		} catch (e) {
+			console.error('❌ [权限调试] 解析userInfo失败:', e)
 			return null
 		}
 	}
+	console.warn('⚠️ [权限调试] localStorage中没有userInfo，用户未登录或信息丢失')
 	return null
 })
 
 // 是否可以删除帖子
 const canDelete = computed(() => {
-	return post.value && currentUserId.value && post.value.author?.id === currentUserId.value
+	const result = post.value && currentUserId.value && post.value.author?.id === currentUserId.value
+	console.log('🗑️ [删除权限] 帖子删除权限判断:')
+	console.log('  - 帖子数据存在:', !!post.value)
+	console.log('  - 当前用户ID:', currentUserId.value)
+	console.log('  - 帖子作者ID:', post.value?.author?.id)
+	console.log('  - 帖子作者信息:', post.value?.author)
+	console.log('  - 是否可以删除帖子:', result)
+	return result
 })
 
 // 是否可以删除评论
 const canDeleteComment = (comment) => {
-	return currentUserId.value && comment.author?.id === currentUserId.value
+	const result = currentUserId.value && comment.author?.id === currentUserId.value
+	console.log('💬 [删除权限] 评论删除权限判断:')
+	console.log('  - 评论ID:', comment.id)
+	console.log('  - 当前用户ID:', currentUserId.value)
+	console.log('  - 评论作者ID:', comment.author?.id)
+	console.log('  - 评论作者信息:', comment.author)
+	console.log('  - 是否可以删除评论:', result)
+	return result
 }
 
 function goBack() { 
@@ -306,9 +362,12 @@ async function loadPost() {
 		
 		if (response.code === 200 && response.data) {
 			post.value = response.data
+			console.log('📄 [帖子数据] 加载的帖子详情:', response.data)
+			console.log('📄 [帖子数据] 帖子作者信息:', response.data.author)
 			// 如果响应中包含评论，直接使用
 			if (response.data.comments) {
 				comments.value = response.data.comments
+				console.log('💬 [评论数据] 加载的评论列表:', response.data.comments)
 			}
 		} else {
 			error.value = response.message || '获取帖子详情失败'
@@ -620,7 +679,85 @@ function handleAvatarError(e) {
 	e.target.src = '/default-avatar.png'
 }
 
-onMounted(loadPost)
+// 处理菜品图片加载错误
+function handleDishImageError(e) {
+	e.target.src = '/default-dish.png'
+}
+
+// 跳转到菜品详情页
+function goToDishDetail(dishId) {
+	router.push({ name: 'DishDetail', params: { id: dishId } })
+}
+
+// 切换帖子菜单
+function togglePostMenu() {
+	showPostMenu.value = !showPostMenu.value
+	console.log('🎯 [菜单操作] 切换帖子菜单，当前状态:', showPostMenu.value)
+	console.log('🎯 [菜单操作] 当前用户是否可删除:', canDelete.value)
+	// 关闭其他菜单
+	activeCommentMenu.value = null
+	activeReplyMenu.value = null
+}
+
+// 切换评论菜单
+function toggleCommentMenu(commentId) {
+	if (activeCommentMenu.value === commentId) {
+		activeCommentMenu.value = null
+	} else {
+		activeCommentMenu.value = commentId
+		// 关闭其他菜单
+		showPostMenu.value = false
+		activeReplyMenu.value = null
+	}
+}
+
+// 切换回复菜单
+function toggleReplyMenu(replyId) {
+	if (activeReplyMenu.value === replyId) {
+		activeReplyMenu.value = null
+	} else {
+		activeReplyMenu.value = replyId
+		// 关闭其他菜单
+		showPostMenu.value = false
+		activeCommentMenu.value = null
+	}
+}
+
+// 举报功能
+// TODO: 实现举报功能 - 需要添加以下功能：
+// 1. 弹出举报理由选择对话框（如：垃圾广告、违规内容、色情低俗等）
+// 2. 调用后端举报API（需要后端添加举报接口）
+// 3. 后端存储举报记录，供管理员审核
+// 4. 可选：达到一定举报数量自动隐藏内容
+function handleReport(type, id) {
+	// 关闭所有菜单
+	showPostMenu.value = false
+	activeCommentMenu.value = null
+	activeReplyMenu.value = null
+	
+	// 临时实现：提示功能待开发
+	const typeText = type === 'post' ? '帖子' : type === 'comment' ? '评论' : '回复'
+	window.$message?.info?.(`举报${typeText}功能待实现`)
+}
+
+// 点击页面其他地方关闭所有菜单
+function closeAllMenus() {
+	showPostMenu.value = false
+	activeCommentMenu.value = null
+	activeReplyMenu.value = null
+}
+
+onMounted(() => {
+	loadPost()
+	// 点击页面任意位置关闭菜单
+	document.addEventListener('click', closeAllMenus)
+})
+
+// 组件卸载时移除事件监听
+import { onUnmounted } from 'vue'
+onUnmounted(() => {
+	document.removeEventListener('click', closeAllMenus)
+})
 </script>
 
 <style scoped>
@@ -683,6 +820,81 @@ onMounted(loadPost)
 	font-size: 15px; 
 	color: var(--color-text);
 	margin-bottom: 32px;
+}
+
+/* 关联菜品卡片样式 */
+.dish-card-section {
+	margin: 24px 0;
+	padding: 16px;
+	background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+	border-radius: 12px;
+	border: 1px solid #e4e7ed;
+}
+
+.dish-card {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 16px;
+	background: white;
+	border-radius: 10px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dish-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 16px rgba(64, 158, 255, 0.15);
+	border-color: #409eff;
+}
+
+.dish-card .dish-image {
+	width: 80px;
+	height: 80px;
+	border-radius: 8px;
+	object-fit: cover;
+	flex-shrink: 0;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dish-card .dish-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.dish-card .dish-name {
+	font-size: 16px;
+	font-weight: 600;
+	color: #303133;
+	margin: 0 0 8px 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dish-card .dish-price {
+	font-size: 18px;
+	font-weight: 700;
+	color: #f56c6c;
+	margin: 4px 0;
+}
+
+.dish-card .dish-canteen {
+	font-size: 14px;
+	color: #909399;
+	margin: 4px 0 0 0;
+}
+
+.dish-card .dish-arrow {
+	font-size: 24px;
+	color: #409eff;
+	flex-shrink: 0;
+	transition: transform 0.3s ease;
+}
+
+.dish-card:hover .dish-arrow {
+	transform: translateX(4px);
 }
 
 /* 帖子图片样式 */
@@ -1036,6 +1248,78 @@ onMounted(loadPost)
 .reply-image:hover {
 	transform: scale(1.05);
 	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* 更多菜单样式 */
+.more-menu {
+	position: relative;
+	display: inline-block;
+}
+
+.more-btn {
+	padding: 4px 10px;
+	border: 1px solid #dcdfe6;
+	background: #fff;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 16px;
+	font-weight: bold;
+	color: #606266;
+	transition: all 0.3s;
+	line-height: 1;
+}
+
+.more-btn.small {
+	padding: 3px 8px;
+	font-size: 14px;
+}
+
+.more-btn:hover {
+	background: #f5f7fa;
+	border-color: #409eff;
+	color: #409eff;
+}
+
+.dropdown-menu {
+	position: absolute;
+	right: 0;
+	top: 100%;
+	margin-top: 4px;
+	background: #fff;
+	border: 1px solid #dcdfe6;
+	border-radius: 4px;
+	box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+	z-index: 1000;
+	min-width: 100px;
+	overflow: hidden;
+}
+
+.menu-item {
+	display: block;
+	width: 100%;
+	padding: 10px 16px;
+	border: none;
+	background: #fff;
+	text-align: left;
+	cursor: pointer;
+	font-size: 13px;
+	color: #606266;
+	transition: all 0.3s;
+	white-space: nowrap;
+}
+
+.menu-item:hover {
+	background: #f5f7fa;
+	color: #409eff;
+}
+
+.menu-item.delete-item {
+	color: #f56c6c;
+}
+
+.menu-item.delete-item:hover {
+	background: #fef0f0;
+	color: #f56c6c;
 }
 
 @media (max-width:900px) {
