@@ -32,7 +32,11 @@ service.interceptors.request.use(
 
 // 响应拦截器
 service.interceptors.response.use(
-  response => response.data,
+  response => {
+    // 直接返回 response.data，保持原始响应结构
+    // 调用方根据实际情况处理 { code, data, message } 或直接返回的数据
+    return response.data
+  },
   error => {
     // 处理错误响应
     if (error.response) {

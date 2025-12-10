@@ -32,6 +32,8 @@ urlpatterns = [
     path("api/v1/", include("profile.urls")),
     # 社区论坛路由 11/3 yyf
     path("api/v1/", include("post.urls")),
+    # 食堂消费数据路由
+    path("api/v1/canteen/", include("canteen.urls")),
 ]
 
 # 在开发环境中提供media文件服务 11/2 yyf
