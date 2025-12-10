@@ -91,6 +91,16 @@ const onRegister = async () => {
     if (jwt) {
       localStorage.setItem('jwt', jwt)
     }
+    
+    // 保存用户信息（重要！用于权限判断和个人资料展示）
+    const userInfo = {
+      id: loginRes?.userId || loginRes?.data?.userId,
+      username: loginRes?.username || loginRes?.data?.username || registerForm.value.username,
+      nickname: loginRes?.nickname || loginRes?.data?.nickname || registerForm.value.nickname
+    }
+    localStorage.setItem('userInfo', JSON.stringify(userInfo))
+    console.log('✅ 注册成功，用户信息已保存到 localStorage:', userInfo)
+    
     window.$message?.success?.('注册成功，已为你登录')
     router.push('/onboarding/tags');
   } catch (err) {

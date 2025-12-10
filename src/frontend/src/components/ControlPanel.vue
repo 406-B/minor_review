@@ -23,7 +23,6 @@ const onLogout = async () => {
   
   // 清理本地 token / 用户信息
   try { localStorage.removeItem('jwt') } catch (e) { /* ignore */ }
-  try { localStorage.removeItem('user') } catch (e) { /* ignore */ }
   try { localStorage.removeItem('userInfo') } catch (e) { /* ignore */ }
   console.log('✅ 已清除本地用户信息')
 
