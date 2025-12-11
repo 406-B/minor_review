@@ -27,9 +27,45 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    // 当使用浏览器后退/前进或 router.back() 时，Vue 会提供 savedPosition
+    if (savedPosition) {
+      return savedPosition
+    }
+    // 对于新导航，滚动到顶部；也可根据页面需要定制
+    return { left: 0, top: 0 }
+  }
 });
 
+// 禁用浏览器默认滚动恢复，交由我们手动控制
+try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual' } catch (_) {}
+
+
+function getActualScroller() {
+  const el = document.querySelector('.canteen-main');
+  if (el && el.scrollHeight > el.clientHeight) return el;
+  return document.scrollingElement || document.documentElement;
+}
+
 router.beforeEach((to, from, next) => {
+  // 在从食堂浏览页进入菜品详情前，记录主容器滚动位置
+  if (from?.name === 'CanteenBrowser' && to?.name === 'DishDetail') {
+    try {
+      const scroller = getActualScroller();
+      const scroll = scroller === document.documentElement || scroller === document.scrollingElement
+        ? (window.pageYOffset || document.scrollingElement?.scrollTop || document.documentElement.scrollTop || 0)
+        : (scroller?.scrollTop || 0);
+      sessionStorage.setItem('canteenScroll', String(scroll || 0));
+    } catch (_) { /* 忽略 DOM 访问异常 */ }
+  }
+  // 标记“从详情返回到食堂”，供页面决定是否跳过浮现动画
+  if (from?.name === 'DishDetail' && to?.name === 'CanteenBrowser') {
+    try {
+      sessionStorage.setItem('returningFromDetail', '1')
+      // 添加全局禁用动画类，避免闪动
+      document.documentElement.classList.add('no-animate')
+    } catch (_) {}
+  }
   const token = localStorage.getItem('jwt');
   const needAuth = isProtectedPath(to.path) || to.meta?.requiresAuth
   if (!token && needAuth) {
@@ -38,5 +74,6 @@ router.beforeEach((to, from, next) => {
     next();
   }
 });
+
 
 export default router;
