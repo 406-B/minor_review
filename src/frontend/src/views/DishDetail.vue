@@ -3,7 +3,7 @@
     <template #header>
       <AppTopBar />
     </template>
-    <el-button type="primary" @click="$router.push('/canteen')" class="back-btn">返回食堂主页</el-button>
+  <el-button type="primary" @click="$router.back()" class="back-btn">返回</el-button>
 
     <el-row :gutter="24" class="dish-layout">
       <el-col :xs="24" :md="10">
