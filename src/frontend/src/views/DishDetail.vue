@@ -20,7 +20,7 @@
           <h2 class="dish-title">{{ dish.name }}</h2>
           <div class="dish-tags">
             <el-tag v-for="tag in dish.tags" :key="tag.id" type="warning" effect="light">{{ tag.name }}</el-tag>
-            <el-button link type="primary" size="small" @click="onEditTags">修改标签</el-button>
+      <el-button link type="primary" size="small" @click="onEditTags">添加标签</el-button>
           </div>
           <div class="dish-rating">
             <el-rate v-model="dishRatingNumber" disabled show-score />
@@ -81,12 +81,23 @@
     </div>
   </PageContainer>
   <el-empty v-else description="未找到该菜品" />
+
+  <!-- 添加标签弹窗 -->
+  <el-dialog v-model="tagDialogVisible" title="添加标签" width="420px">
+    <div class="tag-form">
+      <el-input v-model="newTagName" maxlength="20" show-word-limit placeholder="输入新标签，例如：招牌、辣、必吃" />
+      <div class="tag-actions">
+        <el-button @click="tagDialogVisible=false" :disabled="tagSubmitting">取消</el-button>
+        <el-button type="primary" @click="submitNewTag" :loading="tagSubmitting" :disabled="!newTagName.trim()">提交</el-button>
+      </div>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getDishDetail, getReviews, rateDish, createReview, checkInDish } from '@/utils/api/listApi'
+import { getDishDetail, getReviews, rateDish, createReview, checkInDish, addTagToDish } from '@/utils/api/listApi'
 import PageContainer from '@/components/ui/PageContainer.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
 import AchievementImage from '@/components/common/AchievementImage.vue'
@@ -251,14 +262,49 @@ onMounted(() => {
   fetchReviews()
 })
 
+// 标签添加弹窗状态
+const tagDialogVisible = ref(false)
+const newTagName = ref('')
+const tagSubmitting = ref(false)
+
 function onEditTags() {
   const token = localStorage.getItem('jwt')
   if (!token) {
-    window.$message?.warning?.('您需要先登录')
+    window.$message?.warning?.('You need to log in first')
     return router.push('/login')
   }
-  // 占位：后续接入真实标签编辑弹窗或页面
-  window.$message?.info?.('标签编辑功能开发中')
+  newTagName.value = ''
+  tagDialogVisible.value = true
+}
+
+async function submitNewTag() {
+  if (!dish.value) return
+  const name = newTagName.value.trim()
+  if (!name) return
+  tagSubmitting.value = true
+  try {
+  const res = await addTagToDish(dish.value.id, { tag_name: name })
+  // 乐观更新：立即把新标签加入本地展示，避免网络/缓存延迟
+    const newTag = { id: res?.data?.tag_id || Date.now(), name }
+    if (dish.value?.tags && !dish.value.tags.some(t => String(t.name) === name)) {
+      dish.value.tags = [...dish.value.tags, newTag]
+    }
+    // 之后刷新菜品详情以获取服务端的最终数据
+    await fetchDish()
+  tagDialogVisible.value = false
+  window.$message?.success?.(res?.message || 'Tag submitted, awaiting approval')
+  } catch (e) {
+    if (e?.code === 401) {
+      window.$message?.warning?.('You need to log in first')
+      router.push('/login')
+    } else if (e?.code === 403) {
+      window.$message?.error?.('No permission to add tags')
+    } else {
+      window.$message?.error?.(e?.message || 'Failed to add tag')
+    }
+  } finally {
+    tagSubmitting.value = false
+  }
 }
 </script>
 
@@ -343,6 +389,9 @@ function onEditTags() {
   margin-top: 6px;
   color: #333;
 }
+
+.tag-form { display:flex; flex-direction: column; gap: 12px; }
+.tag-actions { display:flex; justify-content: flex-end; gap: 10px; }
 
 /* 自定义滚动条（Webkit 浏览器） */
 /* 保留全局滚动条样式即可，无需局部覆盖 */
