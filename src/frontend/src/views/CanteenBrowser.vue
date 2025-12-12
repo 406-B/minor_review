@@ -27,7 +27,7 @@ import PageContainer from '@/components/ui/PageContainer.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import CanteenSidebar from '../components/CanteenSidebar.vue'
 import CanteenFloors from '../components/CanteenFloors.vue'
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 function getActualScroller() {
   const el = mainRef.value;
   if (el && el.scrollHeight > el.clientHeight) return el;
@@ -64,6 +64,35 @@ function onCanteenChange(id) {
 }
 
 onMounted(fetchCanteens)
+
+// 刷新（关闭/重新加载）前记录当前滚动位置，保证刷新前后状态一致
+function recordScroll() {
+  try {
+    const scroller = getActualScroller();
+    const isHtmlRoot = (scroller === document.documentElement) || (scroller === document.scrollingElement) || (scroller === document.body);
+    const scroll = isHtmlRoot
+      ? (window.pageYOffset || document.scrollingElement?.scrollTop || document.documentElement.scrollTop || 0)
+      : (scroller?.scrollTop || 0);
+    sessionStorage.setItem('canteenScroll', String(scroll || 0));
+  } catch (_) {}
+}
+
+function beforeUnloadHandler() {
+  // 标记返回场景与禁用动画，避免刷新后闪动
+  try {
+    sessionStorage.setItem('returningFromDetail', '1');
+    document.documentElement.classList.add('no-animate');
+  } catch (_) {}
+  recordScroll();
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', beforeUnloadHandler);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', beforeUnloadHandler);
+});
 
 // 返回后恢复容器滚动位置（主内容区而非窗口）
 // 监听楼层数据加载完成后再恢复滚动
