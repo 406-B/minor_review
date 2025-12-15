@@ -16,9 +16,16 @@ from .serializers import (
     UserProfileSerializer,
     UserStatsSerializer,
     UserPreferenceTagsSerializer,
+    CheckInDateSerializer,
+    CheckInHistorySummarySerializer,
 )
-from list.models import Tag, Dish, Canteen
+from list.models import Tag, Dish, Canteen, DishCheckInRecord, UserDishHistory
 from list.serializers import TagSerializer, DishListSerializer, CanteenSerializer
+from django.contrib.auth.models import User as AuthUser
+from django.utils import timezone
+from datetime import datetime, timedelta
+from decimal import Decimal
+from collections import defaultdict
 import math
 
 
@@ -974,5 +981,351 @@ def get_nearby_recommended_dishes(request):
             'page': page,
             'page_size': page_size,
             'user_tags': TagSerializer(user_tags, many=True).data if user_tags.exists() else []
+        }
+    }, status=status.HTTP_200_OK)
+
+
+# ==================== 美食日历相关视图 ====================
+
+def _get_or_create_auth_user(request):
+    """将自定义登录用户统一映射到 Django 内置 AuthUser"""
+    try:
+        if isinstance(request.user, AuthUser):
+            return request.user
+        username = getattr(request.user, 'username', None)
+        if not username:
+            return None
+        user, _created = AuthUser.objects.get_or_create(username=username, defaults={"password": ""})
+        return user
+    except Exception:
+        return None
+
+
+def _calculate_achievement_tier(check_in_count):
+    """计算成就等级"""
+    if check_in_count >= 11:
+        return 'rainbow'
+    elif check_in_count >= 6:
+        return 'gold'
+    elif check_in_count >= 3:
+        return 'silver'
+    elif check_in_count >= 1:
+        return 'bronze'
+    else:
+        return None
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name='start_date',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='开始日期，格式 YYYY-MM-DD，默认为当前日期前6天',
+            required=False,
+        ),
+        OpenApiParameter(
+            name='end_date',
+            type=str,
+            location=OpenApiParameter.QUERY,
+            description='结束日期，格式 YYYY-MM-DD，默认为当前日期',
+            required=False,
+        ),
+        OpenApiParameter(
+            name='year',
+            type=int,
+            location=OpenApiParameter.QUERY,
+            description='年份，用于按月查询',
+            required=False,
+        ),
+        OpenApiParameter(
+            name='month',
+            type=int,
+            location=OpenApiParameter.QUERY,
+            description='月份（1-12），用于按月查询',
+            required=False,
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(description='获取成功'),
+        401: OpenApiResponse(description='未授权，请先登录'),
+        400: OpenApiResponse(description='日期格式错误'),
+    },
+    description='获取用户打卡历史（按日期范围或月份）',
+    summary='获取打卡历史',
+    tags=['Profile'],
+)
+@api_view(['GET'])
+@login_required
+def get_check_in_history(request):
+    """
+    获取用户打卡历史（按日期范围或月份）
+    """
+    # 获取用户
+    auth_user = _get_or_create_auth_user(request)
+    if not auth_user:
+        return Response({
+            'code': 401,
+            'message': '未授权，请先登录'
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
+    # 解析日期参数
+    try:
+        year = request.query_params.get('year', None)
+        month = request.query_params.get('month', None)
+        start_date_str = request.query_params.get('start_date', None)
+        end_date_str = request.query_params.get('end_date', None)
+
+        # 按月查询
+        if year and month:
+            if not (1 <= int(month) <= 12):
+                return Response({
+                    'code': 400,
+                    'message': '月份必须在1-12之间'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            start_date = datetime(int(year), int(month), 1).date()
+            # 计算该月最后一天
+            if int(month) == 12:
+                end_date = datetime(int(year) + 1, 1, 1).date() - timedelta(days=1)
+            else:
+                end_date = datetime(int(year), int(month) + 1, 1).date() - timedelta(days=1)
+        # 按日期范围查询
+        elif start_date_str or end_date_str:
+            if start_date_str:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            else:
+                # 默认当前日期前6天
+                start_date = timezone.now().date() - timedelta(days=6)
+
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            else:
+                # 默认当前日期
+                end_date = timezone.now().date()
+        else:
+            # 默认最近7天
+            end_date = timezone.now().date()
+            start_date = end_date - timedelta(days=6)
+
+        if start_date > end_date:
+            return Response({
+                'code': 400,
+                'message': '开始日期不能晚于结束日期'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    except ValueError as e:
+        return Response({
+            'code': 400,
+            'message': f'日期格式错误: {str(e)}'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # 查询打卡记录
+    check_in_records = DishCheckInRecord.objects.filter(
+        user=auth_user,
+        checked_in_at__date__gte=start_date,
+        checked_in_at__date__lte=end_date
+    ).select_related('dish', 'dish__canteen', 'dish__window').prefetch_related('dish__tags').order_by('-checked_in_at')
+
+    # 获取用户菜品历史（用于统计）
+    dish_history_map = {}
+    dish_histories = UserDishHistory.objects.filter(user=auth_user).select_related('dish')
+    for history in dish_histories:
+        dish_history_map[history.dish_id] = history
+
+    # 按日期分组
+    check_ins_by_date = defaultdict(list)
+    total_check_ins = 0
+    unique_dishes = set()
+    total_consumption = Decimal('0.00')
+    dish_frequency = defaultdict(int)
+
+    for record in check_in_records:
+        date_str = record.checked_in_at.date().isoformat()
+        dish = record.dish
+
+        # 获取历史统计
+        history = dish_history_map.get(dish.id)
+        check_in_count = history.count if history else 0
+        total_consumption_dish = (dish.price * check_in_count) if history else Decimal('0.00')
+
+        # 计算成就等级
+        achievement_tier = _calculate_achievement_tier(check_in_count)
+
+        # 构建菜品数据
+        dish_data = {
+            'dish': dish,
+            'check_in_time': record.checked_in_at,
+            'check_in_count': check_in_count,
+            'total_consumption': total_consumption_dish,
+            'achievement_tier': achievement_tier,
+        }
+
+        check_ins_by_date[date_str].append(dish_data)
+        total_check_ins += 1
+        unique_dishes.add(dish.id)
+        # 累计消费使用单次打卡的价格（因为这是本次打卡的消费）
+        total_consumption += dish.price
+        dish_frequency[dish.id] += 1
+
+    # 构建响应数据
+    check_ins_list = []
+    current_date = start_date
+
+    # 生成日期范围内的所有日期（包括没有打卡的日期）
+    while current_date <= end_date:
+        date_str = current_date.isoformat()
+        dishes_for_date = check_ins_by_date.get(date_str, [])
+
+        # 序列化菜品数据
+        dishes_serialized = []
+        for dish_data in dishes_for_date:
+            dish = dish_data['dish']
+            # 构建图片URL
+            image_url = None
+            if dish.image:
+                image_url = dish.image.url
+                # 如果是相对路径，确保以 /media/ 开头
+                if not image_url.startswith('http'):
+                    if not image_url.startswith('/'):
+                        image_url = '/' + image_url
+
+            dishes_serialized.append({
+                'id': dish.id,
+                'name': dish.name,
+                'image': image_url,
+                'canteen_name': dish.canteen.name if dish.canteen else '',
+                'window_name': dish.window.name if dish.window else None,
+                'price': float(dish.price),
+                'rating': float(dish.rating),
+                'check_in_time': dish_data['check_in_time'].isoformat(),
+                'check_in_count': dish_data['check_in_count'],
+                'total_consumption': float(dish_data['total_consumption']),
+                'achievement_tier': dish_data['achievement_tier'],
+                'tags': [{'id': tag.id, 'name': tag.name} for tag in dish.tags.all()],
+            })
+
+        check_ins_list.append({
+            'date': date_str,
+            'dishes': dishes_serialized
+        })
+
+        current_date += timedelta(days=1)
+
+    # 计算统计摘要
+    most_frequent_dish = None
+    if dish_frequency:
+        most_frequent_dish_id = max(dish_frequency.items(), key=lambda x: x[1])[0]
+        most_frequent_dish_obj = Dish.objects.get(id=most_frequent_dish_id)
+        most_frequent_dish = {
+            'id': most_frequent_dish_obj.id,
+            'name': most_frequent_dish_obj.name,
+            'count': dish_frequency[most_frequent_dish_id]
+        }
+
+    summary = {
+        'total_check_ins': total_check_ins,
+        'total_dishes': len(unique_dishes),
+        'total_consumption': float(total_consumption),
+        'most_frequent_dish': most_frequent_dish
+    }
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'check_ins': check_ins_list,
+            'summary': summary
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name='year',
+            type=int,
+            location=OpenApiParameter.QUERY,
+            description='年份',
+            required=True,
+        ),
+        OpenApiParameter(
+            name='month',
+            type=int,
+            location=OpenApiParameter.QUERY,
+            description='月份（1-12）',
+            required=True,
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(description='获取成功'),
+        401: OpenApiResponse(description='未授权，请先登录'),
+        400: OpenApiResponse(description='参数错误'),
+    },
+    description='获取月度打卡概览（快速查看哪些日期有打卡）',
+    summary='获取月度打卡概览',
+    tags=['Profile'],
+)
+@api_view(['GET'])
+@login_required
+def get_check_in_calendar(request):
+    """
+    获取月度打卡概览（快速查看哪些日期有打卡）
+    """
+    # 获取用户
+    auth_user = _get_or_create_auth_user(request)
+    if not auth_user:
+        return Response({
+            'code': 401,
+            'message': '未授权，请先登录'
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
+    # 获取参数
+    try:
+        year = int(request.query_params.get('year'))
+        month = int(request.query_params.get('month'))
+
+        if not (1 <= month <= 12):
+            return Response({
+                'code': 400,
+                'message': '月份必须在1-12之间'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    except (ValueError, TypeError):
+        return Response({
+            'code': 400,
+            'message': '年份和月份参数必需且必须为整数'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # 计算月份的开始和结束日期
+    start_date = datetime(year, month, 1).date()
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
+    else:
+        end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
+
+    # 查询该月的打卡记录，按日期分组统计
+    check_in_records = DishCheckInRecord.objects.filter(
+        user=auth_user,
+        checked_in_at__date__gte=start_date,
+        checked_in_at__date__lte=end_date
+    ).values('checked_in_at__date').annotate(count=Count('id')).order_by('checked_in_at__date')
+
+    # 构建响应数据
+    check_in_dates = [
+        {
+            'date': record['checked_in_at__date'].isoformat(),
+            'count': record['count']
+        }
+        for record in check_in_records
+    ]
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'year': year,
+            'month': month,
+            'check_in_dates': check_in_dates
         }
     }, status=status.HTTP_200_OK)
