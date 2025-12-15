@@ -26,4 +26,10 @@ urlpatterns = [
     path("profile/recommended-dishes", views.get_recommended_dishes, name="get_recommended_dishes"),
     # 基于位置的推荐
     path("profile/nearby-dishes", views.get_nearby_recommended_dishes, name="get_nearby_recommended_dishes"),
+    # 美食日历相关
+    path("profile/check-in-history", views.get_check_in_history, name="get_check_in_history"),
+    path("profile/check-in-calendar", views.get_check_in_calendar, name="get_check_in_calendar"),
+    # 内容审核相关（管理员功能）
+    path("audit/pending", views.get_pending_contents, name="get_pending_contents"),
+    path("audit/<str:content_type>/<str:content_id>", views.audit_content, name="audit_content"),
 ]

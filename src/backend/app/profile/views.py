@@ -16,6 +16,8 @@ from .serializers import (
     UserProfileSerializer,
     UserStatsSerializer,
     UserPreferenceTagsSerializer,
+    PendingContentSerializer,
+    AuditActionSerializer,
 )
 from list.models import Tag, Dish, Canteen
 from list.serializers import TagSerializer, DishListSerializer, CanteenSerializer
@@ -310,6 +312,239 @@ def get_my_posts(request):
     }, status=status.HTTP_200_OK)
 
 
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
 @extend_schema(
     responses={
         200: OpenApiResponse(description="获取最近3个帖子成功"),
@@ -337,6 +572,239 @@ def get_recent_posts(request):
         'message': '获取成功',
         'data': serializer.data
     }, status=status.HTTP_200_OK)
+
+
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 @extend_schema(
@@ -382,6 +850,239 @@ def get_liked_posts(request):
             }
         }
     }, status=status.HTTP_200_OK)
+
+
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 @extend_schema(
@@ -437,6 +1138,239 @@ def get_my_comments(request):
     }, status=status.HTTP_200_OK)
 
 
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
 # ==================== 用户偏好标签管理 ====================
 
 @extend_schema(
@@ -484,6 +1418,239 @@ def get_preference_tags(request):
         'message': '获取偏好标签成功',
         'data': serializer.data
     }, status=status.HTTP_200_OK)
+
+
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 @extend_schema(
@@ -565,6 +1732,239 @@ def set_preference_tags(request):
     }, status=status.HTTP_200_OK)
 
 
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
 @extend_schema(
     request={
         "application/json": {
@@ -631,6 +2031,239 @@ def add_preference_tags(request):
         'message': '偏好标签添加成功',
         'data': result_serializer.data
     }, status=status.HTTP_200_OK)
+
+
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 # ==================== 距离计算工具函数 ====================
@@ -794,6 +2427,239 @@ def get_recommended_dishes(request):
                 }
             }, status=status.HTTP_200_OK)
 
+
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
+
         except ValueError:
             pass  # 位置参数格式错误，降级为无位置排序
 
@@ -822,6 +2688,239 @@ def get_recommended_dishes(request):
             'location_enabled': False
         }
     }, status=status.HTTP_200_OK)
+
+
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 # ==================== 基于位置的推荐（仅最近食堂） ====================
@@ -976,3 +3075,236 @@ def get_nearby_recommended_dishes(request):
             'user_tags': TagSerializer(user_tags, many=True).data if user_tags.exists() else []
         }
     }, status=status.HTTP_200_OK)
+
+
+# ==================== 内容审核视图 ====================
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="获取待审核内容列表成功",
+            response={
+                "type": "object",
+                "properties": {
+                    "code": {"type": "integer", "example": 200},
+                    "message": {"type": "string", "example": "获取成功"},
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "pending_contents": {"type": "array"},
+                            "total": {"type": "integer"}
+                        }
+                    }
+                }
+            }
+        ),
+        403: OpenApiResponse(description="权限不足"),
+    },
+    description="获取所有待审核的内容（管理员功能）",
+    summary="获取待审核内容",
+    tags=["Audit"],
+)
+@api_view(['GET'])
+@login_required
+def get_pending_contents(request):
+    """
+    获取所有待审核的内容
+    仅管理员可访问
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    pending_contents = []
+
+    # 获取待审核的帖子
+    from post.models import Post
+    pending_posts = Post.objects.filter(status='pending').select_related('author', 'dish')
+    for post in pending_posts:
+        pending_contents.append({
+            'id': post.id,
+            'type': 'post',
+            'title': post.subject,
+            'content': post.content,
+            'author': post.author.username,
+            'created_at': post.created_at,
+            'images': post.images,
+        })
+
+    # 获取待审核的评论
+    from post.models import Comment
+    pending_comments = Comment.objects.filter(status='pending').select_related('author', 'post')
+    for comment in pending_comments:
+        pending_contents.append({
+            'id': comment.id,
+            'type': 'comment',
+            'title': f'回复: {comment.post.subject}',
+            'content': comment.content,
+            'author': comment.author.username,
+            'created_at': comment.created_at,
+            'images': comment.images,
+        })
+
+    # 获取待审核的菜品评论
+    from list.models import Review
+    pending_reviews = Review.objects.filter(status='pending').select_related('user', 'dish')
+    for review in pending_reviews:
+        pending_contents.append({
+            'id': review.id,
+            'type': 'review',
+            'title': f'评价: {review.dish.name}',
+            'content': review.content,
+            'author': review.user.username,
+            'created_at': review.created_at,
+            'images': review.images,
+        })
+
+    # 获取待审核的标签
+    from list.models import Dish
+    pending_tags = Dish.objects.filter(pending_tags__isnull=False).distinct()
+    for dish in pending_tags:
+        pending_tag_objects = dish.pending_tags.all()
+        for tag in pending_tag_objects:
+            pending_contents.append({
+                'id': f"{dish.id}_{tag.id}",
+                'type': 'tag',
+                'title': f'标签: {tag.name}',
+                'content': f'用户为菜品"{dish.name}"添加标签"{tag.name}"',
+                'author': '用户',  # 标签添加者信息可能需要额外存储
+                'created_at': dish.created_at,
+                'images': [],
+            })
+
+    return Response({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'pending_contents': pending_contents,
+            'total': len(pending_contents)
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    request=AuditActionSerializer,
+    responses={
+        200: OpenApiResponse(description="审核操作成功"),
+        400: OpenApiResponse(description="参数错误"),
+        403: OpenApiResponse(description="权限不足"),
+        404: OpenApiResponse(description="内容不存在"),
+    },
+    description="审核指定内容（管理员功能）",
+    summary="审核内容",
+    tags=["Audit"],
+)
+@api_view(['POST'])
+@login_required
+def audit_content(request, content_type, content_id):
+    """
+    审核指定内容
+    URL: /api/v1/profile/audit/{content_type}/{content_id}/
+    content_type: post/comment/review/tag
+    """
+    user = request.user
+
+    # 检查是否为管理员
+    if not (user.is_staff or user.is_superuser):
+        return Response({
+            'code': 403,
+            'message': '权限不足，仅管理员可访问'
+        }, status=status.HTTP_403_FORBIDDEN)
+
+    # 验证请求数据
+    serializer = AuditActionSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response({
+            'code': 400,
+            'message': '参数错误',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    action = serializer.validated_data['action']
+    reason = serializer.validated_data.get('reason', '')
+
+    from django.utils import timezone
+
+    try:
+        # 根据内容类型处理审核
+        if content_type == 'post':
+            from post.models import Post
+            content_obj = Post.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'comment':
+            from post.models import Comment
+            content_obj = Comment.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'review':
+            from list.models import Review
+            content_obj = Review.objects.get(id=content_id, status='pending')
+
+        elif content_type == 'tag':
+            # 标签审核比较特殊，需要解析 dish_id 和 tag_id
+            try:
+                dish_id, tag_id = content_id.split('_')
+                dish_id = int(dish_id)
+                tag_id = int(tag_id)
+            except ValueError:
+                return Response({
+                    'code': 400,
+                    'message': '无效的标签ID格式'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            from list.models import Dish, Tag
+            dish = Dish.objects.get(id=dish_id)
+            tag = Tag.objects.get(id=tag_id)
+
+            if action == 'approve':
+                # 批准标签：从 pending_tags 移到 tags
+                if tag in dish.pending_tags.all() and tag not in dish.tags.all():
+                    dish.tags.add(tag)
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核通过'
+            else:
+                # 拒绝标签：从 pending_tags 中移除
+                dish.pending_tags.remove(tag)
+                message = f'标签"{tag.name}"审核拒绝'
+
+            return Response({
+                'code': 200,
+                'message': message
+            }, status=status.HTTP_200_OK)
+
+        else:
+            return Response({
+                'code': 400,
+                'message': '不支持的内容类型'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 处理帖子、评论、评价的审核
+        if action == 'approve':
+            content_obj.status = 'approved'
+            content_obj.audit_reason = ''
+            message = '内容审核通过'
+        else:
+            content_obj.status = 'rejected'
+            content_obj.audit_reason = reason
+            message = f'内容审核拒绝: {reason}'
+
+        content_obj.audited_at = timezone.now()
+        content_obj.save()
+
+        return Response({
+            'code': 200,
+            'message': message
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({
+            'code': 404,
+            'message': '内容不存在或已审核'
+        }, status=status.HTTP_404_NOT_FOUND)
