@@ -34,6 +34,45 @@ class UpdateProfileSerializer(serializers.Serializer):
         return value
 
 
+# ==================== 审核相关序列化器 ====================
+
+class PendingContentSerializer(serializers.Serializer):
+    """
+    待审核内容序列化器
+    """
+    id = serializers.IntegerField(help_text="内容ID")
+    type = serializers.CharField(help_text="内容类型")
+    title = serializers.CharField(help_text="标题")
+    content = serializers.CharField(help_text="内容")
+    author = serializers.CharField(help_text="作者")
+    created_at = serializers.DateTimeField(help_text="创建时间")
+    images = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="图片列表"
+    )
+
+
+class AuditActionSerializer(serializers.Serializer):
+    """
+    审核操作序列化器
+    """
+    action = serializers.ChoiceField(
+        choices=['approve', 'reject'],
+        help_text="审核操作：approve(通过) 或 reject(拒绝)"
+    )
+    reason = serializers.CharField(
+        max_length=100,
+        required=False,
+        help_text="拒绝原因（当action为reject时必填）"
+    )
+
+    def validate(self, data):
+        if data['action'] == 'reject' and not data.get('reason'):
+            raise serializers.ValidationError("拒绝审核时必须提供原因")
+        return data
+
+
 class UpdatePasswordSerializer(serializers.Serializer):
     """
     修改密码序列化器
@@ -91,3 +130,42 @@ class UserPreferenceTagsSerializer(serializers.Serializer):
             raise serializers.ValidationError("部分标签ID不存在")
 
         return value
+
+
+# ==================== 审核相关序列化器 ====================
+
+class PendingContentSerializer(serializers.Serializer):
+    """
+    待审核内容序列化器
+    """
+    id = serializers.IntegerField(help_text="内容ID")
+    type = serializers.CharField(help_text="内容类型")
+    title = serializers.CharField(help_text="标题")
+    content = serializers.CharField(help_text="内容")
+    author = serializers.CharField(help_text="作者")
+    created_at = serializers.DateTimeField(help_text="创建时间")
+    images = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="图片列表"
+    )
+
+
+class AuditActionSerializer(serializers.Serializer):
+    """
+    审核操作序列化器
+    """
+    action = serializers.ChoiceField(
+        choices=['approve', 'reject'],
+        help_text="审核操作：approve(通过) 或 reject(拒绝)"
+    )
+    reason = serializers.CharField(
+        max_length=100,
+        required=False,
+        help_text="拒绝原因（当action为reject时必填）"
+    )
+
+    def validate(self, data):
+        if data['action'] == 'reject' and not data.get('reason'):
+            raise serializers.ValidationError("拒绝审核时必须提供原因")
+        return data
