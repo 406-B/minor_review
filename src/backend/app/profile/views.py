@@ -138,6 +138,21 @@ def update_profile(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    # 如果有昵称更新，进行审核
+    if nickname is not None:
+        from utils.audit import audit_content
+        is_passed, reason = audit_content(
+            content=nickname,
+            content_type='nickname',
+            title=f'用户{user.username}昵称'
+        )
+
+        if not is_passed:
+            return Response(
+                {"message": f"昵称审核未通过: {reason}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
     success, message = update_user_profile(user, nickname=nickname, avatar=avatar)
 
     if success:

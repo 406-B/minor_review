@@ -123,11 +123,29 @@ def create_post(request):
 
     # 进行内容审核
     from utils.audit import audit_content
-    is_passed, reason = audit_content(
+
+    # 审核帖子内容
+    is_passed_content, reason_content = audit_content(
         content=post.content,
         content_type='post',
         title=post.subject
     )
+
+    # 审核帖子标题
+    is_passed_title, reason_title = audit_content(
+        content=post.subject,
+        content_type='post_title',
+        title=''
+    )
+
+    # 只要内容或标题任一不通过，就拒绝
+    is_passed = is_passed_content and is_passed_title
+    if not is_passed_content:
+        reason = f"内容审核未通过: {reason_content}"
+    elif not is_passed_title:
+        reason = f"标题审核未通过: {reason_title}"
+    else:
+        reason = ""
 
     # 设置审核状态
     from django.utils import timezone
