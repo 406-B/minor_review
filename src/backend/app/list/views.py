@@ -539,6 +539,22 @@ def create_tag(request):
     """
     serializer = TagSerializer(data=request.data)
     if serializer.is_valid():
+        tag_name = serializer.validated_data['name']
+
+        # 审核标签名称
+        from utils.audit import audit_content
+        is_passed, reason = audit_content(
+            content=tag_name,
+            content_type='tag_name',
+            title='标签名称'
+        )
+
+        if not is_passed:
+            return Response({
+                'code': 400,
+                'message': f'标签名称审核未通过: {reason}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         serializer.save()
         return Response({
             'code': 201,
