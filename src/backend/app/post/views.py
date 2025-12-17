@@ -30,11 +30,11 @@ def post_list(request):
     jwt_authentication(request)
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
-    
+
     result = controllers.get_post_list(page=page, page_size=page_size)
-    
+
     serializer = PostSerializer(result['posts'], many=True, context={'request': request})
-    
+
     return JsonResponse({
         'code': 200,
         'message': '获取成功',
@@ -64,15 +64,15 @@ def post_detail(request, post_id):
     # TODO: 登录页实现后可删除 - 临时在 GET 视图中显式触发 JWT 认证
     jwt_authentication(request)
     post = controllers.get_post_detail(post_id)
-    
+
     if not post:
         return JsonResponse({
             'code': 404,
             'message': '帖子不存在'
         }, status=404)
-    
+
     serializer = PostDetailSerializer(post, context={'request': request})
-    
+
     return JsonResponse({
         'code': 200,
         'message': '获取成功',
@@ -102,26 +102,69 @@ def create_post(request):
             'code': 400,
             'message': '无效的 JSON 数据'
         }, status=400)
-    
+
     serializer = CreatePostSerializer(data=data)
-    
+
     if not serializer.is_valid():
         return JsonResponse({
             'code': 400,
             'message': '数据验证失败',
             'errors': serializer.errors
         }, status=400)
-    
+
+    # 先进行内容审核（在创建之前）
+    from utils.audit import audit_content
+
+    subject = serializer.validated_data['subject']
+    content = serializer.validated_data['content']
+
+    # 审核帖子内容
+    is_passed_content, reason_content = audit_content(
+        content=content,
+        content_type='post',
+        title=subject
+    )
+
+    # 审核帖子标题
+    is_passed_title, reason_title = audit_content(
+        content=subject,
+        content_type='post_title',
+        title=''
+    )
+
+    # 只要内容或标题任一不通过，就拒绝
+    is_passed = is_passed_content and is_passed_title
+    if not is_passed_content:
+        reason = f"内容审核未通过: {reason_content}"
+    elif not is_passed_title:
+        reason = f"标题审核未通过: {reason_title}"
+    else:
+        reason = ""
+
+    # 如果审核未通过，直接返回错误，不保存到数据库
+    if not is_passed:
+        return JsonResponse({
+            'code': 400,
+            'message': f'发布失败，{reason}'
+        }, status=400)
+
+    # 审核通过，创建帖子
     post = controllers.create_post(
         user=request.user,
-        subject=serializer.validated_data['subject'],
-        content=serializer.validated_data['content'],
+        subject=subject,
+        content=content,
         images=serializer.validated_data.get('images', []),  # 图片列表，默认为空
         dish=serializer.validated_data.get('dish')  # 菜品可为空
     )
-    
+
+    # 设置为已审核通过状态
+    from django.utils import timezone
+    post.status = 'approved'
+    post.audited_at = timezone.now()
+    post.save()
+
     result_serializer = PostSerializer(post, context={'request': request})
-    
+
     return JsonResponse({
         'code': 200,
         'message': '发布成功',
@@ -145,13 +188,13 @@ def create_post(request):
 def delete_post(request, post_id):
     """删除帖子"""
     success, message = controllers.delete_post(request.user, post_id)
-    
+
     if not success:
         return JsonResponse({
             'code': 403,
             'message': message
         }, status=403)
-    
+
     return JsonResponse({
         'code': 200,
         'message': message
@@ -174,13 +217,13 @@ def delete_post(request, post_id):
 def toggle_post_like(request, post_id):
     """切换帖子点赞状态"""
     result, message = controllers.toggle_post_like(request.user, post_id)
-    
+
     if result is None:
         return JsonResponse({
             'code': 404,
             'message': message
         }, status=404)
-    
+
     return JsonResponse({
         'code': 200,
         'message': message,
@@ -211,35 +254,61 @@ def create_comment(request):
             'code': 400,
             'message': '无效的 JSON 数据'
         }, status=400)
-    
+
     serializer = CreateCommentSerializer(data=data)
-    
+
     if not serializer.is_valid():
         return JsonResponse({
             'code': 400,
             'message': '数据验证失败',
             'errors': serializer.errors
         }, status=400)
+
+    # 先进行内容审核（在创建之前）
+    from utils.audit import audit_content
     
+    content = serializer.validated_data['content']
+    post = serializer.validated_data['post']
+    
+    is_passed, reason = audit_content(
+        content=content,
+        content_type='comment',
+        title=f'回复: {post.subject}'
+    )
+
+    # 如果审核未通过，直接返回错误，不保存到数据库
+    if not is_passed:
+        return JsonResponse({
+            'code': 400,
+            'message': f'评论发布失败，内容审核未通过: {reason}'
+        }, status=400)
+
+    # 审核通过，创建评论
     comment, message = controllers.create_comment(
         user=request.user,
-        post_id=serializer.validated_data['post'].id,
-        content=serializer.validated_data['content'],
+        post_id=post.id,
+        content=content,
         images=serializer.validated_data.get('images', []),  # 图片列表，默认为空
         parent_id=serializer.validated_data.get('parent').id if serializer.validated_data.get('parent') else None  # 父评论 ID
     )
-    
+
     if not comment:
         return JsonResponse({
             'code': 404,
             'message': message
         }, status=404)
-    
+
+    # 设置为已审核通过状态
+    from django.utils import timezone
+    comment.status = 'approved'
+    comment.audited_at = timezone.now()
+    comment.save()
+
     result_serializer = CommentSerializer(comment, context={'request': request})
-    
+
     return JsonResponse({
         'code': 200,
-        'message': message,
+        'message': '评论发布成功',
         'data': result_serializer.data
     })
 
@@ -261,17 +330,17 @@ def comment_list(request, post_id):
     jwt_authentication(request)
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
-    
+
     result, error = controllers.get_post_comments(post_id, page=page, page_size=page_size)
-    
+
     if error:
         return JsonResponse({
             'code': 404,
             'message': error
         }, status=404)
-    
+
     serializer = CommentSerializer(result['comments'], many=True, context={'request': request})
-    
+
     return JsonResponse({
         'code': 200,
         'message': '获取成功',
@@ -303,13 +372,13 @@ def comment_list(request, post_id):
 def delete_comment(request, comment_id):
     """删除评论"""
     success, message = controllers.delete_comment(request.user, comment_id)
-    
+
     if not success:
         return JsonResponse({
             'code': 403,
             'message': message
         }, status=403)
-    
+
     return JsonResponse({
         'code': 200,
         'message': message
@@ -331,13 +400,13 @@ def delete_comment(request, comment_id):
 def toggle_comment_like(request, comment_id):
     """切换评论点赞状态"""
     result, message = controllers.toggle_comment_like(request.user, comment_id)
-    
+
     if result is None:
         return JsonResponse({
             'code': 404,
             'message': message
         }, status=404)
-    
+
     return JsonResponse({
         'code': 200,
         'message': message,
@@ -361,11 +430,11 @@ def toggle_comment_like(request, comment_id):
 def forum_home(request):
     """
     论坛主页 - 获取帖子列表
-    
+
     支持两种排序方式：
     1. time: 按发布时间排序（最新的在前）
     2. hot: 按热度排序（热度 = 点赞数 * 2 + 评论数）
-    
+
     返回帖子的标题和内容前30字预览
     """
     # TODO: 登录页实现后可删除 - 临时在 GET 视图中显式触发 JWT 认证
@@ -373,18 +442,18 @@ def forum_home(request):
     sort_by = request.GET.get('sort_by', 'time')
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
-    
+
     # 验证排序参数
     if sort_by not in ['time', 'hot']:
         return JsonResponse({
             'code': 400,
             'message': '排序参数错误，仅支持 time 或 hot'
         }, status=400)
-    
+
     result = controllers.get_forum_home(sort_by=sort_by, page=page, page_size=page_size)
-    
+
     serializer = PostHomeSerializer(result['posts'], many=True, context={'request': request})
-    
+
     return JsonResponse({
         'code': 200,
         'message': '获取成功',
@@ -421,7 +490,7 @@ def dish_posts(request, dish_id):
     jwt_authentication(request)
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
-    
+
     # 验证菜品是否存在
     from list.models import Dish
     try:
@@ -431,11 +500,11 @@ def dish_posts(request, dish_id):
             'code': 404,
             'message': '菜品不存在'
         }, status=404)
-    
+
     result = controllers.get_dish_posts(dish_id=dish_id, page=page, page_size=page_size)
-    
+
     serializer = PostSerializer(result['posts'], many=True, context={'request': request})
-    
+
     return JsonResponse({
         'code': 200,
         'message': '获取成功',

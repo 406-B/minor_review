@@ -177,3 +177,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 JWT_SECRET = "django-insecure-jwt-secret-key-change-in-production"
 JWT_EXPIRE_HOURS = 24
 SALT = "django-insecure-salt-change-in-production"  # 密码加密盐值
+
+# DeepSeek API 配置（用于内容审核）
+DEEPSEEK_API_KEY = "sk-6ca4652a7c6f42e2b84564aaca772eb0"
