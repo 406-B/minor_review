@@ -7,6 +7,13 @@ class Post(models.Model):
     帖子模型
     记录用户发布的帖子信息
     """
+
+    STATUS_CHOICES = [
+        ('pending', '待审核'),
+        ('approved', '已通过'),
+        ('rejected', '已拒绝'),
+    ]
+
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -28,6 +35,25 @@ class Post(models.Model):
         related_name='posts',
         help_text="关联的菜品（可选）"
     )
+
+    # 审核相关字段
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        help_text="审核状态"
+    )
+    audit_reason = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="审核不通过原因"
+    )
+    audited_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="审核时间"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, help_text="创建时间")
     updated_at = models.DateTimeField(auto_now=True, help_text="更新时间")
     likes_count = models.IntegerField(default=0, help_text="点赞数")
@@ -51,6 +77,13 @@ class Comment(models.Model):
     评论模型
     记录用户对帖子的评论
     """
+
+    STATUS_CHOICES = [
+        ('pending', '待审核'),
+        ('approved', '已通过'),
+        ('rejected', '已拒绝'),
+    ]
+
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
@@ -77,6 +110,25 @@ class Comment(models.Model):
         related_name='replies',
         help_text="父评论（用于回复功能）"
     )
+
+    # 审核相关字段
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        help_text="审核状态"
+    )
+    audit_reason = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="审核不通过原因"
+    )
+    audited_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="审核时间"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True, help_text="创建时间")
     updated_at = models.DateTimeField(auto_now=True, help_text="更新时间")
     likes_count = models.IntegerField(default=0, help_text="点赞数")
@@ -104,7 +156,7 @@ class Like(models.Model):
         ('post', '帖子'),
         ('comment', '评论'),
     ]
-    
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
