@@ -539,6 +539,22 @@ def create_tag(request):
     """
     serializer = TagSerializer(data=request.data)
     if serializer.is_valid():
+        tag_name = serializer.validated_data['name']
+
+        # 审核标签名称
+        from utils.audit import audit_content
+        is_passed, reason = audit_content(
+            content=tag_name,
+            content_type='tag_name',
+            title='标签名称'
+        )
+
+        if not is_passed:
+            return Response({
+                'code': 400,
+                'message': f'标签名称审核未通过: {reason}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         serializer.save()
         return Response({
             'code': 201,
@@ -628,11 +644,33 @@ def create_review(request, dish_id):
     if serializer.is_valid():
         review = serializer.save(user=user, dish=dish, rating=rating_obj, published_score=rating_obj.score)
 
+        # 进行内容审核
+        from utils.audit import audit_content
+        is_passed, reason = audit_content(
+            content=review.content,
+            content_type='review',
+            title=f'评价: {dish.name}'
+        )
+
+        # 设置审核状态
+        from django.utils import timezone
+        if is_passed:
+            review.status = 'approved'
+            review.audited_at = timezone.now()
+            message = '评论创建成功'
+        else:
+            review.status = 'rejected'
+            review.audit_reason = reason
+            review.audited_at = timezone.now()
+            message = f'评论创建失败，内容审核未通过: {reason}'
+
+        review.save()
+
         return Response({
-            'code': 201,
-            'message': '评论创建成功',
+            'code': 201 if is_passed else 400,
+            'message': message,
             'data': ReviewSerializer(review).data
-        }, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED if is_passed else status.HTTP_400_BAD_REQUEST)
 
     return Response({
         'code': 400,
