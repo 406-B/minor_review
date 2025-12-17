@@ -9,13 +9,9 @@
           <RecommendList :loading="loading.pref" :dishes="data.pref.dishes"/>
           <el-empty v-if="!loading.pref && (!data.pref.dishes || data.pref.dishes.length===0)" description="暂无数据" />
         </el-tab-pane>
-        <el-tab-pane label="按位置推荐" name="geo">
-          <div class="row">
-            <el-button type="primary" @click="locate" :loading="geo.loading">获取当前位置</el-button>
-            <span class="hint" v-if="geo.pos">纬度 {{ geo.pos.lat.toFixed(5) }}, 经度 {{ geo.pos.lng.toFixed(5) }}</span>
-          </div>
-          <RecommendList :loading="loading.geo" :dishes="data.geo.dishes"/>
-          <el-empty v-if="!loading.geo && (!data.geo.dishes || data.geo.dishes.length===0)" description="暂无数据" />
+        <el-tab-pane label="按热度推荐" name="hot">
+          <RecommendList :loading="loading.hot" :dishes="data.hot.dishes"/>
+          <el-empty v-if="!loading.hot && (!data.hot.dishes || data.hot.dishes.length===0)" description="暂无数据" />
         </el-tab-pane>
         <el-tab-pane label="综合推荐" name="mix">
           <RecommendList :loading="loading.mix" :dishes="data.mix.dishes"/>
@@ -32,13 +28,13 @@ import { useRoute } from 'vue-router'
 import PageContainer from '@/components/ui/PageContainer.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
 import RecommendList from '@/components/RecommendList.vue'
-import { getRecommendedDishes, getNearbyRecommendedDishes } from '@/api/profile'
+import { getRecommendedDishes } from '@/api/profile'
+import { getHotDishes } from '@/utils/api/listApi'
 
 const route = useRoute()
 const active = ref('pref')
-const loading = ref({ pref: false, geo: false, mix: false })
-const data = ref({ pref: { dishes: [] }, geo: { dishes: [] }, mix: { dishes: [] } })
-const geo = ref({ loading: false, pos: null })
+const loading = ref({ pref: false, hot: false, mix: false })
+const data = ref({ pref: { dishes: [] }, hot: { dishes: [] }, mix: { dishes: [] } })
 
 const loadPref = async () => {
   loading.value.pref = true
@@ -62,35 +58,26 @@ const loadPref = async () => {
   }
 }
 
-const loadGeo = async () => {
-  if (!geo.value.pos) return
-  loading.value.geo = true
+const loadHot = async () => {
+  loading.value.hot = true
   try {
-    const res = await getNearbyRecommendedDishes({ latitude: geo.value.pos.lat, longitude: geo.value.pos.lng })
-    data.value.geo = res?.data ?? res ?? { dishes: [] }
+    const res = await getHotDishes({ limit: 30 })
+    const list = res?.data ?? res ?? []
+    data.value.hot = Array.isArray(list) ? { dishes: list } : (list || { dishes: [] })
   } catch (e) {
-    const status = e?.response?.status
-    if (status === 404) {
-      window.$message?.info?.('附近暂无可用食堂位置信息')
-      data.value.geo = { dishes: [] }
-    } else {
-      window.$message?.error?.(e?.message || '加载失败')
-    }
+    window.$message?.error?.(e?.message || '加载失败')
+    data.value.hot = { dishes: [] }
   } finally {
-    loading.value.geo = false
+    loading.value.hot = false
   }
 }
 
 const loadMix = async () => {
   loading.value.mix = true
   try {
-    if (geo.value.pos) {
-      const res = await getRecommendedDishes({ latitude: geo.value.pos.lat, longitude: geo.value.pos.lng })
-      data.value.mix = res?.data ?? res ?? { dishes: [] }
-    } else {
-      const res = await getRecommendedDishes()
-      data.value.mix = res?.data ?? res ?? { dishes: [] }
-    }
+    // 使用后端综合推荐结果，不在前端融合
+    const res = await getRecommendedDishes()
+    data.value.mix = res?.data ?? res ?? { dishes: [] }
   } catch (e) {
     const status = e?.response?.status
     if (status === 404) {
@@ -104,35 +91,19 @@ const loadMix = async () => {
   }
 }
 
-const locate = () => {
-  geo.value.loading = true
-  if (!('geolocation' in navigator)) {
-    geo.value.loading = false
-    window.$message?.error?.('浏览器不支持定位')
-    return
-  }
-  navigator.geolocation.getCurrentPosition((pos) => {
-    geo.value.pos = { lat: pos.coords.latitude, lng: pos.coords.longitude }
-    geo.value.loading = false
-    loadGeo()
-    if (active.value === 'mix') loadMix()
-  }, () => {
-    geo.value.loading = false
-    window.$message?.error?.('无法获取定位权限')
-  })
-}
+// 位置推荐已下线，改用热度推荐
 
 onMounted(() => {
   const t = route.query.tab
-  if (t === 'geo' || t === 'mix' || t === 'pref') active.value = t
+  if (t === 'hot' || t === 'mix' || t === 'pref') active.value = t
   if (active.value === 'pref') loadPref()
-  if (active.value === 'geo') locate()
+  if (active.value === 'hot') loadHot()
   if (active.value === 'mix') loadMix()
 })
 
 watch(active, (tab) => {
   if (tab === 'pref') loadPref()
-  if (tab === 'geo') loadGeo()
+  if (tab === 'hot') loadHot()
   if (tab === 'mix') loadMix()
 })
 </script>
