@@ -6,7 +6,13 @@
     
     <div class="calendar-detail">
       <div class="header">
-        <h2>美食日历</h2>
+        <div class="header-left">
+          <button class="back-btn" @click="$router.back()">
+            <span>←</span>
+            <span>返回</span>
+          </button>
+          <h2>美食日历</h2>
+        </div>
         <div class="month-selector">
           <button class="nav-btn" @click="prevMonth" :disabled="loading">
             <span>‹</span>
@@ -54,16 +60,57 @@
           >
             <div class="day-number">{{ day }}</div>
             <div v-if="hasCheckIn(day)" class="dishes-preview">
-              <div class="dish-dots">
-                <span 
-                  v-for="(dish, idx) in getDayDishes(day).slice(0, 3)" 
-                  :key="idx"
-                  class="dish-dot"
-                  :class="`achievement-${getAchievementKey(dish)}`"
-                ></span>
-                <span v-if="getDayDishes(day).length > 3" class="more-count">
-                  +{{ getDayDishes(day).length - 3 }}
-                </span>
+              <div 
+                v-for="(dish, idx) in getMergedDayDishes(day).slice(0, 4)" 
+                :key="idx"
+                class="dish-item"
+                :class="`achievement-${getAchievementKey(dish)}`"
+                @mouseenter="hoverDish = { day, dishId: dish.id }"
+                @mouseleave="hoverDish = null"
+              >
+                <span class="dish-name-text">{{ dish.name }}</span>
+                <span class="dish-count">×{{ dish.daily_check_count }}</span>
+                
+                <!-- 悬浮卡片 -->
+                <transition name="tooltip-fade">
+                  <div 
+                    v-if="hoverDish?.day === day && hoverDish?.dishId === dish.id" 
+                    class="dish-hover-card"
+                  >
+                    <div class="hover-header">
+                      <h4>{{ dish.name }}</h4>
+                      <div class="badge" :class="`achievement-${getAchievementKey(dish)}`">
+                        {{ getAchievementLabel(dish) }}
+                      </div>
+                    </div>
+                    
+                    <div class="hover-content">
+                      <div class="info-row">
+                        <span class="label">所属:</span>
+                        <span class="value">{{ dish.canteen_name }} - {{ dish.window_name }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="label">价格:</span>
+                        <span class="value price">¥{{ dish.price?.toFixed(2) }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="label">评分:</span>
+                        <span class="value rating">⭐ {{ dish.rating?.toFixed(1) }}</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="label">当天打卡:</span>
+                        <span class="value">{{ dish.daily_check_count }} 次</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="label">总打卡:</span>
+                        <span class="value">{{ dish.check_in_count }} 次</span>
+                      </div>
+                    </div>
+                  </div>
+                </transition>
+              </div>
+              <div v-if="getMergedDayDishes(day).length > 4" class="more-indicator">
+                …
               </div>
             </div>
             
@@ -74,12 +121,34 @@
                   <h4>{{ currentMonth }}/{{ day }} 的打卡</h4>
                   <button class="close-btn" @click="expandedDay = null">×</button>
                 </div>
-                <div class="detail-dishes">
-                  <DishCheckInCard 
-                    v-for="dish in getDayDishes(day)" 
-                    :key="dish.id"
-                    :dish="dish"
-                  />
+                <div class="detail-dishes-container">
+                  <!-- 左翻页按钮 -->
+                  <button 
+                    v-if="getMergedDayDishes(day).length > 6"
+                    class="detail-page-btn page-left"
+                    @click="prevDetailPage(day)"
+                    aria-label="上一页"
+                  >
+                    ◀
+                  </button>
+                  
+                  <div class="detail-dishes">
+                    <DishCheckInCard 
+                      v-for="dish in getCurrentDetailPageDishes(day)" 
+                      :key="dish.id"
+                      :dish="dish"
+                    />
+                  </div>
+                  
+                  <!-- 右翻页按钮 -->
+                  <button 
+                    v-if="getMergedDayDishes(day).length > 6"
+                    class="detail-page-btn page-right"
+                    @click="nextDetailPage(day)"
+                    aria-label="下一页"
+                  >
+                    ▶
+                  </button>
                 </div>
               </div>
             </transition>
@@ -135,12 +204,34 @@ const error = ref(null)
 const checkIns = ref([])
 const summary = ref(null)
 const expandedDay = ref(null)
+const hoverDish = ref(null)
+const detailPageIndexes = ref({})
 
 const currentDate = new Date()
 const currentYear = ref(currentDate.getFullYear())
 const currentMonth = ref(currentDate.getMonth() + 1)
 
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+
+// 合并同一天的相同菜品
+const getMergedDayDishes = (day) => {
+  const dishes = getDayDishes(day)
+  const dishMap = new Map()
+  
+  dishes.forEach(dish => {
+    if (dishMap.has(dish.id)) {
+      const existing = dishMap.get(dish.id)
+      existing.daily_check_count = (existing.daily_check_count || 1) + 1
+    } else {
+      dishMap.set(dish.id, {
+        ...dish,
+        daily_check_count: 1
+      })
+    }
+  })
+  
+  return Array.from(dishMap.values())
+}
 
 // 计算当月天数
 const daysInMonth = computed(() => {
@@ -230,11 +321,55 @@ const formatDate = (day) => {
 }
 
 const toggleExpand = (day) => {
-  expandedDay.value = expandedDay.value === day ? null : day
+  if (expandedDay.value === day) {
+    expandedDay.value = null
+  } else {
+    expandedDay.value = day
+    // 初始化该天的页码
+    if (!detailPageIndexes.value[day]) {
+      detailPageIndexes.value[day] = 0
+    }
+  }
+}
+
+// 获取展开详情当前页应该显示的菜品
+const getCurrentDetailPageDishes = (day) => {
+  const mergedDishes = getMergedDayDishes(day)
+  const currentPage = detailPageIndexes.value[day] || 0
+  const pageSize = 6
+  
+  if (mergedDishes.length <= pageSize) {
+    return mergedDishes
+  }
+  
+  const startIndex = currentPage * pageSize
+  return mergedDishes.slice(startIndex, startIndex + pageSize)
+}
+
+// 展开详情上一页
+const prevDetailPage = (day) => {
+  const mergedDishes = getMergedDayDishes(day)
+  const totalPages = Math.ceil(mergedDishes.length / 6)
+  const currentPage = detailPageIndexes.value[day] || 0
+  
+  detailPageIndexes.value[day] = currentPage === 0 ? totalPages - 1 : currentPage - 1
+}
+
+// 展开详情下一页
+const nextDetailPage = (day) => {
+  const mergedDishes = getMergedDayDishes(day)
+  const totalPages = Math.ceil(mergedDishes.length / 6)
+  const currentPage = detailPageIndexes.value[day] || 0
+  
+  detailPageIndexes.value[day] = (currentPage + 1) % totalPages
 }
 
 const getAchievementKey = (dish) => {
   return getAchievementByCount(dish.check_in_count || 0).key
+}
+
+const getAchievementLabel = (dish) => {
+  return getAchievementByCount(dish.check_in_count || 0).name
 }
 
 onMounted(() => {
@@ -256,6 +391,32 @@ onMounted(() => {
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 2px solid var(--color-border);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text);
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+  color: var(--brand-600);
 }
 
 .header h2 {
@@ -326,7 +487,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .weekday-label {
@@ -345,7 +506,7 @@ onMounted(() => {
 
 .calendar-cell {
   position: relative;
-  aspect-ratio: 1;
+  min-height: 120px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 8px;
@@ -367,6 +528,15 @@ onMounted(() => {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   border-color: var(--brand-400);
+  z-index: 10;
+}
+
+.calendar-cell:has(.dish-hover-card) {
+  z-index: 100;
+}
+
+.calendar-cell:has(.day-detail) {
+  z-index: 200;
 }
 
 .calendar-cell.is-today {
@@ -384,41 +554,183 @@ onMounted(() => {
 
 .dishes-preview {
   margin-top: 8px;
-}
-
-.dish-dots {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.dish-item {
+  position: relative;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+  background: var(--color-surface);
+  transition: all 0.2s;
+  cursor: pointer;
 }
 
-.dish-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
+.dish-item:hover {
+  background: var(--brand-50);
+  transform: translateX(2px);
 }
 
-.dish-dot.achievement-bronze {
+.dish-item.achievement-bronze {
+  border-left-color: #CD7F32;
+}
+
+.dish-item.achievement-silver {
+  border-left-color: #C0C0C0;
+}
+
+.dish-item.achievement-gold {
+  border-left-color: #FFD700;
+}
+
+.dish-item.achievement-rainbow {
+  border-left: 3px solid;
+  border-image: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff) 1;
+}
+
+.dish-name-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--color-text);
+}
+
+.dish-count {
+  font-size: 9px;
+  color: var(--color-muted);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.more-indicator {
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-muted);
+  padding: 4px 0;
+  font-weight: bold;
+}
+
+/* 悬浮卡片 */
+.dish-hover-card {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: 8px;
+  width: 220px;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  padding: 10px;
+}
+
+.dish-hover-card::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 8px;
+  border: 5px solid transparent;
+  border-right-color: white;
+}
+
+.hover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hover-header h4 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text);
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  color: white;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.badge.achievement-bronze {
   background: #CD7F32;
 }
 
-.dish-dot.achievement-silver {
+.badge.achievement-silver {
   background: #C0C0C0;
 }
 
-.dish-dot.achievement-gold {
+.badge.achievement-gold {
   background: #FFD700;
+  color: #333;
 }
 
-.dish-dot.achievement-rainbow {
+.badge.achievement-rainbow {
   background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
 }
 
-.more-count {
-  font-size: 10px;
+.hover-content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.info-row .label {
   color: var(--color-muted);
+  font-weight: 500;
+}
+
+.info-row .value {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.value.price {
+  color: #f56c6c;
+}
+
+.value.rating {
+  color: #ff9800;
+}
+
+.tooltip-fade-enter-active,
+.tooltip-fade-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.tooltip-fade-enter-from,
+.tooltip-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-4px);
 }
 
 .expand-btn {
@@ -442,24 +754,24 @@ onMounted(() => {
 .day-detail {
   position: absolute;
   top: 100%;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
   margin-top: 8px;
   background: white;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 100;
-  padding: 12px;
-  min-width: 280px;
+  z-index: 1002;
+  padding: 0;
+  min-width: 480px;
+  width: max-content;
 }
 
 .detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -487,10 +799,58 @@ onMounted(() => {
   color: var(--color-text);
 }
 
-.detail-dishes {
+.detail-dishes-container {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
+  padding: 16px;
+  min-height: 300px;
+  min-width: 450px;
+}
+
+.detail-page-btn {
+  width: 28px;
+  height: 110px;
+  border: 1px solid var(--color-border);
+  background: white;
+  color: var(--color-text);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.detail-page-btn:hover {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+  color: var(--brand-600);
+}
+
+.detail-page-btn:active {
+  transform: scale(0.95);
+}
+
+.detail-dishes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 12px;
+  flex: 1;
+  min-height: 270px;
+  max-height: 270px;
+}
+
+.detail-dishes :deep(.dish-card) {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  max-width: 110px;
+  margin: 0 auto;
+  overflow: visible;
 }
 
 .summary {

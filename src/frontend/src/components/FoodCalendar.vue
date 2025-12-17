@@ -15,16 +15,39 @@
         </div>
         
         <div class="dishes-container">
-          <template v-if="dayData.dishes && dayData.dishes.length > 0">
-            <DishCheckInCard 
-              v-for="dish in dayData.dishes" 
-              :key="dish.id + '-' + dayData.date"
-              :dish="dish"
-            />
-          </template>
-          <div v-else class="no-check-in">
-            <span>未打卡</span>
+          <!-- 翻页按钮 - 左 -->
+          <button 
+            v-if="getMergedDishes(dayData).length > 3"
+            class="page-btn page-left"
+            @click="prevPage(dayData.date)"
+            aria-label="上一页"
+          >
+            ◀
+          </button>
+          
+          <div class="dishes-wrapper">
+            <template v-if="getMergedDishes(dayData).length > 0">
+              <!-- 显示当前页的菜品 -->
+              <DishCheckInCard 
+                v-for="dish in getCurrentPageDishes(dayData)" 
+                :key="dish.id + '-' + dayData.date"
+                :dish="dish"
+              />
+            </template>
+            <div v-else class="no-check-in">
+              <span>未打卡</span>
+            </div>
           </div>
+          
+          <!-- 翻页按钮 - 右 -->
+          <button 
+            v-if="getMergedDishes(dayData).length > 3"
+            class="page-btn page-right"
+            @click="nextPage(dayData.date)"
+            aria-label="下一页"
+          >
+            ▶
+          </button>
         </div>
       </div>
     </div>
@@ -46,6 +69,8 @@ const props = defineProps({
 const loading = ref(false)
 const error = ref(null)
 const checkIns = ref([])
+// 记录每一天的当前页码
+const pageIndexes = ref({})
 
 const loadData = async () => {
   loading.value = true
@@ -56,6 +81,10 @@ const loadData = async () => {
     
     if (response.code === 200 && response.data) {
       checkIns.value = response.data.check_ins || []
+      // 初始化每天的页码为0
+      checkIns.value.forEach(day => {
+        pageIndexes.value[day.date] = 0
+      })
     } else {
       error.value = response.message || '获取打卡历史失败'
     }
@@ -65,6 +94,65 @@ const loadData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// 合并相同菜品，统计每个菜品在当天的打卡次数
+const getMergedDishes = (dayData) => {
+  if (!dayData.dishes || dayData.dishes.length === 0) {
+    return []
+  }
+  
+  const dishMap = new Map()
+  
+  dayData.dishes.forEach(dish => {
+    if (dishMap.has(dish.id)) {
+      // 相同菜品，累加当天打卡次数
+      const existing = dishMap.get(dish.id)
+      existing.daily_check_count = (existing.daily_check_count || 1) + 1
+    } else {
+      // 新菜品，初始化当天打卡次数为1
+      dishMap.set(dish.id, {
+        ...dish,
+        daily_check_count: 1
+      })
+    }
+  })
+  
+  return Array.from(dishMap.values())
+}
+
+// 获取当前页应该显示的菜品
+const getCurrentPageDishes = (dayData) => {
+  const mergedDishes = getMergedDishes(dayData)
+  const currentPage = pageIndexes.value[dayData.date] || 0
+  const pageSize = 3
+  
+  if (mergedDishes.length <= pageSize) {
+    return mergedDishes
+  }
+  
+  const startIndex = currentPage * pageSize
+  return mergedDishes.slice(startIndex, startIndex + pageSize)
+}
+
+// 上一页
+const prevPage = (date) => {
+  const mergedDishes = getMergedDishes(checkIns.value.find(d => d.date === date))
+  const totalPages = Math.ceil(mergedDishes.length / 3)
+  const currentPage = pageIndexes.value[date] || 0
+  
+  // 循环翻页：如果在第一页，跳到最后一页
+  pageIndexes.value[date] = currentPage === 0 ? totalPages - 1 : currentPage - 1
+}
+
+// 下一页
+const nextPage = (date) => {
+  const mergedDishes = getMergedDishes(checkIns.value.find(d => d.date === date))
+  const totalPages = Math.ceil(mergedDishes.length / 3)
+  const currentPage = pageIndexes.value[date] || 0
+  
+  // 循环翻页：如果在最后一页，跳到第一页
+  pageIndexes.value[date] = (currentPage + 1) % totalPages
 }
 
 const formatDateLabel = (dateStr) => {
@@ -133,7 +221,7 @@ onMounted(() => {
   border-radius: 8px;
   border: 1px solid var(--color-border);
   transition: all 0.2s;
-  min-height: 200px;
+  height: 450px;
 }
 
 .day-column:hover {
@@ -145,6 +233,7 @@ onMounted(() => {
   text-align: center;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .date {
@@ -160,11 +249,59 @@ onMounted(() => {
 }
 
 .dishes-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  padding: 8px 0;
+}
+
+.dishes-wrapper {
   display: flex;
   flex-direction: column;
   gap: 10px;
   align-items: center;
   flex: 1;
+  min-height: 0;
+}
+
+.page-btn {
+  width: 20px;
+  height: 48px;
+  border: 1px solid var(--color-border);
+  background: white;
+  color: var(--color-text);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.page-btn.page-left {
+  margin-right: 2px;
+}
+
+.page-btn.page-right {
+  margin-left: 2px;
+}
+
+.page-btn:hover {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+  color: var(--brand-600);
+}
+
+.page-btn:active {
+  transform: scale(0.95);
 }
 
 .no-check-in {
@@ -184,6 +321,10 @@ onMounted(() => {
   .calendar-content {
     grid-template-columns: repeat(4, 1fr);
   }
+  
+  .day-column {
+    height: 420px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -192,7 +333,7 @@ onMounted(() => {
   }
   
   .day-column {
-    min-height: 150px;
+    height: 380px;
   }
 }
 </style>
