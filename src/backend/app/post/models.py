@@ -183,3 +183,75 @@ class Like(models.Model):
 
     def __str__(self):
         return f"{self.user.username} likes {self.like_type} {self.object_id}"
+
+
+class Report(models.Model):
+    """
+    举报模型
+    记录用户对帖子、评论、评价等内容的举报
+    """
+    REPORT_TYPE_CHOICES = [
+        ('post', '帖子'),
+        ('comment', '评论'),
+        ('review', '评价'),
+    ]
+    
+    REASON_CHOICES = [
+        ('political', '政治敏感话题'),
+        ('obscene', '淫秽信息'),
+        ('advertisement', '恶意广告'),
+        ('attack', '人身攻击'),
+        ('other', '其他'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', '待处理'),
+        ('approved', '已处理'),
+        ('rejected', '已驳回'),
+    ]
+    
+    reporter = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reports',
+        help_text="举报人"
+    )
+    content_type = models.CharField(
+        max_length=20,
+        choices=REPORT_TYPE_CHOICES,
+        help_text="被举报内容类型"
+    )
+    content_id = models.IntegerField(help_text="被举报内容的ID")
+    reasons = models.JSONField(
+        default=list,
+        help_text="举报原因列表"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="补充说明"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        help_text="处理状态"
+    )
+    admin_note = models.TextField(
+        blank=True,
+        help_text="管理员备注"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, help_text="举报时间")
+    updated_at = models.DateTimeField(auto_now=True, help_text="更新时间")
+    
+    class Meta:
+        verbose_name = '举报'
+        verbose_name_plural = '举报'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['content_type', 'content_id']),
+            models.Index(fields=['reporter']),
+            models.Index(fields=['status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.reporter.username} 举报 {self.content_type} {self.content_id}"
