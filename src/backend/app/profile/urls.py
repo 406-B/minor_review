@@ -18,4 +18,15 @@ urlpatterns = [
     path("profile/posts/liked", views.get_liked_posts, name="get_liked_posts"),
     # 用户评论
     path("profile/comments", views.get_my_comments, name="get_my_comments"),
+    # 用户偏好标签
+    path("profile/preference-tags", views.get_preference_tags, name="get_preference_tags"),
+    path("profile/preference-tags/set", views.set_preference_tags, name="set_preference_tags"),
+    path("profile/preference-tags/add", views.add_preference_tags, name="add_preference_tags"),
+    # 个性化推荐
+    path("profile/recommended-dishes", views.get_recommended_dishes, name="get_recommended_dishes"),
+    # 基于位置的推荐
+    path("profile/nearby-dishes", views.get_nearby_recommended_dishes, name="get_nearby_recommended_dishes"),
+    # 美食日历相关
+    path("profile/check-in-history", views.get_check_in_history, name="get_check_in_history"),
+    path("profile/check-in-calendar", views.get_check_in_calendar, name="get_check_in_calendar"),
 ]

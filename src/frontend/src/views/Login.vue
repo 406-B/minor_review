@@ -1,7 +1,10 @@
 <template>
-  <div class="login-bg">
-    <el-card class="login-card">
-      <div style="color:red;font-weight:bold;text-align:center;">[Login.vue 页面已加载]</div>
+  <PageContainer>
+    <template #header>
+      <AppTopBar />
+    </template>
+    <div class="login-bg">
+      <el-card class="login-card">
       <h2 class="login-title">登录</h2>
       <el-form :model="loginForm" @submit.prevent="onLogin" label-width="80px" label-position="right">
         <el-form-item label="用户名">
@@ -17,14 +20,17 @@
           <router-link to="/register">没有账号？去注册</router-link>
         </el-form-item>
       </el-form>
-    </el-card>
-  </div>
+      </el-card>
+    </div>
+  </PageContainer>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { login } from '@/api/listApi';
+import PageContainer from '@/components/ui/PageContainer.vue'
+import AppTopBar from '@/components/ui/AppTopBar.vue'
 
 const router = useRouter();
 const loginForm = ref({ username: '', password: '' });
@@ -34,7 +40,19 @@ const onLogin = async () => {
   try {
     const res = await login(loginForm.value);
     console.log('login response', res); // 调试：接口响应
-    localStorage.setItem('jwt', res.jwt); // 修正为 res.jwt
+    
+    // 保存 JWT token
+    localStorage.setItem('jwt', res.jwt);
+    
+    // 保存用户信息（重要！用于权限判断）
+    const userInfo = {
+      id: res.userId,
+      username: res.username,
+      nickname: res.nickname
+    };
+    localStorage.setItem('userInfo', JSON.stringify(userInfo));
+    console.log('✅ 用户信息已保存到 localStorage:', userInfo);
+    
     router.push('/home');
   } catch (err) {
     console.error('login error', err); // 调试：错误信息

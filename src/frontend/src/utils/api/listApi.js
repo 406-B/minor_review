@@ -29,16 +29,26 @@ const api = axios.create({
 // 请求拦截器 - 添加认证 token
 api.interceptors.request.use(
 	(config) => {
-		// 从 localStorage 获取 token
-		const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+		// 统一支持多种 storage key，优先使用最新的 'jwt'
+		let token = localStorage.getItem('jwt')
+			|| localStorage.getItem('access_token')
+			|| localStorage.getItem('token');
 		if (token) {
-			config.headers.Authorization = `Bearer ${token}`;
+			// 纠正可能已有 Bearer 前缀的情况
+			if (token.toLowerCase().startsWith('bearer ')) {
+				config.headers.Authorization = token;
+			} else {
+				config.headers.Authorization = `Bearer ${token}`;
+			}
+		} else {
+			// 可选：开发环境下提示未登录
+			if (import.meta && import.meta.env && import.meta.env.DEV) {
+				console.warn('[listApi] 未找到JWT，部分需要登录的接口将返回403');
+			}
 		}
 		return config;
 	},
-	(error) => {
-		return Promise.reject(error);
-	}
+	(error) => Promise.reject(error)
 );
 
 // 响应拦截器 - 统一处理错误
@@ -299,3 +309,36 @@ export const getMyReviews = () => {
 
 // 导出默认 axios 实例，方便直接使用
 export default api;
+
+// ==================== 成就 / 打卡相关 API ====================
+
+/**
+ * 菜品打卡（需登录）
+ * POST /dishes/{dishId}/check-in/
+ * @param {number} dishId - 菜品ID
+ * @param {Object} data - 可选参数，如 { notes: '好吃' }
+ * @returns {Promise<{code:number, message:string, data:Object}>}
+ */
+export const checkInDish = (dishId, data = {}) => {
+	return api.post(`/dishes/${dishId}/check-in/`, data);
+};
+
+/**
+ * 获取用户菜品历史（需登录）
+ * GET /user/dish-history/
+ * @param {Object} params - { page, page_size, level, ordering }
+ * @returns {Promise<{code:number, message:string, data:{histories:Array, total:number}}>} 
+ */
+export const getUserDishHistory = (params = {}) => {
+	return api.get('/user/dish-history/', { params });
+};
+
+/** 可选：用户成就统计（需登录） */
+export const getUserDishStats = () => {
+	return api.get('/user/dish-stats/');
+};
+
+/** 可选：美食日历（需登录） */
+export const getFoodCalendar = (params = {}) => {
+	return api.get('/user/food-calendar/', { params });
+};

@@ -90,6 +90,7 @@ def post_detail(request, post_id):
 # 在前端登录页实现并正常通过 Authorization header 登录后，可移除本注释及相应视图层的临时处理。
 @csrf_exempt
 @require_http_methods(["POST"])
+@csrf_exempt
 @login_required
 def create_post(request):
     """创建帖子"""
@@ -114,7 +115,9 @@ def create_post(request):
     post = controllers.create_post(
         user=request.user,
         subject=serializer.validated_data['subject'],
-        content=serializer.validated_data['content']
+        content=serializer.validated_data['content'],
+        images=serializer.validated_data.get('images', []),  # 图片列表，默认为空
+        dish=serializer.validated_data.get('dish')  # 菜品可为空
     )
     
     result_serializer = PostSerializer(post, context={'request': request})
@@ -137,6 +140,7 @@ def create_post(request):
 # TODO: 登录页实现后删除：临时性保护（可在前端登录完善后移除）
 @csrf_exempt
 @require_http_methods(["DELETE"])
+@csrf_exempt
 @login_required
 def delete_post(request, post_id):
     """删除帖子"""
@@ -165,6 +169,7 @@ def delete_post(request, post_id):
 # TODO: 登录页实现后删除：此处为在后端保证操作权限的临时方案
 @csrf_exempt
 @require_http_methods(["POST"])
+@csrf_exempt
 @login_required
 def toggle_post_like(request, post_id):
     """切换帖子点赞状态"""
@@ -194,6 +199,7 @@ def toggle_post_like(request, post_id):
 # TODO: 登录页实现后删除：创建评论相关的后端临时保护/处理
 @csrf_exempt
 @require_http_methods(["POST"])
+@csrf_exempt
 @login_required
 def create_comment(request):
     """创建评论"""
@@ -218,7 +224,9 @@ def create_comment(request):
     comment, message = controllers.create_comment(
         user=request.user,
         post_id=serializer.validated_data['post'].id,
-        content=serializer.validated_data['content']
+        content=serializer.validated_data['content'],
+        images=serializer.validated_data.get('images', []),  # 图片列表，默认为空
+        parent_id=serializer.validated_data.get('parent').id if serializer.validated_data.get('parent') else None  # 父评论 ID
     )
     
     if not comment:
@@ -290,6 +298,7 @@ def comment_list(request, post_id):
 # TODO: 登录页实现后删除：该删除评论的装饰器/保护为临时实现
 @csrf_exempt
 @require_http_methods(["DELETE"])
+@csrf_exempt
 @login_required
 def delete_comment(request, comment_id):
     """删除评论"""
@@ -317,6 +326,7 @@ def delete_comment(request, comment_id):
 )
 @csrf_exempt
 @require_http_methods(["POST"])
+@csrf_exempt
 @login_required
 def toggle_comment_like(request, comment_id):
     """切换评论点赞状态"""
@@ -387,6 +397,61 @@ def forum_home(request):
                 'total_pages': result['total_pages']
             },
             'sort_by': result['sort_by']
+        }
+    })
+
+
+@extend_schema(
+    tags=['社区论坛'],
+    summary='获取菜品相关帖子',
+    parameters=[
+        OpenApiParameter(name='dish_id', type=int, location=OpenApiParameter.PATH, description='菜品ID'),
+        OpenApiParameter(name='page', type=int, description='页码，默认1'),
+        OpenApiParameter(name='page_size', type=int, description='每页数量，默认20'),
+    ],
+    responses={200: PostSerializer(many=True)}
+)
+@require_http_methods(["GET"])
+def dish_posts(request, dish_id):
+    """
+    获取关联某个菜品的帖子列表
+    用户可以点击菜品链接跳转到该菜品的相关讨论
+    """
+    # TODO: 登录页实现后可删除 - 临时在 GET 视图中显式触发 JWT 认证
+    jwt_authentication(request)
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 20))
+    
+    # 验证菜品是否存在
+    from list.models import Dish
+    try:
+        dish = Dish.objects.get(id=dish_id)
+    except Dish.DoesNotExist:
+        return JsonResponse({
+            'code': 404,
+            'message': '菜品不存在'
+        }, status=404)
+    
+    result = controllers.get_dish_posts(dish_id=dish_id, page=page, page_size=page_size)
+    
+    serializer = PostSerializer(result['posts'], many=True, context={'request': request})
+    
+    return JsonResponse({
+        'code': 200,
+        'message': '获取成功',
+        'data': {
+            'dish': {
+                'id': dish.id,
+                'name': dish.name,
+                'canteen_name': dish.canteen.name
+            },
+            'posts': serializer.data,
+            'pagination': {
+                'total': result['total'],
+                'page': result['page'],
+                'page_size': result['page_size'],
+                'total_pages': result['total_pages']
+            }
         }
     })
 

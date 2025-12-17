@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Canteen, Tag, Dish, Rating, Review, Floor, Window
+from .models import Canteen, Tag, Dish, Rating, Review, Floor, Window, UserDishHistory
 class WindowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Window
@@ -24,9 +24,11 @@ class WindowWithDishesSerializer(serializers.ModelSerializer):
         return DishListSerializer(dishes, many=True).data
 
 class CanteenSerializer(serializers.ModelSerializer):
+    distance = serializers.FloatField(read_only=True, required=False, help_text="距离（米）")
+
     class Meta:
         model = Canteen
-        fields = '__all__'
+        fields = ['id', 'name', 'latitude', 'longitude', 'address', 'distance', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
     def validate_name(self, value):
@@ -136,18 +138,27 @@ class ReviewSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     dish_name = serializers.CharField(source='dish.name', read_only=True)
     user_rating = serializers.SerializerMethodField()
+    published_score = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
+    # 显式声明只读外键，避免创建时要求客户端提交
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    dish = serializers.PrimaryKeyRelatedField(read_only=True)
+    rating = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Review
         fields = [
             'id', 'user', 'username', 'dish', 'dish_name',
-            'content', 'images', 'rating', 'user_rating',
+            'content', 'images', 'rating', 'user_rating', 'published_score',
             'likes_count', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['user', 'likes_count', 'created_at', 'updated_at']
+    # dish 与 rating 在视图中通过上下文注入，不要求客户端提交
+    read_only_fields = ['user', 'dish', 'rating', 'likes_count', 'created_at', 'updated_at']
 
     def get_user_rating(self, obj):
-        """获取用户对该菜品的评分"""
+        """显示评论发布时的评分快照，不随后续评分变化"""
+        if obj.published_score is not None:
+            return obj.published_score
+        # 兼容旧数据：若无快照但有关联评分，则暂时显示关联评分
         if obj.rating:
             return obj.rating.score
         return None
@@ -174,16 +185,78 @@ class ReviewSerializer(serializers.ModelSerializer):
 class ReviewListSerializer(serializers.ModelSerializer):
     """评论列表序列化器（简化版）"""
     username = serializers.CharField(source='user.username', read_only=True)
-    user_rating = serializers.DecimalField(
-        source='rating.score',
-        max_digits=3,
-        decimal_places=2,
-        read_only=True
-    )
+    user_rating = serializers.SerializerMethodField()
+    published_score = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
 
     class Meta:
         model = Review
         fields = [
             'id', 'user', 'username', 'content', 'images',
-            'user_rating', 'likes_count', 'created_at'
+            'user_rating', 'published_score', 'likes_count', 'created_at'
         ]
+
+    def get_user_rating(self, obj):
+        # 优先评论发布时的评分快照
+        if obj.published_score is not None:
+            return obj.published_score
+        # 兼容旧数据：若无快照但有关联评分，则暂时显示关联评分
+        if obj.rating:
+            return obj.rating.score
+        return None
+
+
+class UserDishHistorySerializer(serializers.ModelSerializer):
+    """用户菜品历史序列化器"""
+    username = serializers.CharField(source='user.username', read_only=True)
+    dish_name = serializers.CharField(source='dish.name', read_only=True)
+    dish_image = serializers.SerializerMethodField()
+    canteen_name = serializers.CharField(source='dish.canteen.name', read_only=True)
+    level = serializers.CharField(read_only=True)
+    level_display = serializers.CharField(read_only=True)
+    level_progress = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserDishHistory
+        fields = [
+            'id', 'user', 'username', 'dish', 'dish_name', 'dish_image', 'canteen_name',
+            'count', 'level', 'level_display', 'level_progress',
+            'first_tried_at', 'last_tried_at'
+        ]
+        read_only_fields = ['user', 'count', 'first_tried_at', 'last_tried_at']
+
+    def get_level_progress(self, obj):
+        """获取级别进度信息"""
+        return obj.level_progress
+
+    def get_dish_image(self, obj):
+        """安全返回菜品图片URL，避免空文件或缺失文件导致异常"""
+        try:
+            image = getattr(obj.dish, 'image', None)
+            if not image:
+                return None
+            return image.url
+        except Exception:
+            return None
+
+
+class UserDishHistoryListSerializer(serializers.ModelSerializer):
+    """用户菜品历史列表序列化器（简化版）"""
+    dish_name = serializers.CharField(source='dish.name', read_only=True)
+    dish_image = serializers.SerializerMethodField()
+    level_display = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = UserDishHistory
+        fields = [
+            'id', 'dish', 'dish_name', 'dish_image',
+            'count', 'level_display', 'last_tried_at'
+        ]
+
+    def get_dish_image(self, obj):
+        try:
+            image = getattr(obj.dish, 'image', None)
+            if not image:
+                return None
+            return image.url
+        except Exception:
+            return None

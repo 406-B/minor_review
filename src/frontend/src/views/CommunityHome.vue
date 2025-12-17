@@ -1,8 +1,10 @@
 <template>
-	<TopBar />
-	<div class="community-page">
+	<PageContainer>
+		<template #header>
+			<AppTopBar />
+		</template>
 			<div class="top-actions">
-				<div class="title">点评社区</div>
+				<SectionTitle>点评社区</SectionTitle>
 				<div class="actions">
 					<button class="publish-btn" @click="goCreate">我要发帖</button>
 				</div>
@@ -11,15 +13,21 @@
 			<div class="content-wrap">
 				<div class="list-wrap">
 					<div v-if="loading" class="loading">加载中...</div>
-					<div v-else-if="error" class="error">{{ error }}</div>
-					<div v-else-if="posts.length === 0" class="empty">暂无帖子</div>
-					<div v-else v-for="post in posts" :key="post.id" class="post-card">
-						<div class="post-left" @click="goDetail(post.id)">
-							<h3 class="post-title">{{ post.subject || '无标题' }}</h3>
-							<div class="post-content-preview" v-if="post.content_preview">
-								{{ post.content_preview }}
-							</div>
-							<div class="post-info">
+					<!-- 错误通过弹窗提示，不再在页面显示 -->
+					<EmptyState v-else-if="posts.length === 0" text="暂无帖子" />
+				<div v-else v-for="post in posts" :key="post.id" class="post-card">
+					<div class="post-left" @click="goDetail(post.id)">
+						<h3 class="post-title">{{ post.subject || '无标题' }}</h3>
+						<div class="post-content-preview" v-if="post.content_preview">
+							{{ post.content_preview }}
+						</div>
+						<!-- 关联菜品标签 -->
+						<div v-if="post.dish" class="dish-tag">
+							<span class="dish-icon">🍽️</span>
+							<span class="dish-name">{{ post.dish.name }}</span>
+							<span class="dish-price">¥{{ post.dish.price }}</span>
+						</div>
+						<div class="post-info">
 								<span class="post-author">{{ post.author?.nickname || post.author?.username || '匿名用户' }}</span>
 								<span class="post-stats">
 									<span class="stat-item">❤️ {{ post.likes_count || 0 }}</span>
@@ -43,13 +51,17 @@
 					</div>
 				</div>
 			</div>
-		</div>
+		</PageContainer>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import TopBar from '@/components/TopBar.vue'
+import { ElMessageBox } from 'element-plus'
+import AppTopBar from '@/components/ui/AppTopBar.vue'
+import PageContainer from '@/components/ui/PageContainer.vue'
+import SectionTitle from '@/components/ui/SectionTitle.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import { getPostList } from '@/api/community'
 
 const router = useRouter()
@@ -77,14 +89,21 @@ async function loadPosts(page = 1) {
 			}
 		} else {
 			error.value = response.message || '获取帖子列表失败'
+			// 使用弹窗提示具体原因
+			ElMessageBox.alert(
+				error.value,
+				'出错了',
+				{ type: 'error' }
+			)
+			// 可选：清空列表，避免页面误解为空态
+			posts.value = []
 		}
 	} catch (err) {
 		console.error('加载帖子列表失败:', err)
-		error.value = '加载失败，请检查网络连接'
-		// 开发环境下显示详细错误
-		if (import.meta.env.DEV) {
-			console.error('详细错误:', err)
-		}
+		// 优先采用后端返回的 message，其次采用异常消息
+		const detail = err?.response?.data?.message || err?.message || '加载失败，请检查网络连接'
+		error.value = detail
+		ElMessageBox.alert(detail, '出错了', { type: 'error' })
 	} finally {
 		loading.value = false
 	}
@@ -95,10 +114,18 @@ function loadPage(page) {
 }
 
 function goCreate() {
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
 	router.push({ name: 'PostCreate' })
 }
 
 function goDetail(id) {
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
 	router.push({ name: 'PostDetail', params: { id } })
 }
 
@@ -106,29 +133,61 @@ onMounted(() => loadPosts())
 </script>
 
 <style scoped>
-.community-page { display:block; background: #f5f7fb; padding: 20px 0; min-height: 100vh }
+.community-page { display:block; background: var(--color-bg); padding: 20px 0; min-height: 100vh }
 .top-actions { display:flex; justify-content:space-between; align-items:center; padding:12px 20px; border-bottom:1px solid #eee; margin-bottom:16px }
 .top-actions .title { font-size:18px; font-weight:600 }
-.top-actions .actions { }
-.publish-btn { padding:8px 14px; background:#67c23a; color:#fff; border:none; border-radius:6px; cursor:pointer; transition: all 0.3s }
-.publish-btn:hover { background:#5daf34 }
+.publish-btn { padding:8px 14px; background:var(--color-accent); color:#fff; border:none; border-radius:var(--radius-xs); cursor:pointer; transition: all 0.3s }
+.publish-btn:hover { background:var(--brand-700) }
 .content-wrap { display:flex; justify-content:flex-start; gap:20px; padding-left:20px }
-.list-wrap { width:720px; background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 4px rgba(16,24,40,0.06) }
-.post-card { display:flex; justify-content:space-between; align-items:center; padding:14px; border:1px solid #f0f0f0; margin-bottom:12px; border-radius:8px; background:#fff; transition: all 0.3s }
-.post-card:hover { box-shadow: 0 2px 8px rgba(16,24,40,0.1); border-color: #409eff }
+.list-wrap { width:720px; background:var(--color-surface); padding:16px; border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); border:1px solid var(--color-border) }
+.post-card { display:flex; justify-content:space-between; align-items:center; padding:14px; border:1px solid var(--color-border); margin-bottom:12px; border-radius:var(--radius-sm); background:var(--color-surface); transition: all 0.3s }
+.post-card:hover { box-shadow: var(--shadow-md); border-color: var(--brand-200) }
 .post-left { cursor:pointer; flex:1 }
-.post-title { font-size: 16px; font-weight: 600; color: #333; margin: 0 0 8px 0; line-height: 1.4 }
-.post-content-preview { font-size: 13px; color: #666; margin-bottom: 8px; line-height: 1.5 }
-.post-content { font-size: 14px; color: #333; margin-bottom: 8px; line-height: 1.6 }
-.post-info { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666 }
-.post-author { color: #409eff }
+.post-title { font-size: 16px; font-weight: 600; color: var(--color-text); margin: 0 0 8px 0; line-height: 1.4 }
+.post-content-preview { font-size: 13px; color: var(--color-muted); margin-bottom: 8px; line-height: 1.5 }
+.post-content { font-size: 14px; color: var(--color-text); margin-bottom: 8px; line-height: 1.6 }
+.post-info { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--color-muted) }
+.post-author { color: var(--color-accent) }
 .post-stats { display: flex; gap: 12px }
 .stat-item { display: inline-flex; align-items: center; gap: 4px }
+
+/* 菜品标签样式 */
+.dish-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	background: linear-gradient(135deg, #fff5f0 0%, #ffe8e0 100%);
+	border: 1px solid #ffd4c4;
+	border-radius: 12px;
+	font-size: 12px;
+	margin-bottom: 8px;
+	color: #333;
+}
+
+.dish-tag .dish-icon {
+	font-size: 14px;
+}
+
+.dish-tag .dish-name {
+	font-weight: 600;
+	color: #303133;
+	max-width: 150px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dish-tag .dish-price {
+	font-weight: 700;
+	color: #f56c6c;
+	margin-left: 4px;
+}
 
 .loading, .error, .empty { 
 	text-align: center; 
 	padding: 40px 20px; 
-	color: #666; 
+	color: var(--color-muted); 
 	font-size: 14px 
 }
 .error { color: #f56c6c }
@@ -143,23 +202,24 @@ onMounted(() => loadPosts())
 }
 .pagination button { 
 	padding: 6px 12px; 
-	background: #409eff; 
+	background: var(--color-accent); 
 	color: #fff; 
 	border: none; 
-	border-radius: 4px; 
+	border-radius: var(--radius-xs); 
 	cursor: pointer;
 	transition: all 0.3s;
 }
 .pagination button:hover:not(:disabled) { 
-	background: #66b1ff 
+	background: var(--brand-700) 
 }
+
 .pagination button:disabled { 
 	background: #ccc; 
 	cursor: not-allowed 
 }
 .pagination span { 
 	font-size: 14px; 
-	color: #666 
+	color: var(--color-muted) 
 }
 
 /* Optional right column placeholder styling (kept minimal) */

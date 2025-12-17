@@ -38,6 +38,8 @@ defineProps({
 
 .title { margin: 0; font-size: 1.05rem; }
 .actions { font-size: 0.9rem; }
-.content { min-height: 2.5rem; }
+.content {
+  min-height: 2.5rem;
+}
 .empty { color: #999; }
 </style>

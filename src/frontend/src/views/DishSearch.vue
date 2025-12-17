@@ -1,6 +1,10 @@
 <template>
-  <div class="dish-search-page">
+  <PageContainer>
+    <template #header>
+      <AppTopBar />
+    </template>
     <el-button type="primary" @click="$router.push('/canteen')" class="back-btn">返回食堂主页</el-button>
+    <SectionTitle>菜品搜索</SectionTitle>
     <el-form :inline="true" :model="searchForm" class="search-form" @submit.prevent="onSearch">
       <el-form-item label="菜品名">
         <el-input v-model="searchForm.name" placeholder="输入菜品名" clearable />
@@ -24,7 +28,13 @@
       <el-row :gutter="24">
         <el-col v-for="dish in dishes" :key="dish.id" :span="6">
           <el-card class="dish-card" shadow="hover" @click="goToDish(dish.id)">
-            <img :src="dish.image" alt="菜品图片" class="dish-img" />
+            <AchievementImage
+              :dish-id="dish.id"
+              :src="dish.image"
+              :width="'100%'"
+              :height="140"
+              :radius="varRadiusSm"
+            />
             <div class="dish-info">
               <div class="dish-title">{{ dish.name }}</div>
               <div class="dish-tags">
@@ -36,13 +46,17 @@
         </el-col>
       </el-row>
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getDishes, getTags } from '@/utils/api/listApi'
+import PageContainer from '@/components/ui/PageContainer.vue'
+import SectionTitle from '@/components/ui/SectionTitle.vue'
+import AppTopBar from '@/components/ui/AppTopBar.vue'
+import AchievementImage from '@/components/common/AchievementImage.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,6 +69,7 @@ const searchForm = ref({
 const dishes = ref([])
 const tags = ref([])
 const loading = ref(false)
+const varRadiusSm = 'var(--radius-sm)'
 
 const fetchTags = async () => {
   const res = await getTags()
@@ -91,14 +106,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.dish-search-page {
-  padding: 40px 56px;
-  background: #fff;
-  min-height: 100vh;
-  max-width: 1200px;
-  margin: 0 auto;
-  box-shadow: 0 4px 32px #e0e0e0aa;
-}
 .back-btn {
   margin-bottom: 18px;
 }
@@ -112,17 +119,18 @@ onMounted(() => {
   cursor: pointer;
   margin-bottom: 24px;
   transition: box-shadow 0.2s;
-  border-radius: 10px;
-  overflow: hidden;
+  border-radius: var(--radius-sm);
+  /* 保持圆角但不阻断滚动 */
+  overflow: visible;
 }
 .dish-card:hover {
-  box-shadow: 0 8px 32px #ff980033;
+  box-shadow: var(--shadow-md);
 }
 .dish-img {
   width: 100%;
   height: 140px;
   object-fit: cover;
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 .dish-info {
   padding: 10px 0 0 0;
@@ -136,7 +144,7 @@ onMounted(() => {
   margin-bottom: 6px;
 }
 .dish-price {
-  color: #ff9800;
+  color: var(--color-accent);
   font-size: 16px;
   font-weight: bold;
 }
