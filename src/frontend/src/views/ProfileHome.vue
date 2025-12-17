@@ -114,46 +114,47 @@
                 <div class="achi-label">院士</div>
               </div>
             </div>
-          </div>
-        </template>
-      </SectionCard>
-    </div>
+          </template>
+        </SectionCard>
+      </div>
 
-    <div class="col">
-      <SectionCard class="equal-card" title="个性化推荐">
-        <template #actions>
-          <el-select v-model="recoSource" size="small" style="width: 120px; margin-right: 8px">
-            <el-option label="综合" value="mix" />
-            <el-option label="偏好" value="pref" />
-            <el-option label="位置" value="geo" />
-          </el-select>
-          <button class="link" @click.prevent="viewAllRecommend">查看全部</button>
-        </template>
-        <template #content>
-          <div v-if="reco.dishes && reco.dishes.length" class="slider" @mouseenter="pauseAuto" @mouseleave="resumeAuto">
-            <button v-if="pages.length > 1" class="nav prev" type="button" @click="onPrev" aria-label="上一页">‹</button>
-            <div class="slides" ref="slidesRef" :style="slidesStyle" @transitionend="onTransitionEnd">
-              <div class="page" v-for="(page, i) in extendedPages" :key="'p-'+i">
-                <div v-for="d in page" :key="d.id" class="dish-card" @click="goDish(d.id)">
-                  <div class="thumb">
-                    <AchievementImage :dish-id="d.id" :src="imageUrl(d.image)" :width="'100%'" :height="96" :radius="8">
-                      <template #placeholder>
-                        <div class="thumb placeholder">{{ d.name?.[0] || '图' }}</div>
-                      </template>
-                    </AchievementImage>
+      <div class="col">
+        <SectionCard class="equal-card" title="个性化推荐">
+          <template #actions>
+            <el-select v-model="recoSource" size="small" style="width: 120px; margin-right: 8px">
+              <el-option label="综合" value="mix" />
+              <el-option label="偏好" value="pref" />
+              <el-option label="热度" value="hot" />
+            </el-select>
+            <button class="link" @click.prevent="viewAllRecommend">查看全部</button>
+          </template>
+          <template #content>
+            <div v-if="reco.dishes && reco.dishes.length" class="slider" @mouseenter="pauseAuto" @mouseleave="resumeAuto">
+              <button v-if="pages.length > 1" class="nav prev" type="button" @click="onPrev" aria-label="上一页">‹</button>
+              <div class="slides" ref="slidesRef" :style="slidesStyle" @transitionend="onTransitionEnd">
+                <div class="page" v-for="(page, i) in extendedPages" :key="'p-'+i">
+                  <div v-for="d in page" :key="d.id" class="dish-card" @click="goDish(d.id)">
+                    <div class="thumb">
+                      <AchievementImage :dish-id="d.id" :src="imageUrl(d.image)" :width="'100%'" :height="96" :radius="8">
+                        <template #placeholder>
+                          <div class="thumb placeholder">{{ d.name?.[0] || '图' }}</div>
+                        </template>
+                      </AchievementImage>
+                    </div>
+                    <div class="dish-name" :title="d.name">{{ d.name }}</div>
                   </div>
                   <div class="dish-name" :title="d.name">{{ d.name }}</div>
                 </div>
               </div>
             </div>
-            <button v-if="pages.length > 1" class="nav next" type="button" @click="onNext" aria-label="下一页">›</button>
-            <div v-if="pages.length > 1" class="dots">
-              <span v-for="(p, i) in pages" :key="'d-'+i" class="dot" :class="{ active: i === activeDot }" @click="goToPage(i)" />
-            </div>
-          </div>
-          <el-empty v-else description="暂无推荐数据" />
-        </template>
-      </SectionCard>
+            <el-empty v-else description="暂无推荐数据" />
+          </template>
+        </SectionCard>
+      </div>
+
+      <div class="col left">
+        <ConsumptionCard class="equal-card" />
+      </div>
     </div>
   </div>
 
@@ -172,7 +173,8 @@
 <script setup>
 import { onMounted, onUnmounted, ref, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { getRecommendedDishes, getNearbyRecommendedDishes } from '@/api/profile'
+import { getRecommendedDishes } from '@/api/profile'
+import { getHotDishes } from '@/utils/api/listApi'
 import { getProfileSections } from '@/api/profile'
 import { getMyPosts, getUserStats } from '@/api/community'
 // Local components
@@ -428,29 +430,20 @@ const loadRecommendPref = async () => {
 }
 const loadRecommendMix = async () => {
   try {
-    // 尝试带定位的综合推荐（若可用）
-    if (!geoPos.value) { await ensureGeo() }
-    const params = geoPos.value ? { latitude: geoPos.value.lat, longitude: geoPos.value.lng } : undefined
-    const res = await getRecommendedDishes(params)
+    // 使用后端综合推荐实现（包含热度因素），不在前端做融合
+    const res = await getRecommendedDishes()
     reco.value = res?.data ?? res ?? { dishes: [] }
   } catch (err) {
-    if (err?.response?.status === 404) {
-      // 用户未设置偏好标签 -> 回退到附近推荐
-      console.log('[ProfileHome] 未设置偏好标签,尝试附近推荐')
-      const ok = await ensureGeo()
-      if (ok) { await loadRecommendGeo(); return }
-      // 静默处理,不显示提示
-    }
     reco.value = { dishes: [] }
   }
 }
-const loadRecommendGeo = async () => {
-  if (!geoPos.value) return
+const loadRecommendHot = async () => {
   try {
-    const res = await getNearbyRecommendedDishes({ latitude: geoPos.value.lat, longitude: geoPos.value.lng })
-    reco.value = res?.data ?? res ?? { dishes: [] }
-  } catch (err) { 
-    console.log('[ProfileHome] 附近推荐失败:', err?.response?.status || err.message)
+    const res = await getHotDishes({ limit: 12 })
+    // 兼容后端返回格式，期望为 { dishes: [...] } 或数组
+    const list = res?.data ?? res ?? []
+    reco.value = Array.isArray(list) ? { dishes: list } : (list || { dishes: [] })
+  } catch (err) {
     reco.value = { dishes: [] }
   }
 }
@@ -467,10 +460,7 @@ const ensureGeo = () => new Promise((resolve) => {
 watch(recoSource, async (v) => {
   if (v === 'pref') await loadRecommendPref()
   if (v === 'mix') await loadRecommendMix()
-  if (v === 'geo') {
-    const ok = await ensureGeo()
-    if (ok) await loadRecommendGeo(); else { reco.value = { dishes: [] }; window.$message?.info?.('无法获取定位') }
-  }
+  if (v === 'hot') await loadRecommendHot()
 })
 
 watch(() => reco.value?.dishes, () => {
