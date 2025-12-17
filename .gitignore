@@ -94,6 +94,10 @@ ENV/
 src/backend/app/db.sqlite3
 *.sqlite3
 
+# Media uploads (keep folder, ignore files)
+src/backend/app/media/dishes/**
+!src/backend/app/media/dishes/.gitkeep
+
 # Java
 *.class
 *.jar
