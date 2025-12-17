@@ -437,7 +437,7 @@ async function handleLike() {
 			} else {
 				post.value.likes_count = Math.max(0, (post.value.likes_count || 0) - 1)
 			}
-	}
+		}
 	} catch (err) {
 		console.error('点赞操作失败:', err)
 		if (err?.response?.status === 401) {
