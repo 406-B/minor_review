@@ -875,33 +875,10 @@ def add_preference_tags(request):
     }, status=status.HTTP_200_OK)
 
 
-# ==================== 距离计算工具函数 ====================
-
-def haversine_distance(lat1, lon1, lat2, lon2):
-    """
-    计算两点之间的距离（米）
-    使用 Haversine 公式
-    """
-    R = 6371000  # 地球半径（米）
-
-    lat1_rad = math.radians(float(lat1))
-    lat2_rad = math.radians(float(lat2))
-    delta_lat = math.radians(float(lat2) - float(lat1))
-    delta_lon = math.radians(float(lon2) - float(lon1))
-
-    a = math.sin(delta_lat / 2) ** 2 + \
-        math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    return R * c
-
-
 # ==================== 个性化推荐 ====================
 
 @extend_schema(
     parameters=[
-        OpenApiParameter(name='latitude', type=float, description='用户纬度（可选，提供后按距离优先排序）'),
-        OpenApiParameter(name='longitude', type=float, description='用户经度（可选，提供后按距离优先排序）'),
         OpenApiParameter(name='page', type=int, description='页码，默认1'),
         OpenApiParameter(name='page_size', type=int, description='每页数量，默认20'),
     ],
@@ -927,8 +904,8 @@ def haversine_distance(lat1, lon1, lat2, lon2):
         401: OpenApiResponse(description="未登录"),
         404: OpenApiResponse(description="用户未设置偏好标签"),
     },
-    description="根据用户偏好标签和位置综合推荐菜品，优先推荐距离近且匹配偏好的菜品",
-    summary="获取个性化推荐菜品",
+    description="根据用户偏好标签 + 热度(view_count) + 评分 推荐菜品，按热度和匹配度排序",
+    summary="获取个性化推荐菜品（按热度）",
     operation_id="get_recommended_dishes",
     tags=["Profile"],
 )
@@ -936,11 +913,10 @@ def haversine_distance(lat1, lon1, lat2, lon2):
 @login_required
 def get_recommended_dishes(request):
     """
-    根据用户偏好标签和位置综合推荐菜品
+    根据用户偏好标签 + 热度(view_count) + 评分 综合推荐菜品
     推荐逻辑：
     1. 匹配用户偏好标签的菜品
-    2. 如果提供了位置信息，综合距离和偏好进行排序
-    3. 排序优先级：距离近 + 标签匹配度高 + 评分高
+    2. 优先级：标签匹配度 > 评分 > 热度(view_count)
     """
     user = request.user
 
@@ -954,11 +930,6 @@ def get_recommended_dishes(request):
             'data': None
         }, status=status.HTTP_404_NOT_FOUND)
 
-    # 获取位置参数（可选）
-    latitude = request.GET.get('latitude')
-    longitude = request.GET.get('longitude')
-    has_location = latitude and longitude
-
     # 获取分页参数
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
@@ -970,76 +941,7 @@ def get_recommended_dishes(request):
         matched_tags_count=Count('tags', filter=Q(tags__in=user_tags))
     ).distinct().select_related('canteen')
 
-    # 如果有位置信息，计算距离并综合排序
-    if has_location:
-        try:
-            lat = float(latitude)
-            lon = float(longitude)
-
-            # 获取菜品列表并计算距离
-            dishes_list = list(dishes)
-            dishes_with_score = []
-
-            for dish in dishes_list:
-                # 计算食堂距离
-                if dish.canteen.latitude and dish.canteen.longitude:
-                    distance = haversine_distance(
-                        lat, lon,
-                        float(dish.canteen.latitude),
-                        float(dish.canteen.longitude)
-                    )
-                else:
-                    distance = float('inf')  # 无位置信息的食堂放最后
-
-                # 综合评分：距离越近分越高，标签匹配越多分越高，评分越高分越高
-                # 距离分数：1000米内满分，超过1000米递减
-                distance_score = max(0, 100 - (distance / 10))  # 每10米扣1分
-                tag_score = dish.matched_tags_count * 20  # 每匹配一个标签加20分
-                rating_score = float(dish.rating) * 10  # 评分 * 10
-
-                total_score = distance_score + tag_score + rating_score
-
-                dishes_with_score.append({
-                    'dish': dish,
-                    'distance': distance,
-                    'total_score': total_score,
-                    'matched_tags_count': dish.matched_tags_count
-                })
-
-            # 按综合评分排序
-            dishes_with_score.sort(key=lambda x: -x['total_score'])
-
-            # 分页
-            total = len(dishes_with_score)
-            start = (page - 1) * page_size
-            end = start + page_size
-            paged_dishes = dishes_with_score[start:end]
-
-            # 构建返回数据（包含距离信息）
-            dishes_data = []
-            for item in paged_dishes:
-                dish_data = DishListSerializer(item['dish']).data
-                dish_data['distance'] = round(item['distance'], 2) if item['distance'] != float('inf') else None
-                dish_data['matched_tags_count'] = item['matched_tags_count']
-                dishes_data.append(dish_data)
-
-            return Response({
-                'code': 200,
-                'message': '获取推荐菜品成功',
-                'data': {
-                    'dishes': dishes_data,
-                    'total': total,
-                    'page': page,
-                    'page_size': page_size,
-                    'user_tags': TagSerializer(user_tags, many=True).data,
-                    'location_enabled': True
-                }
-            }, status=status.HTTP_200_OK)
-
-        except ValueError:
-            pass  # 位置参数格式错误，降级为无位置排序
-
-    # 无位置信息时，按标签匹配度和评分排序
+    # 按标签匹配度 + 评分 + 热度排序
     dishes = dishes.order_by('-matched_tags_count', '-rating', '-view_count')
 
     # 分页
@@ -1060,162 +962,7 @@ def get_recommended_dishes(request):
             'total': total,
             'page': page,
             'page_size': page_size,
-            'user_tags': tag_serializer.data,
-            'location_enabled': False
-        }
-    }, status=status.HTTP_200_OK)
-
-
-# ==================== 基于位置的推荐（仅最近食堂） ====================
-
-@extend_schema(
-    parameters=[
-        OpenApiParameter(name='latitude', type=float, required=True, description='用户纬度'),
-        OpenApiParameter(name='longitude', type=float, required=True, description='用户经度'),
-        OpenApiParameter(name='page', type=int, description='页码，默认1'),
-        OpenApiParameter(name='page_size', type=int, description='每页数量，默认20'),
-    ],
-    responses={
-        200: OpenApiResponse(
-            description="获取附近推荐菜品成功",
-            response={
-                "type": "object",
-                "properties": {
-                    "code": {"type": "integer", "example": 200},
-                    "message": {"type": "string"},
-                    "data": {"type": "object"}
-                }
-            }
-        ),
-        400: OpenApiResponse(description="缺少位置参数"),
-        401: OpenApiResponse(description="未登录"),
-    },
-    description="根据用户位置和偏好标签推荐最近食堂的菜品",
-    summary="获取附近推荐菜品",
-    operation_id="get_nearby_recommended_dishes",
-    tags=["Profile"],
-)
-@api_view(["GET"])
-@login_required
-def get_nearby_recommended_dishes(request):
-    """
-    根据用户位置和偏好标签推荐最近食堂的菜品
-    推荐逻辑：
-    1. 计算用户与各食堂的距离
-    2. 找到最近的食堂
-    3. 从最近食堂中筛选匹配用户偏好标签的菜品
-    4. 按匹配度和评分排序
-    """
-    user = request.user
-
-    # 获取位置参数
-    latitude = request.GET.get('latitude')
-    longitude = request.GET.get('longitude')
-
-    if not latitude or not longitude:
-        return Response({
-            'code': 400,
-            'message': '请提供位置信息（latitude 和 longitude）',
-            'data': None
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        latitude = float(latitude)
-        longitude = float(longitude)
-    except ValueError:
-        return Response({
-            'code': 400,
-            'message': '位置参数格式不正确',
-            'data': None
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    # 获取分页参数
-    page = int(request.GET.get('page', 1))
-    page_size = int(request.GET.get('page_size', 20))
-
-    # 获取所有有位置信息的食堂
-    canteens = Canteen.objects.filter(
-        latitude__isnull=False,
-        longitude__isnull=False
-    )
-
-    if not canteens.exists():
-        return Response({
-            'code': 404,
-            'message': '暂无食堂位置信息',
-            'data': None
-        }, status=status.HTTP_404_NOT_FOUND)
-
-    # 计算距离并排序
-    canteens_with_distance = []
-    for canteen in canteens:
-        distance = haversine_distance(
-            latitude, longitude,
-            canteen.latitude, canteen.longitude
-        )
-        canteen.distance = distance
-        canteens_with_distance.append((canteen, distance))
-
-    # 按距离排序
-    canteens_with_distance.sort(key=lambda x: x[1])
-
-    # 获取最近的食堂
-    nearest_canteen, nearest_distance = canteens_with_distance[0]
-
-    # 获取用户偏好标签
-    user_tags = user.preference_tags.all()
-
-    # 查询该食堂的菜品
-    dishes = Dish.objects.filter(canteen=nearest_canteen)
-
-    # 如果用户有偏好标签，优先推荐匹配的菜品
-    if user_tags.exists():
-        dishes = dishes.filter(tags__in=user_tags).annotate(
-            matched_tags_count=Count('tags', filter=Q(tags__in=user_tags))
-        ).distinct().order_by('-matched_tags_count', '-rating', '-view_count')
-    else:
-        dishes = dishes.order_by('-rating', '-view_count')
-
-    # 分页
-    total = dishes.count()
-    start = (page - 1) * page_size
-    end = start + page_size
-    dishes = dishes[start:end]
-
-    # 序列化
-    dish_serializer = DishListSerializer(dishes, many=True)
-
-    # 食堂信息
-    canteen_data = {
-        'id': nearest_canteen.id,
-        'name': nearest_canteen.name,
-        'address': nearest_canteen.address,
-        'distance': round(nearest_distance, 2),
-        'latitude': float(nearest_canteen.latitude),
-        'longitude': float(nearest_canteen.longitude),
-    }
-
-    # 附近食堂列表（前5个）
-    nearby_canteens = []
-    for canteen, distance in canteens_with_distance[:5]:
-        nearby_canteens.append({
-            'id': canteen.id,
-            'name': canteen.name,
-            'address': canteen.address,
-            'distance': round(distance, 2),
-        })
-
-    return Response({
-        'code': 200,
-        'message': '获取附近推荐菜品成功',
-        'data': {
-            'nearest_canteen': canteen_data,
-            'nearby_canteens': nearby_canteens,
-            'dishes': dish_serializer.data,
-            'total': total,
-            'page': page,
-            'page_size': page_size,
-            'user_tags': TagSerializer(user_tags, many=True).data if user_tags.exists() else []
+            'user_tags': tag_serializer.data
         }
     }, status=status.HTTP_200_OK)
 
