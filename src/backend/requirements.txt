@@ -27,3 +27,7 @@ python-decouple==3.8
 # JWT 和密码加密
 PyJWT==2.8.0
 scrypt==0.8.24
+
+# HTTP 请求和加密（用于食堂数据爬取）
+requests==2.31.0
+pycryptodome==3.19.0
