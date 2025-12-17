@@ -163,14 +163,14 @@ async function onCheckIn() {
       window.$message?.error?.(e?.message || '打卡失败')
     }
   } finally {
-    checkinLoading.value = false
+    checkinLoading.value = false;
   }
 }
 
 // 打分栏
-const userRating = ref(0)
-const ratingLoading = ref(false)
-const lastSavedUserScore = ref(null)
+const userRating = ref(0);
+const ratingLoading = ref(false);
+const lastSavedUserScore = ref(null);
 const submitRating = async () => {
   if (!userRating.value) return;
   // 未登录拦截
@@ -257,9 +257,6 @@ const submitComment = async () => {
       const errorMsg = e?.response?.data?.message || e?.message || '评论失败'
       window.$message?.error?.(`❌ ${errorMsg}`)
     } else {
-      window.$message?.error?.(e?.message || '评论失败')
-    }
-  } finally {
       window.$message?.error?.(e?.message || '评论失败')
     }
   } finally {
