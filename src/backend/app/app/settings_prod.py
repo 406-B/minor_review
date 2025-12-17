@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "post",
     "login",
     "profile",
+    "canteen.apps.CanteenConfig",
 ]
 
 MIDDLEWARE = [

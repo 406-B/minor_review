@@ -12,6 +12,10 @@ while ! nc -z $MYSQL_HOST $MYSQL_PORT; do
 done
 echo "MySQL is ready!"
 
+# 安装可能缺失的依赖（临时修复）
+echo "Installing additional dependencies..."
+pip install requests pycryptodome -q || true
+
 # 运行数据库迁移
 echo "Running database migrations..."
 python manage.py migrate --noinput
