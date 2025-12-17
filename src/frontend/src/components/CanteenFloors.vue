@@ -1,18 +1,21 @@
 <template>
   <div class="canteen-floors">
-    <el-tabs v-model="activeFloor" tab-position="top" type="card">
+  <el-tabs v-model="activeFloor" tab-position="top" type="card">
       <el-tab-pane
-        v-for="floor in floors"
+    v-for="floor in floors"
         :key="floor.id"
         :label="floor.name"
-        :name="floor.id"
+    :name="String(floor.id)"
       >
         <div class="windows-list">
-          <div
-            v-for="window in floor.windows"
-            :key="window.id"
-            class="window-block"
-          >
+          <div class="windows-list-inner" :key="animationKey">
+            <div
+              v-for="(window, idx) in floor.windows"
+              :key="window.id"
+              class="window-block"
+              :style="staggerStyle(idx)"
+              ref="windowRefs"
+            >
             <div class="window-title">{{ window.name }}</div>
             <div class="dish-card-list">
               <div v-for="dish in window.dishes" :key="dish.id" class="dish-card" @click="goToDish && goToDish(dish.id)">
@@ -32,6 +35,7 @@
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
       </el-tab-pane>
@@ -49,7 +53,8 @@ function getImageUrl(image) {
 }
 
 
-import { ref, watch } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount, onUpdated, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { getCanteenFloors } from '@/utils/api/listApi'
 import { useRouter } from 'vue-router'
 
@@ -63,12 +68,96 @@ const props = defineProps({
 const router = useRouter()
 
 function goToDish(dishId) {
-  router.push({ name: 'DishDetail', params: { id: dishId } })
+  const state = { from: router.currentRoute.value.name, scrollY: window.scrollY }
+  router.push({ name: 'DishDetail', params: { id: dishId }, state })
 }
 
 const floors = ref([])
+const emit = defineEmits(['floorsLoaded'])
 const activeFloor = ref('')
+// 切换楼层时通过更新 key 触发过渡重新进入
+const animationTick = ref(0)
+const animationKey = computed(() => `${activeFloor.value}-${animationTick.value}`)
+const route = useRoute()
 
+// IntersectionObserver: 仅当窗口块进入视口时触发浮现
+const windowRefs = ref([])
+let io = null
+
+function setupObserver() {
+  if (io) return
+  if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+    io = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      const el = entry.target
+      if (entry.isIntersecting) {
+        el.classList.add('is-visible')
+        io.unobserve(el)
+      }
+    })
+    }, { root: null, threshold: 0.01 })
+  } else {
+    io = null
+  }
+}
+
+function observeWindows() {
+  if (!io) setupObserver()
+  // 清理旧的可见标记，重新观察新节点
+  const skipAnimation = sessionStorage.getItem('returningFromDetail') === '1'
+  windowRefs.value.forEach((el) => {
+    if (!el) return
+    el.classList.remove('is-visible')
+    if (skipAnimation) {
+      // 返回详情时直接显示，不做浮现
+      el.classList.add('is-visible')
+    } else if (io) {
+      io.observe(el)
+    } else {
+      // 回退：不支持 IO 时直接显示
+      el.classList.add('is-visible')
+    }
+  })
+  // 用一次后清除标记
+  if (skipAnimation) sessionStorage.removeItem('returningFromDetail')
+}
+
+onMounted(() => {
+  setupObserver()
+  // 初次数据到位后，等待 DOM 更新再开始观察
+  nextTick(() => {
+    observeWindows()
+  })
+})
+
+// DOM 更新后（例如列表刷新），重新观察新出现的窗口块
+onUpdated(() => {
+  nextTick(() => {
+    observeWindows()
+  })
+})
+
+onBeforeUnmount(() => {
+  if (io) {
+    windowRefs.value.forEach((el) => el && io.unobserve(el))
+    io.disconnect()
+    io = null
+  }
+})
+
+// 阶梯延迟（ms）与持续时长配置
+const baseDelay = 40
+const maxDelay = 12 // 最多延迟阶梯数量，避免过长
+const durationMs = 360
+
+function staggerStyle(idx) {
+  const safeIdx = Math.min(idx, maxDelay)
+  const delay = safeIdx * baseDelay
+  return {
+    '--fade-up-delay': `${delay}ms`,
+    '--fade-up-duration': `${durationMs}ms`
+  }
+}
 
 const fetchFloors = async () => {
   try {
@@ -76,17 +165,37 @@ const fetchFloors = async () => {
     if (res && Array.isArray(res.data)) {
       floors.value = res.data
       if (floors.value.length > 0) {
-        activeFloor.value = floors.value[0].id
+  // 优先恢复持久化的楼层
+  const savedFloorKey = `activeFloor:${props.canteenId}`
+  const saved = sessionStorage.getItem(savedFloorKey)
+  const exists = saved && floors.value.some(f => String(f.id) === String(saved))
+  activeFloor.value = exists ? String(saved) : String(floors.value[0].id)
+  emit('floorsLoaded', true)
       }
     } else {
       floors.value = []
+      emit('floorsLoaded', true)
     }
   } catch (e) {
     floors.value = []
+    emit('floorsLoaded', true)
   }
 }
 
 watch(() => props.canteenId, fetchFloors, { immediate: true })
+
+// 每次切换楼层，递增 tick，使 TransitionGroup 重新挂载触发 appear 过渡
+watch(activeFloor, async () => {
+  // 仅在非“返回详情”场景递增 animationTick，触发浮现动画
+  if (sessionStorage.getItem('returningFromDetail') !== '1') {
+    animationTick.value++
+  }
+  // 持久化当前食堂的楼层选择
+  const savedFloorKey = `activeFloor:${props.canteenId}`
+  sessionStorage.setItem(savedFloorKey, String(activeFloor.value))
+  await nextTick()
+  observeWindows()
+})
 </script>
 
 <style scoped>
@@ -101,6 +210,9 @@ watch(() => props.canteenId, fetchFloors, { immediate: true })
   gap: 24px;
   margin-top: 16px;
 }
+.windows-list-inner {
+  display: contents; /* 保持原列布局 */
+}
 .window-block {
   background: #fff7ed;
   border: 1px solid #ffe0b2;
@@ -109,7 +221,16 @@ watch(() => props.canteenId, fetchFloors, { immediate: true })
   min-width: 220px;
   flex: 1 1 220px;
   box-shadow: 0 2px 8px #f5c16c22;
-  transition: none;
+  /* 初始隐藏并下移，待进入视口再浮现 */
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity var(--fade-up-duration, 360ms) ease-out,
+              transform var(--fade-up-duration, 360ms) ease-out;
+  transition-delay: var(--fade-up-delay, 0ms);
+}
+.no-animate .window-block {
+  opacity: 1 !important;
+  transform: none !important;
 }
 .window-block:hover {
   /* 悬浮时无任何放大和阴影变化 */
@@ -174,6 +295,19 @@ watch(() => props.canteenId, fetchFloors, { immediate: true })
 @media (min-width: 900px) {
   .dish-card-list {
     grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* 进入视口后浮现 */
+.window-block.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 无障碍：尊重减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .window-block {
+    transition: none;
   }
 }
 </style>
