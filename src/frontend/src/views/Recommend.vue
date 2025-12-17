@@ -3,7 +3,15 @@
     <template #header><AppTopBar /></template>
 
     <div class="wrap">
-      <h2 class="title">个性化推荐</h2>
+      <div class="header">
+        <div class="header-left">
+          <button class="back-btn" @click="$router.back()">
+            <span>←</span>
+            <span>返回</span>
+          </button>
+          <h2>个性化推荐</h2>
+        </div>
+      </div>
       <el-tabs v-model="active">
         <el-tab-pane label="按偏好推荐" name="pref">
           <RecommendList :loading="loading.pref" :dishes="data.pref.dishes"/>
@@ -138,8 +146,48 @@ watch(active, (tab) => {
 </script>
 
 <style scoped>
-.wrap { max-width: 960px; margin: 0 auto; padding: 8px 0 }
-.title { margin: 8px 0 12px }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text);
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+  color: var(--brand-600);
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--color-text);
+}
 .row { display:flex; align-items:center; gap:8px; margin: 8px 0 }
 .row.between { justify-content: space-between }
 .hint { color: var(--color-muted) }
