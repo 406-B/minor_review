@@ -8,13 +8,13 @@
   >
     <div class="dish-image">
       <img :src="imageUrl" :alt="dish.name" />
-      <div class="check-count-badge">×{{ dish.check_in_count }}</div>
+      <div class="check-count-badge">×{{ displayCheckCount }}</div>
     </div>
     <div class="dish-name" :title="dish.name">{{ dish.name }}</div>
     
     <!-- 悬浮卡片 -->
     <transition name="tooltip-fade">
-      <div v-if="showTooltip" class="dish-tooltip" @click.stop>
+      <div v-if="showTooltip" class="dish-tooltip" @click="goToDishDetail">
         <div class="tooltip-header">
           <h4>{{ dish.name }}</h4>
           <div class="badge" :class="achievementClass">
@@ -83,6 +83,11 @@ const props = defineProps({
 const router = useRouter()
 const showTooltip = ref(false)
 
+// 显示的打卡次数：优先使用当天打卡次数（daily_check_count），否则使用总打卡次数
+const displayCheckCount = computed(() => {
+  return props.dish.daily_check_count || props.dish.check_in_count || 0
+})
+
 // 根据打卡次数获取成就等级
 const achievement = computed(() => {
   return getAchievementByCount(props.dish.check_in_count || 0)
@@ -119,10 +124,12 @@ const goToDishDetail = () => {
   padding: 4px;
   border-radius: 8px;
   background: var(--color-surface);
+  z-index: 1;
 }
 
 .dish-card:hover {
   transform: translateY(-4px);
+  z-index: 100;
 }
 
 /* 成就边框 */
@@ -198,8 +205,9 @@ const goToDishDetail = () => {
   border: 1px solid var(--color-border);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 1001;
   padding: 12px;
+  cursor: pointer;
 }
 
 .dish-tooltip::before {

@@ -4,8 +4,13 @@
       <AppTopBar />
     </template>
     <div class="header">
-      <h1 class="page-title">我的帖子</h1>
-      <el-button size="small" @click="goBack">返回</el-button>
+      <div class="header-left">
+        <button class="back-btn" @click="goBack">
+          <span>←</span>
+          <span>返回</span>
+        </button>
+        <h2>我的帖子</h2>
+      </div>
     </div>
 
       <div v-if="loading" class="loading">加载中...</div>
@@ -116,16 +121,41 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--color-border);
 }
 
-.page-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #333;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text);
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+  color: var(--brand-600);
+}
+
+.header h2 {
   margin: 0;
+  font-size: 24px;
+  color: var(--color-text);
 }
 
 

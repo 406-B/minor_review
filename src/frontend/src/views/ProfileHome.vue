@@ -337,17 +337,17 @@ const load = async () => {
       
       // 设置交互统计数据
       interactions.value = [
-        { name: '我点赞的帖子', count: stats.liked_posts_count || 0, to: '/community' },
-        { name: '我收到的评论', count: receivedCommentsCount, to: '/community' },
-        { name: '我发布的评论', count: stats.commented_posts_count || 0, to: '/community' }
+        { name: '我点赞的帖子', count: stats.liked_posts_count || 0, to: '/profile/liked-posts' },
+        { name: '我收到的评论', count: receivedCommentsCount, to: '/profile/received-comments' },
+        { name: '我发布的评论', count: stats.commented_posts_count || 0, to: '/profile/my-comments' }
       ]
     } catch (err) {
       console.log('[ProfileHome] 获取用户统计失败:', err?.response?.status || err.message)
       // 使用默认值,不显示错误提示
       interactions.value = [
-        { name: '我点赞的帖子', count: 0, to: '/community' },
-        { name: '我收到的评论', count: 0, to: '/community' },
-        { name: '我发布的评论', count: 0, to: '/community' }
+        { name: '我点赞的帖子', count: 0, to: '/profile/liked-posts' },
+        { name: '我收到的评论', count: 0, to: '/profile/received-comments' },
+        { name: '我发布的评论', count: 0, to: '/profile/my-comments' }
       ]
       published.value = res.published || []
     }

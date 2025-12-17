@@ -236,6 +236,40 @@ export const getMyPosts = async (page = 1, page_size = 20) => {
   }
 }
 
+/**
+ * 获取我点赞的帖子
+ * @param {number} page - 页码，默认 1
+ * @param {number} page_size - 每页数量，默认 20
+ * @returns {Promise}
+ */
+export const getLikedPosts = async (page = 1, page_size = 20) => {
+  try {
+    const response = await request.get(`${BASE_URL}/profile/posts/liked`, {
+      params: { page, page_size }
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 获取我发布的评论
+ * @param {number} page - 页码，默认 1
+ * @param {number} page_size - 每页数量，默认 20
+ * @returns {Promise}
+ */
+export const getMyComments = async (page = 1, page_size = 20) => {
+  try {
+    const response = await request.get(`${BASE_URL}/profile/comments`, {
+      params: { page, page_size }
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
 export default {
   getPostList,
   getPostDetail,
@@ -247,5 +281,7 @@ export default {
   deleteComment,
   toggleCommentLike,
   getUserStats,
-  getMyPosts
+  getMyPosts,
+  getLikedPosts,
+  getMyComments
 }
