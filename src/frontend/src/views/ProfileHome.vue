@@ -23,82 +23,95 @@
     </template>
   </div>
 
-  <!-- 已发布与 我的互动 同行 -->
-  <div class="grid top-grid">
-      <div class="col left">
-        <SectionCard class="equal-card" title="已发布内容">
-          <template #actions>
-            <button class="link" @click.prevent="viewAllPublished">查看全部</button>
-          </template>
-          <template #content>
-            <div class="posts">
-              <PostItem
-                v-for="p in published"
-                :key="p.id"
-                :post="p"
-                :showStats="false"
-              />
-              <p v-if="(!published || published.length === 0)" class="empty">暂无已发布内容</p>
-            </div>
-          </template>
-        </SectionCard>
-      </div>
+  <!-- 美食日历 -->
+  <div class="grid calendar-grid">
+    <div class="col full-width">
+      <SectionCard class="equal-card" title="美食日历">
+        <template #actions>
+          <button class="link" @click.prevent="viewFullCalendar">查看完整日历</button>
+        </template>
+        <template #content>
+          <FoodCalendar :days="7" />
+        </template>
+      </SectionCard>
+    </div>
+  </div>
 
-      <div class="col right">
-        <SectionCard class="equal-card" title="我的互动">
-          <template #content>
-            <div class="interactions">
-              <InteractionStat
-                v-for="(it, i) in interactions"
-                :key="i"
-                :name="it.name"
-                :count="it.count"
-                :to="it.to"
-                @navigate="onNavigate"
-              />
-            </div>
-            <p v-if="loading" class="hint">加载中...</p>
-          </template>
-        </SectionCard>
-      </div>
+  <!-- 已发布内容 与 我的互动 同行 -->
+  <div class="grid top-grid">
+    <div class="col left">
+      <SectionCard class="equal-card" title="已发布内容">
+        <template #actions>
+          <button class="link" @click.prevent="viewAllPublished">查看全部</button>
+        </template>
+        <template #content>
+          <div class="posts">
+            <PostItem
+              v-for="p in published"
+              :key="p.id"
+              :post="p"
+              :showStats="false"
+            />
+            <p v-if="(!published || published.length === 0)" class="empty">暂无已发布内容</p>
+          </div>
+        </template>
+      </SectionCard>
     </div>
 
-    <!-- 我的成就 与 个性化推荐 同行等宽 -->
-    <div class="grid recommend-grid">
-      <div class="col">
-        <SectionCard class="equal-card" title="我的成就">
-          <template #actions>
-            <button class="link" @click.prevent="openAllAchievements">查看全部</button>
-          </template>
-          <template #content>
-            <div class="achi-cards">
-              <div class="achi-card bronze" @click="goAchievements('bronze')">
-                <div class="icon" aria-hidden="true">🥉</div>
-                <div class="achi-stack">
-                  <div class="achi-count">{{ achiCounts.bronze }}</div>
-                  <div class="achi-label">本科</div>
-                </div>
+    <div class="col right">
+      <SectionCard class="equal-card" title="我的互动">
+        <template #content>
+          <div class="interactions">
+            <InteractionStat
+              v-for="(it, i) in interactions"
+              :key="i"
+              :name="it.name"
+              :count="it.count"
+              :to="it.to"
+              @navigate="onNavigate"
+            />
+          </div>
+          <p v-if="loading" class="hint">加载中...</p>
+        </template>
+      </SectionCard>
+    </div>
+  </div>
+
+  <!-- 我的成就 与 个性化推荐 同行 -->
+  <div class="grid middle-grid">
+    <div class="col">
+      <SectionCard class="equal-card" title="我的成就">
+        <template #actions>
+          <button class="link" @click.prevent="openAllAchievements">查看全部</button>
+        </template>
+        <template #content>
+          <div class="achi-cards">
+            <div class="achi-card bronze" @click="goAchievements('bronze')">
+              <div class="icon" aria-hidden="true">🥉</div>
+              <div class="achi-stack">
+                <div class="achi-count">{{ achiCounts.bronze }}</div>
+                <div class="achi-label">本科</div>
               </div>
-              <div class="achi-card silver" @click="goAchievements('silver')">
-                <div class="icon" aria-hidden="true">🥈</div>
-                <div class="achi-stack">
-                  <div class="achi-count">{{ achiCounts.silver }}</div>
-                  <div class="achi-label">硕士</div>
-                </div>
+            </div>
+            <div class="achi-card silver" @click="goAchievements('silver')">
+              <div class="icon" aria-hidden="true">🥈</div>
+              <div class="achi-stack">
+                <div class="achi-count">{{ achiCounts.silver }}</div>
+                <div class="achi-label">硕士</div>
               </div>
-              <div class="achi-card gold" @click="goAchievements('gold')">
-                <div class="icon" aria-hidden="true">🥇</div>
-                <div class="achi-stack">
-                  <div class="achi-count">{{ achiCounts.gold }}</div>
-                  <div class="achi-label">博士</div>
-                </div>
+            </div>
+            <div class="achi-card gold" @click="goAchievements('gold')">
+              <div class="icon" aria-hidden="true">🥇</div>
+              <div class="achi-stack">
+                <div class="achi-count">{{ achiCounts.gold }}</div>
+                <div class="achi-label">博士</div>
               </div>
-              <div class="achi-card rainbow" @click="goAchievements('rainbow')">
-                <div class="icon" aria-hidden="true">🏆</div>
-                <div class="achi-stack">
-                  <div class="achi-count">{{ achiCounts.rainbow }}</div>
-                  <div class="achi-label">院士</div>
-                </div>
+            </div>
+            <div class="achi-card rainbow" @click="goAchievements('rainbow')">
+              <div class="icon" aria-hidden="true">🏆</div>
+              <div class="achi-stack">
+                <div class="achi-count">{{ achiCounts.rainbow }}</div>
+                <div class="achi-label">院士</div>
               </div>
             </div>
           </template>
@@ -130,11 +143,8 @@
                     </div>
                     <div class="dish-name" :title="d.name">{{ d.name }}</div>
                   </div>
+                  <div class="dish-name" :title="d.name">{{ d.name }}</div>
                 </div>
-              </div>
-              <button v-if="pages.length > 1" class="nav next" type="button" @click="onNext" aria-label="下一页">›</button>
-              <div v-if="pages.length > 1" class="dots">
-                <span v-for="(p, i) in pages" :key="'d-'+i" class="dot" :class="{ active: i === activeDot }" @click="goToPage(i)" />
               </div>
             </div>
             <el-empty v-else description="暂无推荐数据" />
@@ -146,8 +156,16 @@
         <ConsumptionCard class="equal-card" />
       </div>
     </div>
+  </div>
 
-    <!-- 控制组件板块（在底部） -->
+  <!-- 消费记录 -->
+  <div class="grid bottom-grid">
+    <div class="col left">
+      <ConsumptionCard class="equal-card" />
+    </div>
+  </div>
+
+  <!-- 控制组件板块（在底部） -->
     <ControlPanel />
   </PageContainer>
 </template>
@@ -170,6 +188,7 @@ import ControlPanel from '@/components/ControlPanel.vue'
 import AchievementImage from '@/components/common/AchievementImage.vue'
 import { ensureAchievementsLoaded, getAllAchievements, getAchievementByCount, onAchievementsUpdated, offAchievementsUpdated } from '@/utils/achievements'
 import ConsumptionCard from '@/components/ConsumptionCard.vue'
+import FoodCalendar from '@/components/FoodCalendar.vue'
 
 const router = useRouter()
 const published = ref([])
@@ -320,17 +339,17 @@ const load = async () => {
       
       // 设置交互统计数据
       interactions.value = [
-        { name: '我点赞的帖子', count: stats.liked_posts_count || 0, to: '/community' },
-        { name: '我收到的评论', count: receivedCommentsCount, to: '/community' },
-        { name: '我发布的评论', count: stats.commented_posts_count || 0, to: '/community' }
+        { name: '我点赞的帖子', count: stats.liked_posts_count || 0, to: '/profile/liked-posts' },
+        { name: '我收到的评论', count: receivedCommentsCount, to: '/profile/received-comments' },
+        { name: '我发布的评论', count: stats.commented_posts_count || 0, to: '/profile/my-comments' }
       ]
     } catch (err) {
       console.log('[ProfileHome] 获取用户统计失败:', err?.response?.status || err.message)
       // 使用默认值,不显示错误提示
       interactions.value = [
-        { name: '我点赞的帖子', count: 0, to: '/community' },
-        { name: '我收到的评论', count: 0, to: '/community' },
-        { name: '我发布的评论', count: 0, to: '/community' }
+        { name: '我点赞的帖子', count: 0, to: '/profile/liked-posts' },
+        { name: '我收到的评论', count: 0, to: '/profile/received-comments' },
+        { name: '我发布的评论', count: 0, to: '/profile/my-comments' }
       ]
       published.value = res.published || []
     }
@@ -392,6 +411,7 @@ const goDish = (id) => router.push(`/dish/${id}`)
 const viewAllRecommend = () => router.push({ path: '/recommend', query: { tab: recoSource.value } })
 const goAchievements = (tab) => router.push({ path: '/achievements', query: { tab } })
 const openAllAchievements = () => router.push('/achievements')
+const viewFullCalendar = () => router.push('/profile/food-calendar')
 
 const loadRecommendPref = async () => {
   try {
@@ -512,11 +532,14 @@ watch(() => reco.value?.dishes, () => {
 @media (min-width: 1024px) {
   .grid { grid-template-columns: 1fr 1fr }
   /* 限制卡片的最大宽度，减少卡内留白 */
-  .top-grid, .top-second-grid { justify-items: center; }
-  .top-grid .col, .top-second-grid .col { width: 100%; max-width: 680px; }
-  /* 个性化推荐单独占一行时全宽 */
-  .bottom-grid { grid-template-columns: 1fr; justify-items: center; }
-  .bottom-grid .col.full-width { width: 100%; max-width: 1400px; }
+  .top-grid, .middle-grid { justify-items: center; }
+  .top-grid .col, .middle-grid .col { width: 100%; max-width: 680px; }
+  /* 美食日历独占一行，全宽 */
+  .calendar-grid { grid-template-columns: 1fr; justify-items: center; }
+  .calendar-grid .col.full-width { width: 100%; max-width: 1400px; }
+  /* 消费记录占左侧一列 */
+  .bottom-grid { justify-items: center; }
+  .bottom-grid .col { width: 100%; max-width: 680px; }
   /* 固定等高：两列时卡片充满列高 */
   .col { align-items: stretch }
   .equal-card { height: 100%; min-height: 240px }

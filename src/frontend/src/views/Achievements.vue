@@ -4,8 +4,19 @@
       <AppTopBar />
     </template>
 
-    <SectionCard title="我的成就">
-      <template #content>
+    <div class="achievements-detail">
+      <div class="header">
+        <div class="header-left">
+          <button class="back-btn" @click="$router.back()">
+            <span>←</span>
+            <span>返回</span>
+          </button>
+          <h2>我的成就</h2>
+        </div>
+      </div>
+      
+      <SectionCard>
+        <template #content>
         <div class="tabs-wrap">
           <el-tabs v-model="activeTab" @tab-change="onTabChange">
             <el-tab-pane label="全部" name="all" />
@@ -50,8 +61,7 @@
           <el-empty v-else description="暂无数据" />
         </div>
       </template>
-    </SectionCard>
-  </PageContainer>
+    </SectionCard>    </div>  </PageContainer>
 </template>
 
 <script setup>
