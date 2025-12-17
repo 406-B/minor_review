@@ -114,47 +114,43 @@
                 <div class="achi-label">院士</div>
               </div>
             </div>
-          </template>
-        </SectionCard>
-      </div>
+          </div>
+        </template>
+      </SectionCard>
+    </div>
 
-      <div class="col">
-        <SectionCard class="equal-card" title="个性化推荐">
-          <template #actions>
-            <el-select v-model="recoSource" size="small" style="width: 120px; margin-right: 8px">
-              <el-option label="综合" value="mix" />
-              <el-option label="偏好" value="pref" />
-              <el-option label="热度" value="hot" />
-            </el-select>
-            <button class="link" @click.prevent="viewAllRecommend">查看全部</button>
-          </template>
-          <template #content>
-            <div v-if="reco.dishes && reco.dishes.length" class="slider" @mouseenter="pauseAuto" @mouseleave="resumeAuto">
-              <button v-if="pages.length > 1" class="nav prev" type="button" @click="onPrev" aria-label="上一页">‹</button>
-              <div class="slides" ref="slidesRef" :style="slidesStyle" @transitionend="onTransitionEnd">
-                <div class="page" v-for="(page, i) in extendedPages" :key="'p-'+i">
-                  <div v-for="d in page" :key="d.id" class="dish-card" @click="goDish(d.id)">
-                    <div class="thumb">
-                      <AchievementImage :dish-id="d.id" :src="imageUrl(d.image)" :width="'100%'" :height="96" :radius="8">
-                        <template #placeholder>
-                          <div class="thumb placeholder">{{ d.name?.[0] || '图' }}</div>
-                        </template>
-                      </AchievementImage>
-                    </div>
-                    <div class="dish-name" :title="d.name">{{ d.name }}</div>
+    <div class="col">
+      <SectionCard class="equal-card" title="个性化推荐">
+        <template #actions>
+          <el-select v-model="recoSource" size="small" style="width: 120px; margin-right: 8px">
+            <el-option label="综合" value="mix" />
+            <el-option label="偏好" value="pref" />
+            <el-option label="热度" value="hot" />
+          </el-select>
+          <button class="link" @click.prevent="viewAllRecommend">查看全部</button>
+        </template>
+        <template #content>
+          <div v-if="reco.dishes && reco.dishes.length" class="slider" @mouseenter="pauseAuto" @mouseleave="resumeAuto">
+            <button v-if="pages.length > 1" class="nav prev" type="button" @click="onPrev" aria-label="上一页">‹</button>
+            <div class="slides" ref="slidesRef" :style="slidesStyle" @transitionend="onTransitionEnd">
+              <div class="page" v-for="(page, i) in extendedPages" :key="'p-'+i">
+                <div v-for="d in page" :key="d.id" class="dish-card" @click="goDish(d.id)">
+                  <div class="thumb">
+                    <AchievementImage :dish-id="d.id" :src="imageUrl(d.image)" :width="'100%'" :height="96" :radius="8">
+                      <template #placeholder>
+                        <div class="thumb placeholder">{{ d.name?.[0] || '图' }}</div>
+                      </template>
+                    </AchievementImage>
                   </div>
                   <div class="dish-name" :title="d.name">{{ d.name }}</div>
                 </div>
               </div>
+              <button v-if="pages.length > 1" class="nav next" type="button" @click="onNext" aria-label="下一页">›</button>
             </div>
-            <el-empty v-else description="暂无推荐数据" />
-          </template>
-        </SectionCard>
-      </div>
-
-      <div class="col left">
-        <ConsumptionCard class="equal-card" />
-      </div>
+          </div>
+          <el-empty v-else description="暂无推荐数据" />
+        </template>
+      </SectionCard>
     </div>
   </div>
 
@@ -166,7 +162,7 @@
   </div>
 
   <!-- 控制组件板块（在底部） -->
-    <ControlPanel />
+  <ControlPanel />
   </PageContainer>
 </template>
 
