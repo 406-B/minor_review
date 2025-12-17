@@ -19,6 +19,7 @@ window.$message = {
 	error: (msg) => ElMessage({ type: 'error', message: msg }),
 	info: (msg) => ElMessage({ type: 'info', message: msg }),
 	warning: (msg) => ElMessage({ type: 'warning', message: msg }),
+	loading: (msg) => ElMessage({ type: 'info', message: msg, duration: 0, iconClass: 'el-icon-loading' })
 }
 
 // 路由加载指示（轻量 Loading 遮罩）

@@ -112,28 +112,22 @@ def create_post(request):
             'errors': serializer.errors
         }, status=400)
 
-    # 创建帖子
-    post = controllers.create_post(
-        user=request.user,
-        subject=serializer.validated_data['subject'],
-        content=serializer.validated_data['content'],
-        images=serializer.validated_data.get('images', []),  # 图片列表，默认为空
-        dish=serializer.validated_data.get('dish')  # 菜品可为空
-    )
-
-    # 进行内容审核
+    # 先进行内容审核（在创建之前）
     from utils.audit import audit_content
+
+    subject = serializer.validated_data['subject']
+    content = serializer.validated_data['content']
 
     # 审核帖子内容
     is_passed_content, reason_content = audit_content(
-        content=post.content,
+        content=content,
         content_type='post',
-        title=post.subject
+        title=subject
     )
 
     # 审核帖子标题
     is_passed_title, reason_title = audit_content(
-        content=post.subject,
+        content=subject,
         content_type='post_title',
         title=''
     )
@@ -147,25 +141,33 @@ def create_post(request):
     else:
         reason = ""
 
-    # 设置审核状态
-    from django.utils import timezone
-    if is_passed:
-        post.status = 'approved'
-        post.audited_at = timezone.now()
-        message = '发布成功'
-    else:
-        post.status = 'rejected'
-        post.audit_reason = reason
-        post.audited_at = timezone.now()
-        message = f'发布失败，内容审核未通过: {reason}'
+    # 如果审核未通过，直接返回错误，不保存到数据库
+    if not is_passed:
+        return JsonResponse({
+            'code': 400,
+            'message': f'发布失败，{reason}'
+        }, status=400)
 
+    # 审核通过，创建帖子
+    post = controllers.create_post(
+        user=request.user,
+        subject=subject,
+        content=content,
+        images=serializer.validated_data.get('images', []),  # 图片列表，默认为空
+        dish=serializer.validated_data.get('dish')  # 菜品可为空
+    )
+
+    # 设置为已审核通过状态
+    from django.utils import timezone
+    post.status = 'approved'
+    post.audited_at = timezone.now()
     post.save()
 
     result_serializer = PostSerializer(post, context={'request': request})
 
     return JsonResponse({
-        'code': 200 if is_passed else 400,
-        'message': message,
+        'code': 200,
+        'message': '发布成功',
         'data': result_serializer.data
     })
 
@@ -262,10 +264,30 @@ def create_comment(request):
             'errors': serializer.errors
         }, status=400)
 
+    # 先进行内容审核（在创建之前）
+    from utils.audit import audit_content
+    
+    content = serializer.validated_data['content']
+    post = serializer.validated_data['post']
+    
+    is_passed, reason = audit_content(
+        content=content,
+        content_type='comment',
+        title=f'回复: {post.subject}'
+    )
+
+    # 如果审核未通过，直接返回错误，不保存到数据库
+    if not is_passed:
+        return JsonResponse({
+            'code': 400,
+            'message': f'评论发布失败，内容审核未通过: {reason}'
+        }, status=400)
+
+    # 审核通过，创建评论
     comment, message = controllers.create_comment(
         user=request.user,
-        post_id=serializer.validated_data['post'].id,
-        content=serializer.validated_data['content'],
+        post_id=post.id,
+        content=content,
         images=serializer.validated_data.get('images', []),  # 图片列表，默认为空
         parent_id=serializer.validated_data.get('parent').id if serializer.validated_data.get('parent') else None  # 父评论 ID
     )
@@ -276,33 +298,17 @@ def create_comment(request):
             'message': message
         }, status=404)
 
-    # 进行内容审核
-    from utils.audit import audit_content
-    is_passed, reason = audit_content(
-        content=comment.content,
-        content_type='comment',
-        title=f'回复: {comment.post.subject}'
-    )
-
-    # 设置审核状态
+    # 设置为已审核通过状态
     from django.utils import timezone
-    if is_passed:
-        comment.status = 'approved'
-        comment.audited_at = timezone.now()
-        final_message = '评论发布成功'
-    else:
-        comment.status = 'rejected'
-        comment.audit_reason = reason
-        comment.audited_at = timezone.now()
-        final_message = f'评论发布失败，内容审核未通过: {reason}'
-
+    comment.status = 'approved'
+    comment.audited_at = timezone.now()
     comment.save()
 
     result_serializer = CommentSerializer(comment, context={'request': request})
 
     return JsonResponse({
-        'code': 200 if is_passed else 400,
-        'message': final_message,
+        'code': 200,
+        'message': '评论发布成功',
         'data': result_serializer.data
     })
 

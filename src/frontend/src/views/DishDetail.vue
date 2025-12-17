@@ -216,17 +216,51 @@ const submitComment = async () => {
     return
   }
   commentLoading.value = true;
+  
+  // 显示审核中的提示
+  const auditingMessage = window.$message?.loading?.('正在进行内容审核，请稍候...')
+  
   try {
-    await createReview(route.params.id, { content: commentContent.value });
-    await fetchReviews();
-    commentContent.value = '';
-    window.$message?.success?.('评论成功！')
+    const res = await createReview(route.params.id, { content: commentContent.value });
+    
+    // 关闭审核中提示
+    if (auditingMessage && typeof auditingMessage.close === 'function') {
+      auditingMessage.close()
+    }
+    
+    // 处理审核结果
+    if (res?.code === 201 || res?.code === 200) {
+      // 审核通过
+      await fetchReviews();
+      commentContent.value = '';
+      window.$message?.success?.('✅ 审核通过，评论成功！')
+    } else if (res?.code === 400) {
+      // 审核失败，显示详细原因
+      const errorMsg = res.message || '评论失败'
+      window.$message?.error?.(`❌ ${errorMsg}`)
+    } else {
+      window.$message?.error?.(res?.message || '评论失败')
+    }
   } catch (e) {
+    console.error('评论失败:', e)
+    
+    // 关闭审核中提示
+    if (auditingMessage && typeof auditingMessage.close === 'function') {
+      auditingMessage.close()
+    }
+    
     if (e?.response?.status === 401) {
       window.$message?.warning?.('您需要先登录')
       router.push('/login')
+    } else if (e?.response?.status === 400) {
+      // 处理400错误（包括审核失败）
+      const errorMsg = e?.response?.data?.message || e?.message || '评论失败'
+      window.$message?.error?.(`❌ ${errorMsg}`)
     } else {
-      window.$message?.error?.(e.message || '评论失败')
+      window.$message?.error?.(e?.message || '评论失败')
+    }
+  } finally {
+      window.$message?.error?.(e?.message || '评论失败')
     }
   } finally {
     commentLoading.value = false;
@@ -283,24 +317,56 @@ async function submitNewTag() {
   if (!name) return
   tagSubmitting.value = true
   try {
-  const res = await addTagToDish(dish.value.id, { tag_name: name })
-  // 乐观更新：立即把新标签加入本地展示，避免网络/缓存延迟
-    const newTag = { id: res?.data?.tag_id || Date.now(), name }
-    if (dish.value?.tags && !dish.value.tags.some(t => String(t.name) === name)) {
-      dish.value.tags = [...dish.value.tags, newTag]
+    const res = await addTagToDish(dish.value.id, { tag_name: name })
+    
+    // 处理审核结果
+    if (res?.code === 200) {
+      // 审核通过，乐观更新：立即把新标签加入本地展示，避免网络/缓存延迟
+      const newTag = { id: res?.data?.tag_id || Date.now(), name }
+      if (dish.value?.tags && !dish.value.tags.some(t => String(t.name) === name)) {
+        dish.value.tags = [...dish.value.tags, newTag]
+      }
+      // 之后刷新菜品详情以获取服务端的最终数据
+      await fetchDish()
+      tagDialogVisible.value = false
+      newTagName.value = ''
+      window.$message?.success?.(res?.message || '标签已提交，等待管理员审核')
+    } else if (res?.code === 400) {
+      // 审核失败，显示详细原因
+      const errorMsg = res.message || '标签添加失败'
+      if (errorMsg.includes('审核未通过') || errorMsg.includes('审核不通过')) {
+        window.$message?.error?.({
+          message: errorMsg,
+          duration: 5000,
+          showClose: true
+        })
+      } else {
+        window.$message?.error?.(errorMsg)
+      }
+    } else {
+      window.$message?.error?.(res?.message || '标签添加失败')
     }
-    // 之后刷新菜品详情以获取服务端的最终数据
-    await fetchDish()
-  tagDialogVisible.value = false
-  window.$message?.success?.(res?.message || 'Tag submitted, awaiting approval')
   } catch (e) {
+    console.error('添加标签失败:', e)
     if (e?.code === 401) {
-      window.$message?.warning?.('You need to log in first')
+      window.$message?.warning?.('您需要先登录')
       router.push('/login')
     } else if (e?.code === 403) {
-      window.$message?.error?.('No permission to add tags')
+      window.$message?.error?.('没有权限添加标签')
+    } else if (e?.response?.status === 400 || e?.code === 400) {
+      // 处理400错误（包括审核失败）
+      const errorMsg = e?.response?.data?.message || e?.message || '标签添加失败'
+      if (errorMsg.includes('审核未通过') || errorMsg.includes('审核不通过')) {
+        window.$message?.error?.({
+          message: errorMsg,
+          duration: 5000,
+          showClose: true
+        })
+      } else {
+        window.$message?.error?.(errorMsg)
+      }
     } else {
-      window.$message?.error?.(e?.message || 'Failed to add tag')
+      window.$message?.error?.(e?.message || '标签添加失败')
     }
   } finally {
     tagSubmitting.value = false
