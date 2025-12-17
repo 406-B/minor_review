@@ -23,7 +23,7 @@ from django.shortcuts import render, get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Count
 from .models import Canteen, Dish, Tag, Rating, Review, UserDishHistory, DishCheckInRecord
 from django.contrib.auth.models import User as AuthUser
 from .serializers import (
@@ -326,13 +326,41 @@ def rate_dish(request, dish_id):
             'message': '评分格式不正确',
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    # 检查用户是否已经评过分，以便计算增量更新
+    old_user_rating = None
+    try:
+        existing_rating = Rating.objects.get(dish=dish, user=auth_user)
+        old_user_rating = float(existing_rating.score)
+    except Rating.DoesNotExist:
+        pass
+    
     # 创建或更新用户对该菜品的评分（Rating表字段为 score，不是 rating）
     rating_obj, created = Rating.objects.update_or_create(dish=dish, user=auth_user, defaults={'score': rating_value})
 
-    # 重新计算平均分，聚合字段应为 'score'
-    avg_score = Rating.objects.filter(dish=dish).aggregate(avg=Avg('score'))['avg']
-    dish.rating = round(float(avg_score), 2) if avg_score is not None else 0.0
-    dish.save(update_fields=['rating'])
+    # 使用增量更新方式计算新评分
+    # 新评分 = (旧评分 × 旧评分人数 + 新评分) / (旧评分人数 + 1)
+    old_rating = float(dish.rating) if dish.rating else 0.0
+    old_rating_count = dish.rating_count
+    
+    if created:
+        # 新用户评分：评分人数+1
+        new_rating_count = old_rating_count + 1
+        new_rating = (old_rating * old_rating_count + rating_value) / new_rating_count
+    else:
+        # 用户修改评分：评分人数不变，但需要用新评分替换旧评分
+        # 计算：先减去旧评分的贡献，再加上新评分
+        if old_rating_count > 0 and old_user_rating is not None:
+            new_rating = (old_rating * old_rating_count - old_user_rating + rating_value) / old_rating_count
+            new_rating_count = old_rating_count
+        else:
+            # 异常情况：评分人数为0但有评分记录，重置为1
+            new_rating = rating_value
+            new_rating_count = 1
+    
+    # 更新菜品的评分和评分人数
+    dish.rating = round(new_rating, 2)
+    dish.rating_count = new_rating_count
+    dish.save(update_fields=['rating', 'rating_count'])
 
     return Response({
         'code': 200,
@@ -340,7 +368,8 @@ def rate_dish(request, dish_id):
         'data': {
             'dish_id': dish.id,
             'user_score': float(rating_obj.score),
-            'new_rating': float(dish.rating)
+            'new_rating': float(dish.rating),
+            'rating_count': dish.rating_count
         }
     })
 

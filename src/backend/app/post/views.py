@@ -523,4 +523,3 @@ def dish_posts(request, dish_id):
             }
         }
     })
-
