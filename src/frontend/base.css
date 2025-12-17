@@ -28,11 +28,12 @@ a:hover {
 }
 
 #app {
-  min-height: 100vh;
   background: #fff7ed;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
+  min-height: 100vh;
+  width: 100%;
+  /* 允许页面垂直滚动，避免 100vh+hidden 导致内容被切断 */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* 侧边栏优化 */
@@ -67,10 +68,10 @@ a:hover {
   margin: 0;
   padding: 32px 40px;
   min-height: 100vh;
-  height: 100vh;
-  width: 100vw;
+  width: 100%;
   transition: box-shadow 0.2s;
-  overflow-y: auto;
+  /* 交由页面统一滚动 */
+  overflow: visible;
 }
 
 

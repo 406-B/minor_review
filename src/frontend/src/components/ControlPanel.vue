@@ -1,24 +1,36 @@
 <template>
   <div class="control-panel">
-    <button class="btn logout" @click="onLogout">登出账号 (TODO)</button>
+    <button class="btn logout" @click="onLogout">登出账号</button>
     <!-- 未来可在此添加更多控制按钮 -->
   </div>
 </template>
 
 <script setup>
+import { useRouter } from 'vue-router'
+import request from '@/api/request'
+
+const router = useRouter()
 const emit = defineEmits(['logged-out'])
 
-const onLogout = () => {
+const onLogout = async () => {
+  try {
+    // 调用后端登出接口（后端挂载在 /api/v1/ 下）
+    await request.post('/v1/logout')
+  } catch (error) {
+    console.error('登出接口调用失败:', error)
+    // 即使后端调用失败，也继续清理本地状态
+  }
+  
   // 清理本地 token / 用户信息
   try { localStorage.removeItem('jwt') } catch (e) { /* ignore */ }
-  try { localStorage.removeItem('user') } catch (e) { /* ignore */ }
+  try { localStorage.removeItem('userInfo') } catch (e) { /* ignore */ }
+  console.log('✅ 已清除本地用户信息')
 
-  // 通知父组件或应用已登出，父组件可根据需要刷新状态或跳转。
+  // 通知父组件已登出
   emit('logged-out')
 
-  // TODO: 前端登录页尚未实现，跳转功能暂不需要实现。
-  // 将来可以在此处调用 router.push('/login') 或者调用后端登出接口再跳转。
-  console.log('logout processed (token cleared, TODO: navigate to login)')
+  // 跳转到登录页
+  router.push('/login')
 }
 </script>
 

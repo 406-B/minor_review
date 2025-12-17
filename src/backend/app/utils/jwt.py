@@ -7,7 +7,6 @@ import scrypt
 from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from login.controllers import get_user
 
@@ -90,10 +89,11 @@ def login_required(func):
 
     # @wraps(func)
     def wrapper(*args, **kwargs):
-        if isinstance(args[0], APIView):
-            request = args[1]
+        # 兼容 APIView.method(self, request, ...) 与函数视图(request, ...)
+        if len(args) >= 2 and hasattr(args[1], 'META'):
+            request = args[1]  # APIView 方法：self, request, ...
         else:
-            request = args[0]
+            request = args[0]  # 函数视图：request, ...
 
         jwt_authentication(request)
         if not request.user:
@@ -104,4 +104,6 @@ def login_required(func):
             return func(*args, **kwargs)
 
     return wrapper
+
+
 

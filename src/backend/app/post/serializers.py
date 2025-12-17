@@ -1,7 +1,17 @@
 from rest_framework import serializers
 from .models import Post, Comment, Like
 from login.models import User
+from list.models import Dish
 
+
+class DishSimpleSerializer(serializers.ModelSerializer):
+    """菜品简单信息序列化器"""
+    canteen_name = serializers.CharField(source='canteen.name', read_only=True)
+    
+    class Meta:
+        model = Dish
+        fields = ['id', 'name', 'price', 'image', 'canteen_name']
+        read_only_fields = ['id', 'name', 'price', 'image', 'canteen_name']
 
 class AuthorSerializer(serializers.ModelSerializer):
     """作者信息序列化器"""
@@ -13,18 +23,48 @@ class AuthorSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     """评论序列化器"""
     author = AuthorSerializer(read_only=True)
+    replies = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['id', 'post', 'author', 'content', 'created_at', 
-                  'updated_at', 'likes_count', 'is_liked']
+        fields = ['id', 'post', 'author', 'content', 'images', 'parent',
+                  'created_at', 'updated_at', 'likes_count', 'is_liked', 'replies']
+        read_only_fields = ['id', 'author', 'created_at', 'updated_at', 'likes_count']
+
+    def get_replies(self, obj):
+        """获取回复评论（仅显示直接回复）"""
+        if obj.parent is None:  # 只有顶级评论才显示回复
+            replies = obj.replies.all().order_by('created_at')
+            return CommentReplySerializer(replies, many=True, context=self.context).data
+        return []
+
+    def get_is_liked(self, obj):
+        """检查当前用户是否点赞了该评论"""
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user and request.user.id:
+            return Like.objects.filter(
+                user=request.user,
+                like_type='comment',
+                object_id=obj.id
+            ).exists()
+        return False
+    
+class CommentReplySerializer(serializers.ModelSerializer):
+    """回复评论序列化器（简化版，不包括嵌套回复）"""
+    author = AuthorSerializer(read_only=True)
+    is_liked = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'post', 'author', 'content', 'images', 'parent',
+                  'created_at', 'updated_at', 'likes_count', 'is_liked']
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 'likes_count']
 
     def get_is_liked(self, obj):
         """检查当前用户是否点赞了该评论"""
         request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user:
+        if request and hasattr(request, 'user') and request.user and request.user.id:
             return Like.objects.filter(
                 user=request.user,
                 like_type='comment',
@@ -36,19 +76,27 @@ class CommentSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     """帖子序列化器（列表显示）"""
     author = AuthorSerializer(read_only=True)
+    dish = DishSimpleSerializer(read_only=True)
     is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
-        fields = ['id', 'author', 'subject', 'created_at', 'updated_at', 
+        fields = ['id', 'author', 'subject', 'images', 'dish', 'created_at', 'updated_at', 
                   'likes_count', 'comments_count', 'is_liked']
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 
                             'likes_count', 'comments_count']
 
+    # TODO: 生产环境对帖子中的图片应注意：
+    # - 图片应上传至云存储（例如 OSS/COS/S3），数据库仅保存访问 URL
+    # - 强制校验图片类型（jpg/png/webp 等）与大小（如单张 <=5MB），并限制图片数量
+    # - 上传应考虑事务一致性或使用异步任务处理（避免阻塞主请求）
+    # - 为图片资源启用签名 URL、CDN 与防盗链策略，保护私有资源
+    # - 对上传文件做恶意内容/病毒扫描，并记录审计日志
+
     def get_is_liked(self, obj):
         """检查当前用户是否点赞了该帖子"""
         request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user:
+        if request and hasattr(request, 'user') and request.user and request.user.id:
             return Like.objects.filter(
                 user=request.user,
                 like_type='post',
@@ -60,20 +108,30 @@ class PostSerializer(serializers.ModelSerializer):
 class PostDetailSerializer(serializers.ModelSerializer):
     """帖子详情序列化器（包含完整内容和评论）"""
     author = AuthorSerializer(read_only=True)
-    comments = CommentSerializer(many=True, read_only=True)
+    dish = DishSimpleSerializer(read_only=True)
+    comments = serializers.SerializerMethodField()
     is_liked = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
-        fields = ['id', 'author', 'subject', 'content', 'created_at', 'updated_at', 
+        fields = ['id', 'author', 'subject', 'content', 'images', 'dish', 'created_at', 'updated_at', 
                   'likes_count', 'comments_count', 'is_liked', 'comments']
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 
                             'likes_count', 'comments_count']
+    # TODO: 生产环境图片访问建议：
+    # - 对图片请求使用临时签名 URL，避免公开长期有效的直链
+    # - 前端应以分页或懒加载方式获取图片，避免一次性加载过多资源
+    # - 在高并发场景下，考虑将图片访问交由 CDN 缓存，减少源站压力
+    
+    def get_comments(self, obj):
+        """获取顶级评论（不包括回复）"""
+        top_level_comments = obj.comments.filter(parent__isnull=True).order_by('created_at')
+        return CommentSerializer(top_level_comments, many=True, context=self.context).data
 
     def get_is_liked(self, obj):
         """检查当前用户是否点赞了该帖子"""
         request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user:
+        if request and hasattr(request, 'user') and request.user and request.user.id:
             return Like.objects.filter(
                 user=request.user,
                 like_type='post',
@@ -98,7 +156,7 @@ class PostHomeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'subject', 'content_preview', 'author', 'created_at', 
+        fields = ['id', 'subject', 'content_preview', 'images', 'author', 'created_at', 
                   'updated_at', 'likes_count', 'comments_count', 'is_liked']
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 
                             'likes_count', 'comments_count']
@@ -125,7 +183,14 @@ class CreatePostSerializer(serializers.ModelSerializer):
     """创建帖子序列化器"""
     class Meta:
         model = Post
-        fields = ['subject', 'content']
+        fields = ['subject', 'content', 'images', 'dish']
+
+    # TODO: 生产环境创建帖子（若支持附带图片）应注意：
+    # - 接收的图片应先上传至专用上传接口/云存储，接口只接收图片 URL 或附件 ID
+    # - 严格校验图片数量与大小（例如最多 9 张，每张不超过 5MB）
+    # - 对图片上传过程需要异常回滚或补偿逻辑，防止部分数据残留
+    # - 校验用户的上传权限与速率限制，防止滥用
+    # - 建议把图片写入单独的表或对象存储，并在业务逻辑中保存引用
 
     def validate_subject(self, value):
         """验证帖子主题"""
@@ -142,13 +207,25 @@ class CreatePostSerializer(serializers.ModelSerializer):
         if len(value) > 5000:
             raise serializers.ValidationError("帖子内容不能超过5000字符")
         return value
+    
+    def validate_images(self, value):
+        """验证图片列表"""
+        if value and len(value) > 9:
+            raise serializers.ValidationError("每个帖子最多可上传9张图片")
+        return value
+    
+    def validate_dish(self, value):
+        """验证菜品是否存在"""
+        if value and not Dish.objects.filter(id=value.id).exists():
+            raise serializers.ValidationError("菜品不存在")
+        return value
 
 
 class CreateCommentSerializer(serializers.ModelSerializer):
     """创建评论序列化器"""
     class Meta:
         model = Comment
-        fields = ['post', 'content']
+        fields = ['post', 'content', 'images', 'parent']
 
     def validate_content(self, value):
         """验证评论内容"""
@@ -162,4 +239,26 @@ class CreateCommentSerializer(serializers.ModelSerializer):
         """验证帖子是否存在"""
         if not Post.objects.filter(id=value.id).exists():
             raise serializers.ValidationError("帖子不存在")
+        return value
+    
+    def validate_parent(self, value):
+        """验证父评论"""
+        if value:
+            # 检查父评论是否存在
+            if not Comment.objects.filter(id=value.id).exists():
+                raise serializers.ValidationError("父评论不存在")
+            # 防止多级回复（只允许回复顶级评论）
+            if value.parent is not None:
+                raise serializers.ValidationError("只能回复顶级评论")
+        return value
+
+    def validate_images(self, value):
+        """验证图片列表"""
+        # TODO: 生产环境图片处理建议：
+        # - 限制图片数量（如 <=9）并限制单张与总大小
+        # - 校验图片 MIME 类型和扩展名，防止恶意文件上传
+        # - 推荐异步上传与扫描（病毒/敏感内容检测），并在审核通过后展示
+        # - 若图片通过外部服务上传，前端应传回稳定的 URL 或文件 ID
+        if value and len(value) > 9:
+            raise serializers.ValidationError("每条评论最多可上传9张图片")
         return value

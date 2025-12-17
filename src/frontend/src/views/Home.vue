@@ -1,15 +1,21 @@
 <template>
-  <div class="user-bg">
-    <el-card class="user-card user-center-card">
-      <div class="main-title">小众点评</div>
-  <el-button type="primary" @click="onStart" class="logout-btn">开始使用</el-button>
-    </el-card>
-  </div>
+  <PageContainer>
+    <template #header>
+      <AppTopBar />
+    </template>
+    <div class="user-bg">
+      <el-card class="user-card user-center-card">
+        <div class="main-title">小众点评</div>
+        <el-button type="primary" @click="onStart" class="logout-btn">开始使用</el-button>
+      </el-card>
+    </div>
+  </PageContainer>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import PageContainer from '@/components/ui/PageContainer.vue'
+import AppTopBar from '@/components/ui/AppTopBar.vue'
 
 const router = useRouter();
 

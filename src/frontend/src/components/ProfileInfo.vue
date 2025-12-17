@@ -4,21 +4,26 @@
       <img class="avatar" :src="avatarSrc" alt="avatar" />
     </div>
     <div class="meta">
-      <h2 class="name">{{ userDisplayName }}</h2>
-        <ul class="meta-list">
-          <li v-if="user.created"><strong>注册时间：</strong>{{ formatDate(user.created) }}</li>
-        </ul>
+      <div class="header-row">
+        <h2 class="name">{{ userDisplayName }}</h2>
+        <button class="edit-btn" @click="handleEdit">编辑资料</button>
+      </div>
+      <ul class="meta-list">
+        <li v-if="user.created"><strong>注册时间：</strong>{{ formatDate(user.created) }}</li>
+      </ul>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   user: { type: Object, default: () => ({}) }
 })
 
+const router = useRouter()
 
 const userDisplayName = computed(() => props.user.nickname || props.user.name || '匿名用户')
 
@@ -34,7 +39,9 @@ function formatDate(iso) {
   } catch (e) { return iso }
 }
 
-
+const handleEdit = () => {
+  router.push('/profile/edit')
+}
 </script>
 
 <style scoped>
@@ -48,9 +55,28 @@ function formatDate(iso) {
   background: #fff;
 }
 .avatar { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; }
-.meta-list { margin: 0.5rem 0 0; padding-left: 1rem; }
-.todo { color: #999; margin-top: 0.5rem; }
+.meta { flex: 1; }
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
 .name { margin: 0; }
+.edit-btn {
+  padding: 0.4rem 1rem;
+  background-color: #2b8aef;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+.edit-btn:hover {
+  background-color: #1a73d9;
+}
+.meta-list { margin: 0.5rem 0 0; padding-left: 1rem; }
 .bio { margin: 0.25rem 0; color: #555 }
 .actions { margin-top: 0.75rem }
 </style>

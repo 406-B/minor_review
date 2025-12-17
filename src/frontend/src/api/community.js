@@ -3,13 +3,6 @@ import request from './request'
 
 const BASE_URL = '/v1'
 
-// 获取 JWT Token
-const getToken = () => {
-  const token = localStorage.getItem('jwt') || ''
-  // 如果 token 存在且不包含 'Bearer' 前缀，则添加
-  return token && !token.startsWith('Bearer ') ? `Bearer ${token}` : token
-}
-
 // ============ 帖子相关接口 ============
 
 /**
@@ -20,11 +13,8 @@ const getToken = () => {
  */
 export const getPostList = async (page = 1, page_size = 20) => {
   try {
-    const token = getToken()
-    const config = token ? { headers: { Authorization: token } } : {}
     const response = await request.get(`${BASE_URL}/posts/`, {
-      params: { page, page_size },
-      ...config
+      params: { page, page_size }
     })
     return response
   } catch (err) {
@@ -39,9 +29,7 @@ export const getPostList = async (page = 1, page_size = 20) => {
  */
 export const getPostDetail = async (postId) => {
   try {
-    const token = getToken()
-    const config = token ? { headers: { Authorization: token } } : {}
-    const response = await request.get(`${BASE_URL}/posts/${postId}/`, config)
+    const response = await request.get(`${BASE_URL}/posts/${postId}/`)
     return response
   } catch (err) {
     throw err
@@ -52,16 +40,23 @@ export const getPostDetail = async (postId) => {
  * 创建帖子
  * @param {string} subject - 帖子标题
  * @param {string} content - 帖子内容
+ * @param {Array<string>} images - 图片URL列表，可选，最多9张
+ * @param {number} dish - 关联菜品ID，可选
  * @returns {Promise}
  */
-export const createPost = async (subject, content) => {
+export const createPost = async (subject, content, images = [], dish = null) => {
   try {
-    const token = getToken()
-    const response = await request.post(
-      `${BASE_URL}/posts/create/`,
-      { subject, content },
-      { headers: { Authorization: token } }
-    )
+    const data = { subject, content }
+    
+    // 添加可选参数
+    if (images && images.length > 0) {
+      data.images = images
+    }
+    if (dish) {
+      data.dish = dish
+    }
+    
+    const response = await request.post(`${BASE_URL}/posts/create/`, data)
     return response
   } catch (err) {
     throw err
@@ -75,11 +70,7 @@ export const createPost = async (subject, content) => {
  */
 export const deletePost = async (postId) => {
   try {
-    const token = getToken()
-    const response = await request.delete(
-      `${BASE_URL}/posts/${postId}/delete/`,
-      { headers: { Authorization: token } }
-    )
+    const response = await request.delete(`${BASE_URL}/posts/${postId}/delete/`)
     return response
   } catch (err) {
     throw err
@@ -93,12 +84,7 @@ export const deletePost = async (postId) => {
  */
 export const togglePostLike = async (postId) => {
   try {
-    const token = getToken()
-    const response = await request.post(
-      `${BASE_URL}/posts/${postId}/like/`,
-      {},
-      { headers: { Authorization: token } }
-    )
+    const response = await request.post(`${BASE_URL}/posts/${postId}/like/`, {})
     return response
   } catch (err) {
     throw err
@@ -116,11 +102,8 @@ export const togglePostLike = async (postId) => {
  */
 export const getCommentList = async (postId, page = 1, page_size = 20) => {
   try {
-    const token = getToken()
-    const config = token ? { headers: { Authorization: token } } : {}
     const response = await request.get(`${BASE_URL}/posts/${postId}/comments/`, {
-      params: { page, page_size },
-      ...config
+      params: { page, page_size }
     })
     return response
   } catch (err) {
@@ -132,16 +115,23 @@ export const getCommentList = async (postId, page = 1, page_size = 20) => {
  * 创建评论
  * @param {number} postId - 帖子ID
  * @param {string} content - 评论内容
+ * @param {Array<string>} images - 图片URL列表，可选，最多9张
+ * @param {number} parent - 父评论ID，可选（用于回复）
  * @returns {Promise}
  */
-export const createComment = async (postId, content) => {
+export const createComment = async (postId, content, images = [], parent = null) => {
   try {
-    const token = getToken()
-    const response = await request.post(
-      `${BASE_URL}/comments/create/`,
-      { post: postId, content },
-      { headers: { Authorization: token } }
-    )
+    const data = { post: postId, content }
+    
+    // 添加可选参数
+    if (images && images.length > 0) {
+      data.images = images
+    }
+    if (parent) {
+      data.parent = parent
+    }
+    
+    const response = await request.post(`${BASE_URL}/comments/create/`, data)
     return response
   } catch (err) {
     throw err
@@ -155,11 +145,7 @@ export const createComment = async (postId, content) => {
  */
 export const deleteComment = async (commentId) => {
   try {
-    const token = getToken()
-    const response = await request.delete(
-      `${BASE_URL}/comments/${commentId}/delete/`,
-      { headers: { Authorization: token } }
-    )
+    const response = await request.delete(`${BASE_URL}/comments/${commentId}/delete/`)
     return response
   } catch (err) {
     throw err
@@ -173,19 +159,52 @@ export const deleteComment = async (commentId) => {
  */
 export const toggleCommentLike = async (commentId) => {
   try {
-    const token = getToken()
-    const response = await request.post(
-      `${BASE_URL}/comments/${commentId}/like/`,
-      {},
-      { headers: { Authorization: token } }
-    )
+    const response = await request.post(`${BASE_URL}/comments/${commentId}/like/`, {})
     return response
   } catch (err) {
     throw err
   }
 }
 
-// ============ 用户资料相关接口 ============
+// ============ 菜品相关接口 ============
+
+/**
+ * 搜索菜品
+ * @param {string} keyword - 搜索关键词
+ * @param {number} page - 页码，默认 1
+ * @param {number} page_size - 每页数量，默认 10
+ * @returns {Promise}
+ */
+export const searchDishes = async (keyword, page = 1, page_size = 10) => {
+  try {
+    const response = await request.get(`${BASE_URL}/dishes/`, {
+      params: {
+        search: keyword,
+        page,
+        page_size
+      }
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 获取菜品详情
+ * @param {number} dishId - 菜品ID
+ * @returns {Promise}
+ */
+export const getDishDetail = async (dishId) => {
+  try {
+    const response = await request.get(`${BASE_URL}/dishes/${dishId}/`)
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+// ============ 导出所有函数 ============
 
 /**
  * 获取用户统计信息
@@ -193,10 +212,7 @@ export const toggleCommentLike = async (commentId) => {
  */
 export const getUserStats = async () => {
   try {
-    const token = getToken()
-    const response = await request.get(`${BASE_URL}/profile/stats`, {
-      headers: { Authorization: token }
-    })
+    const response = await request.get(`${BASE_URL}/profile/stats`)
     return response
   } catch (err) {
     throw err
@@ -211,10 +227,42 @@ export const getUserStats = async () => {
  */
 export const getMyPosts = async (page = 1, page_size = 20) => {
   try {
-    const token = getToken()
     const response = await request.get(`${BASE_URL}/profile/posts`, {
-      params: { page, page_size },
-      headers: { Authorization: token }
+      params: { page, page_size }
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 获取我点赞的帖子
+ * @param {number} page - 页码，默认 1
+ * @param {number} page_size - 每页数量，默认 20
+ * @returns {Promise}
+ */
+export const getLikedPosts = async (page = 1, page_size = 20) => {
+  try {
+    const response = await request.get(`${BASE_URL}/profile/posts/liked`, {
+      params: { page, page_size }
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 获取我发布的评论
+ * @param {number} page - 页码，默认 1
+ * @param {number} page_size - 每页数量，默认 20
+ * @returns {Promise}
+ */
+export const getMyComments = async (page = 1, page_size = 20) => {
+  try {
+    const response = await request.get(`${BASE_URL}/profile/comments`, {
+      params: { page, page_size }
     })
     return response
   } catch (err) {
@@ -233,5 +281,7 @@ export default {
   deleteComment,
   toggleCommentLike,
   getUserStats,
-  getMyPosts
+  getMyPosts,
+  getLikedPosts,
+  getMyComments
 }
