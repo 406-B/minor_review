@@ -286,6 +286,9 @@ async function publish() {
 	
 	publishing.value = true
 	
+	// 显示审核中的提示
+	const auditingMessage = window.$message?.loading?.('正在进行内容审核，请稍候...')
+	
 	try {
 		const response = await createPost(
 			subject.value.trim(), 
@@ -294,21 +297,41 @@ async function publish() {
 			selectedDish.value?.id || null  // 传递菜品ID
 		)
 		
+		// 关闭审核中提示
+		if (auditingMessage && typeof auditingMessage.close === 'function') {
+			auditingMessage.close()
+		}
+		
+		// 处理审核结果
 		if (response.code === 200 && response.data) {
-			window.$message?.success?.('发布成功！')
+			window.$message?.success?.('✅ 审核通过，发布成功！')
 			// 跳转到帖子详情页
-			router.push({ name: 'PostDetail', params: { id: response.data.id } })
+			setTimeout(() => {
+				router.push({ name: 'PostDetail', params: { id: response.data.id } })
+			}, 500)
+		} else if (response.code === 400) {
+			// 审核失败，显示详细原因
+			const errorMsg = response.message || '发布失败'
+			window.$message?.error?.(`❌ ${errorMsg}`)
 		} else {
 			window.$message?.error?.(response.message || '发布失败')
 		}
 	} catch (err) {
 		console.error('发布帖子失败:', err)
 		
+		// 关闭审核中提示
+		if (auditingMessage && typeof auditingMessage.close === 'function') {
+			auditingMessage.close()
+		}
+		
 		// 根据错误类型显示不同的提示
 		if (err.response?.status === 401) {
 			window.$message?.warning?.('请先登录')
+			router.push('/login')
 		} else if (err.response?.status === 400) {
-			window.$message?.error?.(err.response?.data?.message || '数据验证失败，请检查标题和内容')
+			// 处理400错误（包括审核失败）
+			const errorMsg = err.response?.data?.message || '数据验证失败，请检查标题和内容'
+			window.$message?.error?.(`❌ ${errorMsg}`)
 		} else {
 			window.$message?.error?.('发布失败，请检查网络连接或稍后重试')
 		}
