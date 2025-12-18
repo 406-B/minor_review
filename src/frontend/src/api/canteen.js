@@ -12,7 +12,7 @@ const BASE_URL = '/v1/canteen'
 export const getConsumption = async () => {
   try {
     const response = await request.get(`${BASE_URL}/consumption/`)
-    return response.data
+    return response
   } catch (err) {
     throw err
   }
@@ -34,7 +34,7 @@ export const bindAccount = async (idserial = null, browserType = 'chrome') => {
     const response = await request.post(`${BASE_URL}/bind/`, data, {
       timeout: 300000 // 5分钟 = 300秒 = 300000毫秒
     })
-    return response.data
+    return response
   } catch (err) {
     throw err
   }
@@ -59,7 +59,7 @@ export const refreshConsumption = async (servicehall = null, browserType = 'chro
     const response = await request.post(`${BASE_URL}/refresh/`, data, {
       timeout: 300000 // 5分钟
     })
-    return response.data
+    return response
   } catch (err) {
     throw err
   }
@@ -72,7 +72,7 @@ export const refreshConsumption = async (servicehall = null, browserType = 'chro
 export const unbindAccount = async () => {
   try {
     const response = await request.delete(`${BASE_URL}/unbind/`)
-    return response.data
+    return response
   } catch (err) {
     throw err
   }

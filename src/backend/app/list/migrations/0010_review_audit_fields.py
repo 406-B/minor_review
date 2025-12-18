@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("list", "0008_merge_20251203_2229"),
+        ("list", "0009_dish_rating_count"),
     ]
 
     operations = [
