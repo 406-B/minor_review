@@ -3,9 +3,10 @@
  * 测试菜品、食堂等 API 调用函数
  */
 
-// Mock axios
-jest.mock('axios');
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 
+// Mock axios
+vi.mock('axios');
 import axios from 'axios';
 
 // 模拟 API 函数（因为实际文件可能不完整，这里定义示例）
@@ -30,8 +31,8 @@ const createReview = async (dishId, data) => {
 };
 
 describe('List API', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   describe('getDishList', () => {
