@@ -119,6 +119,7 @@
       </SectionCard>
     </div>
 
+    <!-- 个性化推荐 -->
     <div class="col">
       <SectionCard class="equal-card" title="个性化推荐">
         <template #actions>
@@ -145,7 +146,15 @@
                   <div class="dish-name" :title="d.name">{{ d.name }}</div>
                 </div>
               </div>
-              <button v-if="pages.length > 1" class="nav next" type="button" @click="onNext" aria-label="下一页">›</button>
+            </div>
+            <button v-if="pages.length > 1" class="nav next" type="button" @click="onNext" aria-label="下一页">›</button>
+            <div v-if="pages.length > 1" class="dots">
+              <span
+                v-for="(p, i) in pages"
+                :key="'dot-'+i"
+                :class="['dot', { active: i === activeDot }]"
+                @click="goToPage(i)"
+              />
             </div>
           </div>
           <el-empty v-else description="暂无推荐数据" />
