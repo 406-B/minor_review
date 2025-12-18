@@ -4,6 +4,8 @@ services:
   # MySQL 数据库
   db:
     image: mysql:8.0
+    ports:
+      - "33306:3306"  # 映射到主机33306端口，避免与本地MySQL冲突
     container_name: minor_review_db
     restart: always
     environment:
@@ -23,6 +25,31 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=mysql_native_password
+
+  # phpMyAdmin 数据库管理界面
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: minor_review_phpmyadmin
+    restart: always
+    ports:
+      - "8080:80"  # 通过 http://localhost:8080 访问
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: database
+      MYSQL_ROOT_PASSWORD: database
+      UPLOAD_LIMIT: 50M
+    networks:
+      - backend_network
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Django 后端服务 (可扩展多实例)
   backend:
