@@ -260,6 +260,14 @@
 			</div>
 			<div class="side-placeholder"></div>
 		</div>
+		
+		<!-- 举报对话框 -->
+		<ReportDialog 
+			v-model:visible="reportDialogVisible"
+			:content-id="reportContentId"
+			:content-type="reportContentType"
+			@success="handleReportSuccess"
+		/>
 	</PageContainer>
 </template>
 
@@ -294,6 +302,9 @@ const replyTargetUser = ref(null) // 记录要@的用户
 const showPostMenu = ref(false) // 帖子更多菜单
 const activeCommentMenu = ref(null) // 当前激活的评论菜单ID
 const activeReplyMenu = ref(null) // 当前激活的回复菜单ID
+const reportDialogVisible = ref(false) // 举报对话框显示状态
+const reportContentId = ref(null) // 被举报内容的ID
+const reportContentType = ref('post') // 被举报内容的类型
 
 import PageActions from '../components/PageActions.vue'
 import PageContainer from '@/components/ui/PageContainer.vue'
@@ -301,6 +312,7 @@ import SectionTitle from '@/components/ui/SectionTitle.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
 import ImageUploader from '@/components/ImageUploader.vue'
+import ReportDialog from '@/components/ReportDialog.vue'
 
 // 计算当前用户ID（从 localStorage 或其他地方获取）
 const currentUserId = computed(() => {
@@ -425,7 +437,7 @@ async function handleLike() {
 			} else {
 				post.value.likes_count = Math.max(0, (post.value.likes_count || 0) - 1)
 			}
-	}
+		}
 	} catch (err) {
 		console.error('点赞操作失败:', err)
 		if (err?.response?.status === 401) {
@@ -447,9 +459,18 @@ async function handleComment() {
 	}
 	commenting.value = true
 	
+	// 显示审核中的提示
+	const auditingMessage = window.$message?.loading?.('正在进行内容审核，请稍候...')
+	
 	try {
 		const response = await createComment(post.value.id, newComment.value, commentImages.value)
 		
+		// 关闭审核中提示
+		if (auditingMessage && typeof auditingMessage.close === 'function') {
+			auditingMessage.close()
+		}
+		
+		// 处理审核结果
 		if (response.code === 200 && response.data) {
 			// 将新评论添加到列表顶部
 			comments.value.unshift(response.data)
@@ -458,15 +479,29 @@ async function handleComment() {
 			// 清空输入框和图片
 			newComment.value = ''
 			commentImages.value = []
-			window.$message?.success?.('评论成功')
+			window.$message?.success?.('✅ 审核通过，评论成功！')
+		} else if (response.code === 400) {
+			// 审核失败，显示详细原因
+			const errorMsg = response.message || '评论失败'
+			window.$message?.error?.(`❌ ${errorMsg}`)
 		} else {
 			window.$message?.error?.(response.message || '评论失败')
 		}
 	} catch (err) {
 		console.error('发表评论失败:', err)
+		
+		// 关闭审核中提示
+		if (auditingMessage && typeof auditingMessage.close === 'function') {
+			auditingMessage.close()
+		}
+		
 		if (err?.response?.status === 401) {
 			window.$message?.warning?.('您需要先登录')
 			router.push('/login')
+		} else if (err?.response?.status === 400) {
+			// 处理400错误（包括审核失败）
+			const errorMsg = err.response?.data?.message || '评论失败'
+			window.$message?.error?.(`❌ ${errorMsg}`)
 		} else {
 			window.$message?.error?.('评论失败，请重试')
 		}
@@ -572,9 +607,18 @@ async function handleReply(parentCommentId) {
 	}
 	replying.value = true
 	
+	// 显示审核中的提示
+	const auditingMessage = window.$message?.loading?.('正在进行内容审核，请稍候...')
+	
 	try {
 		const response = await createComment(post.value.id, replyContent.value, replyImages.value, parentCommentId)
 		
+		// 关闭审核中提示
+		if (auditingMessage && typeof auditingMessage.close === 'function') {
+			auditingMessage.close()
+		}
+		
+		// 处理审核结果
 		if (response.code === 200 && response.data) {
 			// 找到父评论并添加回复
 			const parentComment = comments.value.find(c => c.id === parentCommentId)
@@ -590,15 +634,29 @@ async function handleReply(parentCommentId) {
 			replyContent.value = ''
 			replyImages.value = []
 			replyingTo.value = null
-			window.$message?.success?.('回复成功')
+			window.$message?.success?.('✅ 审核通过，回复成功！')
+		} else if (response.code === 400) {
+			// 审核失败，显示详细原因
+			const errorMsg = response.message || '回复失败'
+			window.$message?.error?.(`❌ ${errorMsg}`)
 		} else {
 			window.$message?.error?.(response.message || '回复失败')
 		}
 	} catch (err) {
 		console.error('回复评论失败:', err)
+		
+		// 关闭审核中提示
+		if (auditingMessage && typeof auditingMessage.close === 'function') {
+			auditingMessage.close()
+		}
+		
 		if (err?.response?.status === 401) {
 			window.$message?.warning?.('您需要先登录')
 			router.push('/login')
+		} else if (err?.response?.status === 400) {
+			// 处理400错误（包括审核失败）
+			const errorMsg = err.response?.data?.message || '回复失败'
+			window.$message?.error?.(`❌ ${errorMsg}`)
 		} else {
 			window.$message?.error?.('回复失败，请重试')
 		}
@@ -724,20 +782,25 @@ function toggleReplyMenu(replyId) {
 }
 
 // 举报功能
-// TODO: 实现举报功能 - 需要添加以下功能：
-// 1. 弹出举报理由选择对话框（如：垃圾广告、违规内容、色情低俗等）
-// 2. 调用后端举报API（需要后端添加举报接口）
-// 3. 后端存储举报记录，供管理员审核
-// 4. 可选：达到一定举报数量自动隐藏内容
 function handleReport(type, id) {
 	// 关闭所有菜单
 	showPostMenu.value = false
 	activeCommentMenu.value = null
 	activeReplyMenu.value = null
 	
-	// 临时实现：提示功能待开发
-	const typeText = type === 'post' ? '帖子' : type === 'comment' ? '评论' : '回复'
-	window.$message?.info?.(`举报${typeText}功能待实现`)
+	// 设置举报内容信息
+	reportContentType.value = type
+	reportContentId.value = id
+	
+	// 打开举报对话框
+	reportDialogVisible.value = true
+}
+
+// 举报成功的回调
+function handleReportSuccess() {
+	const typeText = reportContentType.value === 'post' ? '帖子' : reportContentType.value === 'comment' ? '评论' : '回复'
+	console.log(`${typeText}举报成功，ID: ${reportContentId.value}`)
+	// 可以在这里添加其他操作，如刷新数据等
 }
 
 // 点击页面其他地方关闭所有菜单
