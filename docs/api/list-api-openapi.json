@@ -1316,6 +1316,482 @@
           }
         }
       }
+    },
+    "/dishes/{dish_id}/check-in/": {
+      "post": {
+        "tags": ["Dishes"],
+        "summary": "打卡菜品",
+        "description": "记录用户吃过这道菜，每次调用会增加该菜品的打卡次数",
+        "operationId": "checkInDish",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dish_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "notes": {
+                    "type": "string",
+                    "description": "打卡备注（可选）",
+                    "example": "今天特别好吃"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "打卡成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "打卡成功！这是您第 5 次品尝\"红烧肉\"，恭喜晋升为【硕士】！"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "dish": { "type": "integer" },
+                        "count": { "type": "integer" },
+                        "level": { "type": "string" },
+                        "level_display": { "type": "string" },
+                        "check_in_record_id": { "type": "integer" },
+                        "checked_in_at": { "type": "string", "format": "date-time" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/user/dish-history/": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "获取用户的菜品历史记录",
+        "description": "获取用户打卡过的菜品历史，支持筛选和排序",
+        "operationId": "getUserDishHistory",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "搜索菜品名称"
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["count", "-count", "last_tried_at", "-last_tried_at"],
+              "default": "-last_tried_at"
+            },
+            "description": "排序方式"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishHistoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/user/dish-stats/": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "获取用户的菜品统计信息",
+        "description": "获取用户打卡统计、成就、最近打卡等信息",
+        "operationId": "getUserDishStats",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DishStatsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/user/food-calendar/": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "获取美食日历",
+        "description": "获取指定月份每天吃过的菜品",
+        "operationId": "getFoodCalendar",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "年份（默认当前年）"
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "description": "月份（1-12，默认当前月）"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodCalendarResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/user/day-dishes/": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "获取指定日期的菜品",
+        "description": "获取指定日期吃过的菜品详情",
+        "operationId": "getDayDishes",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "description": "日期，格式：YYYY-MM-DD"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DayDishesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile/check-in-history": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "获取用户打卡历史",
+        "description": "获取指定日期范围内的打卡历史记录",
+        "operationId": "getCheckInHistory",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "开始日期，格式：YYYY-MM-DD"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "结束日期，格式：YYYY-MM-DD"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "年份，用于按月查询"
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "description": "月份（1-12），用于按月查询"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile/check-in-calendar": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "获取月度打卡概览",
+        "description": "获取指定月份的打卡日历数据，用于快速查看哪些日期有打卡记录",
+        "operationId": "getCheckInCalendar",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "年份"
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "description": "月份（1-12）"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInCalendarResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile/audit/pending": {
+      "get": {
+        "tags": ["Audit"],
+        "summary": "获取待审核内容列表",
+        "description": "获取所有待审核的内容（管理员功能）",
+        "operationId": "getPendingContents",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingContentsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile/audit/{content_type}/{content_id}": {
+      "post": {
+        "tags": ["Audit"],
+        "summary": "审核内容",
+        "description": "审核指定内容（管理员功能）",
+        "operationId": "auditContent",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "content_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["post", "comment", "review", "tag"]
+            },
+            "description": "内容类型：post(帖子)、comment(评论)、review(评价)、tag(标签)"
+          },
+          {
+            "name": "content_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "内容ID（标签类型为 \"dish_id_tag_id\" 格式，如 \"1_5\"）"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "审核操作成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditActionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "内容不存在或已审核",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": 404,
+                  "message": "内容不存在或已审核"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1917,6 +2393,304 @@
                 }
               }
             }
+          }
+        }
+      },
+      "DishHistoryItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "dish": { "type": "integer" },
+          "dish_name": { "type": "string" },
+          "dish_image": { "type": "string", "nullable": true },
+          "count": { "type": "integer" },
+          "level": { "type": "string" },
+          "level_display": { "type": "string" },
+          "last_tried_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DishHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 200 },
+          "message": { "type": "string", "example": "获取成功" },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DishHistoryItem"
+            }
+          }
+        }
+      },
+      "DishStatsResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 200 },
+          "message": { "type": "string", "example": "获取成功" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "total_dishes": { "type": "integer", "description": "打卡过的不同菜品数量" },
+              "total_check_ins": { "type": "integer", "description": "总打卡次数" },
+              "achievements": { "type": "array", "description": "成就列表" },
+              "recent_dishes": { "type": "array", "description": "最近打卡的菜品" }
+            }
+          }
+        }
+      },
+      "FoodCalendarResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 200 },
+          "message": { "type": "string", "example": "获取美食日历成功" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "year": { "type": "integer" },
+              "month": { "type": "integer" },
+              "calendar": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": { "type": "string", "format": "date" },
+                    "dishes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "name": { "type": "string" },
+                          "image": { "type": "string", "nullable": true },
+                          "canteen_name": { "type": "string" },
+                          "checked_in_at": { "type": "string" },
+                          "notes": { "type": "string" }
+                        }
+                      }
+                    },
+                    "count": { "type": "integer" }
+                  }
+                }
+              },
+              "total_days": { "type": "integer" },
+              "total_check_ins": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "DayDishesResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 200 },
+          "message": { "type": "string", "example": "获取成功" },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "name": { "type": "string" },
+                "image": { "type": "string", "nullable": true },
+                "canteen_name": { "type": "string" },
+                "checked_in_at": { "type": "string", "format": "date-time" },
+                "notes": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "CheckInHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 200 },
+          "message": { "type": "string", "example": "获取成功" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "check_ins": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": { "type": "string", "format": "date" },
+                    "dishes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "name": { "type": "string" },
+                          "image": { "type": "string", "nullable": true },
+                          "canteen_name": { "type": "string" },
+                          "window_name": { "type": "string", "nullable": true },
+                          "price": { "type": "number" },
+                          "rating": { "type": "string" },
+                          "check_in_time": { "type": "string", "format": "date-time" },
+                          "check_in_count": { "type": "integer" },
+                          "total_consumption": { "type": "number" },
+                          "achievement_tier": {
+                            "type": "string",
+                            "enum": ["bronze", "silver", "gold", "rainbow"]
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/Tag"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "total_check_ins": { "type": "integer" },
+                  "total_dishes": { "type": "integer" },
+                  "total_consumption": { "type": "number" },
+                  "most_frequent_dish": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "name": { "type": "string" },
+                      "count": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CheckInCalendarResponse": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 200 },
+          "message": { "type": "string", "example": "获取成功" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "year": { "type": "integer" },
+              "month": { "type": "integer" },
+              "check_in_dates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": { "type": "string", "format": "date" },
+                    "count": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PendingContent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "内容ID（标签类型为 \"dish_id_tag_id\" 格式）",
+            "example": "1"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["post", "comment", "review", "tag"],
+            "description": "内容类型",
+            "example": "post"
+          },
+          "title": {
+            "type": "string",
+            "description": "标题",
+            "example": "今天吃了什么"
+          },
+          "content": {
+            "type": "string",
+            "description": "内容文本",
+            "example": "今天吃了宫保鸡丁，很好吃！"
+          },
+          "author": {
+            "type": "string",
+            "description": "作者用户名",
+            "example": "user123"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间",
+            "example": "2025-12-15T10:00:00Z"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "图片列表",
+            "example": []
+          }
+        }
+      },
+      "PendingContentsResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "获取成功"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "pending_contents": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PendingContent"
+                }
+              },
+              "total": {
+                "type": "integer",
+                "description": "待审核内容总数",
+                "example": 10
+              }
+            }
+          }
+        }
+      },
+      "AuditActionRequest": {
+        "type": "object",
+        "required": ["action"],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["approve", "reject"],
+            "description": "审核操作：approve(通过) 或 reject(拒绝)",
+            "example": "approve"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "拒绝原因（当action为reject时必填）",
+            "example": "包含不当内容"
+          }
+        }
+      },
+      "AuditActionResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "内容审核通过"
           }
         }
       }
