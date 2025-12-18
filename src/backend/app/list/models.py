@@ -113,6 +113,9 @@ class Dish(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(5)],
         help_text="Average rating from 0 to 5",
     )
+    rating_count = models.IntegerField(
+        default=0, help_text="Number of ratings this dish has received"
+    )
     view_count = models.IntegerField(
         default=0, help_text="Number of times this dish has been viewed"
     )
@@ -174,6 +177,13 @@ class Rating(models.Model):
 
 class Review(models.Model):
     """用户对菜品的文字评论"""
+
+    STATUS_CHOICES = [
+        ('pending', '待审核'),
+        ('approved', '已通过'),
+        ('rejected', '已拒绝'),
+    ]
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -208,6 +218,25 @@ class Review(models.Model):
         blank=True,
         help_text="评论发布时的评分快照"
     )
+
+    # 审核相关字段
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        help_text="审核状态"
+    )
+    audit_reason = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="审核不通过原因"
+    )
+    audited_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="审核时间"
+    )
+
     likes_count = models.IntegerField(default=0, help_text="点赞数")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

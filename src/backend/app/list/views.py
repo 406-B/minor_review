@@ -23,7 +23,7 @@ from django.shortcuts import render, get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Count
 from .models import Canteen, Dish, Tag, Rating, Review, UserDishHistory, DishCheckInRecord
 from django.contrib.auth.models import User as AuthUser
 from .serializers import (
@@ -326,13 +326,41 @@ def rate_dish(request, dish_id):
             'message': '评分格式不正确',
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    # 检查用户是否已经评过分，以便计算增量更新
+    old_user_rating = None
+    try:
+        existing_rating = Rating.objects.get(dish=dish, user=auth_user)
+        old_user_rating = float(existing_rating.score)
+    except Rating.DoesNotExist:
+        pass
+    
     # 创建或更新用户对该菜品的评分（Rating表字段为 score，不是 rating）
     rating_obj, created = Rating.objects.update_or_create(dish=dish, user=auth_user, defaults={'score': rating_value})
 
-    # 重新计算平均分，聚合字段应为 'score'
-    avg_score = Rating.objects.filter(dish=dish).aggregate(avg=Avg('score'))['avg']
-    dish.rating = round(float(avg_score), 2) if avg_score is not None else 0.0
-    dish.save(update_fields=['rating'])
+    # 使用增量更新方式计算新评分
+    # 新评分 = (旧评分 × 旧评分人数 + 新评分) / (旧评分人数 + 1)
+    old_rating = float(dish.rating) if dish.rating else 0.0
+    old_rating_count = dish.rating_count
+    
+    if created:
+        # 新用户评分：评分人数+1
+        new_rating_count = old_rating_count + 1
+        new_rating = (old_rating * old_rating_count + rating_value) / new_rating_count
+    else:
+        # 用户修改评分：评分人数不变，但需要用新评分替换旧评分
+        # 计算：先减去旧评分的贡献，再加上新评分
+        if old_rating_count > 0 and old_user_rating is not None:
+            new_rating = (old_rating * old_rating_count - old_user_rating + rating_value) / old_rating_count
+            new_rating_count = old_rating_count
+        else:
+            # 异常情况：评分人数为0但有评分记录，重置为1
+            new_rating = rating_value
+            new_rating_count = 1
+    
+    # 更新菜品的评分和评分人数
+    dish.rating = round(new_rating, 2)
+    dish.rating_count = new_rating_count
+    dish.save(update_fields=['rating', 'rating_count'])
 
     return Response({
         'code': 200,
@@ -340,7 +368,8 @@ def rate_dish(request, dish_id):
         'data': {
             'dish_id': dish.id,
             'user_score': float(rating_obj.score),
-            'new_rating': float(dish.rating)
+            'new_rating': float(dish.rating),
+            'rating_count': dish.rating_count
         }
     })
 
@@ -356,8 +385,11 @@ def rate_dish(request, dish_id):
 def add_tag_to_dish(request, dish_id):
     """
     用户给菜品添加标签
-    - 普通用户：标签添加到pending_tags（待审核）
-    - 管理员：标签直接添加到tags
+    - AI审核通过后直接添加到tags（暂时停用人工审核）
+    
+    # 已注释：原人工审核流程
+    # - 普通用户：标签添加到pending_tags（待审核）
+    # - 管理员：标签直接添加到tags
 
     请求体示例：
     {
@@ -388,36 +420,66 @@ def add_tag_to_dish(request, dish_id):
 
     message = ''
 
-    # 处理现有标签
+    # 处理现有标签 - 直接添加（已停用人工审核）
     if tag_ids:
         tags = Tag.objects.filter(id__in=tag_ids)
-
-        if user.is_staff or user.is_superuser:
-            # 管理员直接添加到tags
-            for tag in tags:
-                if tag not in dish.tags.all():
-                    dish.tags.add(tag)
-            message = '标签添加成功'
-        else:
-            # 普通用户添加到pending_tags
-            for tag in tags:
-                if tag not in dish.pending_tags.all():
-                    dish.pending_tags.add(tag)
-            message = '标签已提交，等待管理员审核'
-
-    # 处理新标签
-    if tag_name:
-        # 检查标签是否已存在
-        tag, created = Tag.objects.get_or_create(name=tag_name.strip())
-
-        if user.is_staff or user.is_superuser:
+        
+        # 所有用户直接添加到tags（暂时停用人工审核）
+        for tag in tags:
             if tag not in dish.tags.all():
                 dish.tags.add(tag)
-            message = '标签添加成功'
-        else:
-            if tag not in dish.pending_tags.all():
-                dish.pending_tags.add(tag)
-            message = '标签已提交，等待管理员审核'
+        message = '标签添加成功'
+        
+        # # 原人工审核流程（已注释）
+        # if user.is_staff or user.is_superuser:
+        #     # 管理员直接添加到tags
+        #     for tag in tags:
+        #         if tag not in dish.tags.all():
+        #             dish.tags.add(tag)
+        #     message = '标签添加成功'
+        # else:
+        #     # 普通用户添加到pending_tags
+        #     for tag in tags:
+        #         if tag not in dish.pending_tags.all():
+        #             dish.pending_tags.add(tag)
+        #     message = '标签已提交，等待管理员审核'
+
+    # 处理新标签 - AI审核通过后直接添加
+    if tag_name:
+        tag_name_trimmed = tag_name.strip()
+        
+        # 对新标签名称进行AI内容审核
+        from utils.audit import audit_content
+        is_passed, reason = audit_content(
+            content=tag_name_trimmed,
+            content_type='tag',
+            title=''
+        )
+        
+        # 如果AI审核未通过，直接拒绝
+        if not is_passed:
+            return Response({
+                'code': 400,
+                'message': f'标签名称审核未通过: {reason}',
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # AI审核通过，创建标签并直接添加（暂时停用人工审核）
+        tag, created = Tag.objects.get_or_create(name=tag_name_trimmed)
+        
+        # 所有用户直接添加到tags（暂时停用人工审核）
+        if tag not in dish.tags.all():
+            dish.tags.add(tag)
+        message = '标签添加成功' if not message else message
+        
+        # # 原人工审核流程（已注释）
+        # if user.is_staff or user.is_superuser:
+        #     if tag not in dish.tags.all():
+        #         dish.tags.add(tag)
+        #     message = '标签添加成功'
+        # else:
+        #     if tag not in dish.pending_tags.all():
+        #         dish.pending_tags.add(tag)
+        #     message = '标签已提交，等待管理员审核'
 
     serializer = DishSerializer(dish)
     return Response({
@@ -539,6 +601,22 @@ def create_tag(request):
     """
     serializer = TagSerializer(data=request.data)
     if serializer.is_valid():
+        tag_name = serializer.validated_data['name']
+
+        # 审核标签名称
+        from utils.audit import audit_content
+        is_passed, reason = audit_content(
+            content=tag_name,
+            content_type='tag_name',
+            title='标签名称'
+        )
+
+        if not is_passed:
+            return Response({
+                'code': 400,
+                'message': f'标签名称审核未通过: {reason}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         serializer.save()
         return Response({
             'code': 201,
@@ -619,14 +697,38 @@ def create_review(request, dish_id):
             'message': '您需要先完成评分'
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    # 创建评论
     # 若前端未传 images，设为空列表避免验证错误
     incoming_data = request.data.copy()
     if 'images' not in incoming_data or incoming_data.get('images') in [None, '']:
         incoming_data['images'] = []
+    
     serializer = ReviewSerializer(data=incoming_data, context={'request': request})
     if serializer.is_valid():
+        # 先进行内容审核（在创建之前）
+        from utils.audit import audit_content
+        
+        content = serializer.validated_data['content']
+        is_passed, reason = audit_content(
+            content=content,
+            content_type='review',
+            title=f'评价: {dish.name}'
+        )
+
+        # 如果审核未通过，直接返回错误，不保存到数据库
+        if not is_passed:
+            return Response({
+                'code': 400,
+                'message': f'评论创建失败，内容审核未通过: {reason}',
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 审核通过，创建评论
         review = serializer.save(user=user, dish=dish, rating=rating_obj, published_score=rating_obj.score)
+
+        # 设置为已审核通过状态
+        from django.utils import timezone
+        review.status = 'approved'
+        review.audited_at = timezone.now()
+        review.save()
 
         return Response({
             'code': 201,

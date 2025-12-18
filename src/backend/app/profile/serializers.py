@@ -34,6 +34,45 @@ class UpdateProfileSerializer(serializers.Serializer):
         return value
 
 
+# ==================== 审核相关序列化器 ====================
+
+class PendingContentSerializer(serializers.Serializer):
+    """
+    待审核内容序列化器
+    """
+    id = serializers.IntegerField(help_text="内容ID")
+    type = serializers.CharField(help_text="内容类型")
+    title = serializers.CharField(help_text="标题")
+    content = serializers.CharField(help_text="内容")
+    author = serializers.CharField(help_text="作者")
+    created_at = serializers.DateTimeField(help_text="创建时间")
+    images = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="图片列表"
+    )
+
+
+class AuditActionSerializer(serializers.Serializer):
+    """
+    审核操作序列化器
+    """
+    action = serializers.ChoiceField(
+        choices=['approve', 'reject'],
+        help_text="审核操作：approve(通过) 或 reject(拒绝)"
+    )
+    reason = serializers.CharField(
+        max_length=100,
+        required=False,
+        help_text="拒绝原因（当action为reject时必填）"
+    )
+
+    def validate(self, data):
+        if data['action'] == 'reject' and not data.get('reason'):
+            raise serializers.ValidationError("拒绝审核时必须提供原因")
+        return data
+
+
 class UpdatePasswordSerializer(serializers.Serializer):
     """
     修改密码序列化器
@@ -144,3 +183,42 @@ class CheckInHistorySummarySerializer(serializers.Serializer):
     total_dishes = serializers.IntegerField(help_text="不同菜品数量")
     total_consumption = serializers.DecimalField(max_digits=10, decimal_places=2, help_text="总消费金额")
     most_frequent_dish = serializers.DictField(help_text="最常打卡的菜品", allow_null=True)
+
+
+# ==================== 审核相关序列化器 ====================
+
+class PendingContentSerializer(serializers.Serializer):
+    """
+    待审核内容序列化器
+    """
+    id = serializers.IntegerField(help_text="内容ID")
+    type = serializers.CharField(help_text="内容类型")
+    title = serializers.CharField(help_text="标题")
+    content = serializers.CharField(help_text="内容")
+    author = serializers.CharField(help_text="作者")
+    created_at = serializers.DateTimeField(help_text="创建时间")
+    images = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        help_text="图片列表"
+    )
+
+
+class AuditActionSerializer(serializers.Serializer):
+    """
+    审核操作序列化器
+    """
+    action = serializers.ChoiceField(
+        choices=['approve', 'reject'],
+        help_text="审核操作：approve(通过) 或 reject(拒绝)"
+    )
+    reason = serializers.CharField(
+        max_length=100,
+        required=False,
+        help_text="拒绝原因（当action为reject时必填）"
+    )
+
+    def validate(self, data):
+        if data['action'] == 'reject' and not data.get('reason'):
+            raise serializers.ValidationError("拒绝审核时必须提供原因")
+        return data
