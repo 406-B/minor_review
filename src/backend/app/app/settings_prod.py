@@ -68,8 +68,8 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        'utils.authentication.JWTAuthentication',  # 仅使用JWT，避免CSRF问题
+        # 'rest_framework.authentication.SessionAuthentication',  # 移除Session认证
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',

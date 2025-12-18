@@ -143,6 +143,12 @@ def main():
     mysql_conn = get_mysql_connection()
     print("✓ 数据库连接成功\n")
     
+    # 禁用外键检查
+    mysql_cursor = mysql_conn.cursor()
+    mysql_cursor.execute("SET FOREIGN_KEY_CHECKS=0")
+    mysql_conn.commit()
+    print("✓ 已禁用外键检查\n")
+    
     # 获取表列表
     tables = get_table_list(sqlite_conn)
     print(f"找到 {len(tables)} 个表\n")
@@ -168,10 +174,16 @@ def main():
     print(f"  - 成功迁移表: {successful_tables}/{len(tables_to_migrate)}")
     print(f"  - 总记录数: {total_records}")
     
+    # 重新启用外键检查
+    mysql_cursor = mysql_conn.cursor()
+    mysql_cursor.execute("SET FOREIGN_KEY_CHECKS=1")
+    mysql_conn.commit()
+    print("\n✓ 已重新启用外键检查")
+    
     # 关闭连接
     sqlite_conn.close()
     mysql_conn.close()
-    print("\n数据库连接已关闭")
+    print("✓ 数据库连接已关闭")
 
 if __name__ == '__main__':
     try:
