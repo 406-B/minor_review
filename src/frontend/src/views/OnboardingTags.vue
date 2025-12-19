@@ -75,7 +75,7 @@ const save = async () => {
 	try {
 		await setPreferenceTags([...selected.value])
 		window.$message?.success?.('偏好已保存')
-		router.push('/home')
+		router.push('/profile')
 	} catch (e) {
 		window.$message?.error?.(e?.message || '保存失败')
 	} finally {
@@ -84,7 +84,7 @@ const save = async () => {
 }
 
 const skip = () => {
-	router.push('/home')
+	router.push('/profile')
 }
 
 onMounted(loadTags)

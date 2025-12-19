@@ -1,0 +1,19 @@
+# 前端开发环境Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 复制package文件
+COPY package*.json ./
+
+# 安装所有依赖 (包括devDependencies)
+RUN npm ci
+
+# 复制源代码
+COPY . .
+
+# 暴露端口
+EXPOSE 3000
+
+# 默认启动命令 (在docker-compose中会被覆盖)
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
