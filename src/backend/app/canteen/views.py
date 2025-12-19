@@ -14,6 +14,7 @@ from .controllers import (
     refresh_consumption_data,
     unbind_consumption,
 )
+from .models import CanteenConsumption
 from .serializers import (
     BindIdserialSerializer,
     CanteenConsumptionSerializer,
@@ -467,10 +468,13 @@ def submit_verification(request):
     result = submit_verification_code(session_id, verification_code)
     
     if result["success"]:
+        # 返回更新后的会话状态，便于前端立即判断是否已登录完成并拿到 servicehall
+        status_result = check_login_status(session_id)
         return Response(
             {
                 "code": 200,
-                "message": result["message"]
+                "message": result["message"],
+                "data": status_result
             },
             status=status.HTTP_200_OK
         )
@@ -541,9 +545,8 @@ def check_auto_login_status(request):
     
     result = check_login_status(session_id)
     
-    # 如果登录完成，清理会话
-    if result["status"] == "completed":
-        cleanup_login_session(session_id)
+    # NOTE: 不在此处立即清理会话，保留会话以便前端可以在登录完成后获取到返回的 servicehall 并进行后续绑定。
+    # 会话的清理应由绑定流程（如 fetch-with-cookie）或超时/后台任务负责，避免在并发轮询中产生竞态条件。
     
     return Response(
         {
@@ -609,7 +612,7 @@ def check_auto_login_status(request):
 @login_required
 def fetch_consumption_with_cookie(request):
     """
-    使用cookie直接获取消费数据
+    使用cookie直接获取消费数据并绑定到用户账号
     """
     idserial = request.data.get("idserial")
     servicehall = request.data.get("servicehall")
@@ -627,11 +630,33 @@ def fetch_consumption_with_cookie(request):
     result = fetch_canteen_data(idserial, servicehall)
     
     if result["success"]:
+        # 保存绑定到数据库
+        from django.db import transaction
+        try:
+            with transaction.atomic():
+                consumption, created = CanteenConsumption.objects.update_or_create(
+                    user=request.user,
+                    defaults={
+                        'idserial': idserial,
+                        'servicehall_cookie': servicehall,
+                        'total_amount': result["data"]["total_amount"],
+                        'canteen_count': result["data"]["canteen_count"],
+                        'canteen_data': result["data"]["canteens"]
+                    }
+                )
+            action = "绑定" if created else "更新"
+            message = f"{action}成功并获取消费数据"
+        except Exception as e:
+            message = f"获取成功但保存失败: {str(e)}"
+        
         return Response(
             {
                 "code": 200,
-                "message": "获取成功",
-                "data": result["data"]
+                "message": message,
+                "data": {
+                    **result["data"],
+                    "idserial": idserial
+                }
             },
             status=status.HTTP_200_OK
         )
