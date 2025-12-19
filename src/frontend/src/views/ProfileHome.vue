@@ -3,7 +3,7 @@
     <template #header>
       <AppTopBar />
     </template>
-  <ProfileInfo :user="user" />
+    <ProfileInfo :user="user" />
 
   <!-- 偏好标签展示 -->
   <div class="pref-tags" v-if="user && user.preference_tags">
@@ -24,7 +24,6 @@
   </div>
 
   <!-- 美食日历 -->
-  <div class="grid calendar-grid">
     <div class="col full-width">
       <SectionCard class="equal-card" title="美食日历">
         <template #actions>
@@ -35,7 +34,7 @@
         </template>
       </SectionCard>
     </div>
-  </div>
+  
 
   <!-- 已发布内容 与 我的互动 同行 -->
   <div class="grid top-grid">
@@ -131,7 +130,9 @@
           <button class="link" @click.prevent="viewAllRecommend">查看全部</button>
         </template>
         <template #content>
-          <div v-if="reco.dishes && reco.dishes.length" class="slider" @mouseenter="pauseAuto" @mouseleave="resumeAuto">
+          <!-- 加载中文案占位 -->
+          <div v-if="recoLoading" class="loading-placeholder">正在努力加载中（>.<）</div>
+          <div v-else-if="reco.dishes && reco.dishes.length" class="slider" @mouseenter="pauseAuto" @mouseleave="resumeAuto">
             <button v-if="pages.length > 1" class="nav prev" type="button" @click="onPrev" aria-label="上一页">‹</button>
             <div class="slides" ref="slidesRef" :style="slidesStyle" @transitionend="onTransitionEnd">
               <div class="page" v-for="(page, i) in extendedPages" :key="'p-'+i">
@@ -157,7 +158,7 @@
               />
             </div>
           </div>
-          <el-empty v-else description="暂无推荐数据" />
+          <el-empty v-else-if="recoFetched" description="暂无推荐数据" />
         </template>
       </SectionCard>
     </div>
@@ -202,7 +203,9 @@ const user = ref({})
 const loading = ref(false)
 const hasTags = computed(() => Array.isArray(user.value?.preference_tags) && user.value.preference_tags.length > 0)
 const reco = ref({ dishes: [] })
+const recoFetched = ref(false)
 const recoSource = ref('mix')
+const recoLoading = ref(false)
 const geoPos = ref(null)
 let autoTimer = null
 const slideIndex = ref(1) // 使用首尾克隆，初始为第1个真实页
@@ -420,6 +423,7 @@ const viewFullCalendar = () => router.push('/profile/food-calendar')
 
 const loadRecommendPref = async () => {
   try {
+    recoLoading.value = true
     const res = await getRecommendedDishes()
     reco.value = res?.data ?? res ?? { dishes: [] }
   } catch (err) {
@@ -431,26 +435,28 @@ const loadRecommendPref = async () => {
       // 静默处理,不显示提示
     }
     reco.value = { dishes: [] }
-  }
+  } finally { recoLoading.value = false; recoFetched.value = true }
 }
 const loadRecommendMix = async () => {
   try {
+    recoLoading.value = true
     // 使用后端综合推荐实现（包含热度因素），不在前端做融合
     const res = await getRecommendedDishes()
     reco.value = res?.data ?? res ?? { dishes: [] }
   } catch (err) {
     reco.value = { dishes: [] }
-  }
+  } finally { recoLoading.value = false; recoFetched.value = true }
 }
 const loadRecommendHot = async () => {
   try {
+    recoLoading.value = true
     const res = await getHotDishes({ limit: 12 })
     // 兼容后端返回格式，期望为 { dishes: [...] } 或数组
     const list = res?.data ?? res ?? []
     reco.value = Array.isArray(list) ? { dishes: list } : (list || { dishes: [] })
   } catch (err) {
     reco.value = { dishes: [] }
-  }
+  } finally { recoLoading.value = false; recoFetched.value = true }
 }
 
 const ensureGeo = () => new Promise((resolve) => {
@@ -533,6 +539,18 @@ watch(() => reco.value?.dishes, () => {
 .dish-name { margin-top: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .dish-card:hover { border-color: var(--color-accent); box-shadow: 0 8px 22px rgba(0,0,0,0.10); transform: translateY(-2px); position: relative; z-index: 2 }
 .dish-card:hover .thumb { transform: scale(1.03) }
+
+/* 个性化推荐：加载占位样式 */
+.placeholder-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 6px 0 }
+.ph-card { border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; padding: 8px; background: #fff }
+.ph-thumb { width: 100%; height: 96px; border-radius: 8px; background: linear-gradient(90deg, #f3f5f7 25%, #e9edf2 37%, #f3f5f7 63%); background-size: 400% 100%; animation: shimmer 1.2s infinite }
+.ph-lines { margin-top: 6px; display: flex; flex-direction: column; gap: 6px }
+.ph-line { height: 12px; border-radius: 6px; background: linear-gradient(90deg, #f3f5f7 25%, #e9edf2 37%, #f3f5f7 63%); background-size: 400% 100%; animation: shimmer 1.2s infinite }
+.ph-line.short { width: 60% }
+.ph-line.long { width: 85% }
+@keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+/* 加载中文案居中提示 */
+.loading-placeholder { display:flex; align-items:center; justify-content:center; height: 120px; color: var(--color-muted); font-size: 14px }
 
 @media (min-width: 1024px) {
   .grid { grid-template-columns: 1fr 1fr }
