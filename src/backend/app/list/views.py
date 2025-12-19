@@ -892,6 +892,21 @@ def check_in_dish(request, dish_id):
             'message': '未登录或无效用户'
         }, status=status.HTTP_401_UNAUTHORIZED)
 
+    # 限制：每道菜每天最多打卡3次
+    from django.utils import timezone
+    today = timezone.now().date()
+    today_count = DishCheckInRecord.objects.filter(
+        user=user,
+        dish=dish,
+        checked_in_at__date=today
+    ).count()
+
+    if today_count >= 3:
+        return Response({
+            'code': 400,
+            'message': '同一道菜每日最多打卡3次'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
     # 获取打卡备注（可选）
     notes = request.data.get('notes', '')
 
