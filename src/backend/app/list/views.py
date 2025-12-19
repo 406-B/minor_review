@@ -128,8 +128,22 @@ def canteen_detail(request, canteen_id):
     # 获取该食堂的所有菜品
     dishes = Dish.objects.filter(canteen=canteen)
 
-    # 支持按标签筛选
-    tag_ids = request.query_params.getlist('tag_ids', None)
+    # 支持按标签筛选（兼容 axios 将数组序列化为 tag_ids[] 的场景）
+    raw_tag_ids = []
+    # 常规：?tag_ids=1&tag_ids=2
+    raw_tag_ids += request.query_params.getlist('tag_ids')
+    # axios 默认：?tag_ids[]=1&tag_ids[]=2
+    raw_tag_ids += request.query_params.getlist('tag_ids[]')
+    # 兼容逗号分隔：?tag_ids=1,2
+    single_csv = request.query_params.get('tag_ids')
+    if single_csv and isinstance(single_csv, str) and ',' in single_csv:
+        raw_tag_ids += single_csv.split(',')
+    # 去空并转为整型
+    try:
+        tag_ids = [int(x) for x in raw_tag_ids if str(x).strip()]
+    except Exception:
+        tag_ids = []
+
     if tag_ids:
         for tag_id in tag_ids:
             dishes = dishes.filter(tags__id=tag_id)
@@ -139,15 +153,10 @@ def canteen_detail(request, canteen_id):
     if min_rating:
         dishes = dishes.filter(rating__gte=float(min_rating))
 
-    # 支持关键词搜索（搜索菜品名称、描述、食堂名称、标签名称）
+    # 支持关键词搜索：仅匹配菜品名称；当提供 tag_ids 时，为避免歧义，忽略文本搜索
     search = request.query_params.get('search', None)
-    if search:
-        dishes = dishes.filter(
-            Q(name__icontains=search) |
-            Q(description__icontains=search) |
-            Q(canteen__name__icontains=search) |
-            Q(tags__name__icontains=search)
-        ).distinct()  # 去重，因为标签可能匹配多次
+    if search and not tag_ids:
+        dishes = dishes.filter(name__icontains=search)
 
     # 排序
     ordering = request.query_params.get('ordering', '-rating')
@@ -184,8 +193,17 @@ def dish_list(request):
     if canteen_id:
         queryset = queryset.filter(canteen_id=canteen_id)
 
-    # 按标签筛选（支持多个标签）
-    tag_ids = request.query_params.getlist('tag_ids', None)
+    # 按标签筛选（支持多个标签）- 兼容 tag_ids 与 tag_ids[] 以及逗号分隔
+    raw_tag_ids = []
+    raw_tag_ids += request.query_params.getlist('tag_ids')
+    raw_tag_ids += request.query_params.getlist('tag_ids[]')
+    single_csv = request.query_params.get('tag_ids')
+    if single_csv and isinstance(single_csv, str) and ',' in single_csv:
+        raw_tag_ids += single_csv.split(',')
+    try:
+        tag_ids = [int(x) for x in raw_tag_ids if str(x).strip()]
+    except Exception:
+        tag_ids = []
     if tag_ids:
         for tag_id in tag_ids:
             queryset = queryset.filter(tags__id=tag_id)
@@ -204,15 +222,10 @@ def dish_list(request):
     if max_price:
         queryset = queryset.filter(price__lte=float(max_price))
 
-    # 关键词搜索（搜索菜品名称、描述、食堂名称、标签名称）
+    # 关键词搜索：仅匹配菜品名称；当提供 tag_ids 时，为避免歧义，忽略文本搜索
     search = request.query_params.get('search', None)
-    if search:
-        queryset = queryset.filter(
-            Q(name__icontains=search) |
-            Q(description__icontains=search) |
-            Q(canteen__name__icontains=search) |
-            Q(tags__name__icontains=search)
-        ).distinct()  # 去重，因为标签可能匹配多次
+    if search and not tag_ids:
+        queryset = queryset.filter(name__icontains=search)
 
     # 排序
     ordering = request.query_params.get('ordering', '-rating')
@@ -333,7 +346,7 @@ def rate_dish(request, dish_id):
         old_user_rating = float(existing_rating.score)
     except Rating.DoesNotExist:
         pass
-    
+
     # 创建或更新用户对该菜品的评分（Rating表字段为 score，不是 rating）
     rating_obj, created = Rating.objects.update_or_create(dish=dish, user=auth_user, defaults={'score': rating_value})
 
@@ -341,7 +354,7 @@ def rate_dish(request, dish_id):
     # 新评分 = (旧评分 × 旧评分人数 + 新评分) / (旧评分人数 + 1)
     old_rating = float(dish.rating) if dish.rating else 0.0
     old_rating_count = dish.rating_count
-    
+
     if created:
         # 新用户评分：评分人数+1
         new_rating_count = old_rating_count + 1
@@ -356,7 +369,7 @@ def rate_dish(request, dish_id):
             # 异常情况：评分人数为0但有评分记录，重置为1
             new_rating = rating_value
             new_rating_count = 1
-    
+
     # 更新菜品的评分和评分人数
     dish.rating = round(new_rating, 2)
     dish.rating_count = new_rating_count
@@ -386,7 +399,7 @@ def add_tag_to_dish(request, dish_id):
     """
     用户给菜品添加标签
     - AI审核通过后直接添加到tags（暂时停用人工审核）
-    
+
     # 已注释：原人工审核流程
     # - 普通用户：标签添加到pending_tags（待审核）
     # - 管理员：标签直接添加到tags
@@ -423,13 +436,13 @@ def add_tag_to_dish(request, dish_id):
     # 处理现有标签 - 直接添加（已停用人工审核）
     if tag_ids:
         tags = Tag.objects.filter(id__in=tag_ids)
-        
+
         # 所有用户直接添加到tags（暂时停用人工审核）
         for tag in tags:
             if tag not in dish.tags.all():
                 dish.tags.add(tag)
         message = '标签添加成功'
-        
+
         # # 原人工审核流程（已注释）
         # if user.is_staff or user.is_superuser:
         #     # 管理员直接添加到tags
@@ -447,7 +460,7 @@ def add_tag_to_dish(request, dish_id):
     # 处理新标签 - AI审核通过后直接添加
     if tag_name:
         tag_name_trimmed = tag_name.strip()
-        
+
         # 对新标签名称进行AI内容审核
         from utils.audit import audit_content
         is_passed, reason = audit_content(
@@ -455,22 +468,22 @@ def add_tag_to_dish(request, dish_id):
             content_type='tag',
             title=''
         )
-        
+
         # 如果AI审核未通过，直接拒绝
         if not is_passed:
             return Response({
                 'code': 400,
                 'message': f'标签名称审核未通过: {reason}',
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # AI审核通过，创建标签并直接添加（暂时停用人工审核）
         tag, created = Tag.objects.get_or_create(name=tag_name_trimmed)
-        
+
         # 所有用户直接添加到tags（暂时停用人工审核）
         if tag not in dish.tags.all():
             dish.tags.add(tag)
         message = '标签添加成功' if not message else message
-        
+
         # # 原人工审核流程（已注释）
         # if user.is_staff or user.is_superuser:
         #     if tag not in dish.tags.all():
@@ -701,12 +714,12 @@ def create_review(request, dish_id):
     incoming_data = request.data.copy()
     if 'images' not in incoming_data or incoming_data.get('images') in [None, '']:
         incoming_data['images'] = []
-    
+
     serializer = ReviewSerializer(data=incoming_data, context={'request': request})
     if serializer.is_valid():
         # 先进行内容审核（在创建之前）
         from utils.audit import audit_content
-        
+
         content = serializer.validated_data['content']
         is_passed, reason = audit_content(
             content=content,
