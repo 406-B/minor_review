@@ -2,16 +2,17 @@
   <div class="app-top-bar">
     <div class="title" @click="safeGo('/')">小众点评</div>
     <nav class="nav" aria-label="主导航">
+  <span v-if="isAuthed" class="item" :class="{ active: isActive('/profile') }" @click="safeGo('/profile')">个人主页</span>
       <span class="item" :class="{ active: isActive('/canteen') }" @click="safeGo('/canteen')">食堂浏览</span>
-      <span class="item" :class="{ active: isActive('/community') }" @click="safeGo('/community')">美食论坛</span>
+      <span v-if="isAuthed" class="item" :class="{ active: isActive('/community') }" @click="safeGo('/community')">美食论坛</span>
     </nav>
-    <template v-if="isAuthed">
-      <button class="profile" @click="safeGo('/profile')" aria-label="个人主页">个人主页</button>
-    </template>
-    <template v-else>
-      <div class="auth-actions">
-        <button class="login-btn" @click="go('/login')">登录</button>
-        <button class="register-btn" @click="go('/register')">注册</button>
+    <template v-if="!isAuthed">
+      <div class="unauth-wrap">
+        <span class="unauth-hint">未登录：登录后可体验论坛与个人主页等更多功能</span>
+        <div class="auth-actions">
+          <button class="login-btn" @click="go('/login')">登录</button>
+          <button class="register-btn" @click="go('/register')">注册</button>
+        </div>
       </div>
     </template>
   </div>
@@ -70,25 +71,19 @@ function safeGo(path) {
   transition: background .18s,color .18s;
   user-select: none;
 }
-.item.active, .item:hover { background: var(--brand-100); color: var(--color-accent); }
-.profile {
-  margin-left: auto;
-  font-size: .95rem;
-  color: var(--color-accent);
-  font-weight: 600;
-  padding: 6px 16px;
-  border-radius: 18px;
-  background: var(--brand-50);
-  user-select: none;
-  cursor: pointer;
-  transition: background .18s,color .18s;
-  border: 1px solid transparent;
-}
-.profile:hover { background: var(--brand-100); color: var(--brand-700); }
-.auth-actions { margin-left:auto; display:flex; gap:12px }
+.item:hover { background: var(--brand-100); color: var(--brand-800, #8A4B00); }
+.item.active { background: var(--brand-100); color: var(--brand-800, #8A4B00); font-weight: 600; }
+/* 个人主页已放入 .nav 作为 .item，无需单独 .profile 样式 */
+.unauth-wrap { margin-left: auto; display: flex; align-items: center; gap: 12px }
+.unauth-hint { color: var(--color-muted); font-size: .85rem; white-space: nowrap }
+.auth-actions { display:flex; gap:12px }
 .login-btn, .register-btn {
   padding:6px 16px; border-radius:18px; cursor:pointer; background:var(--brand-50); border:1px solid transparent; font-size:.9rem; color:var(--color-accent); transition:background .18s,color .18s;
 }
-.login-btn:hover, .register-btn:hover { background: var(--brand-100); color: var(--brand-700); }
+.login-btn:hover, .register-btn:hover,
+.login-btn:focus-visible, .register-btn:focus-visible {
+  background: var(--brand-100);
+  color: var(--brand-800, #8A4B00);
+}
 .register-btn { font-weight:600 }
 </style>
