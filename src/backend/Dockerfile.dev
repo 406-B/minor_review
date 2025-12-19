@@ -1,0 +1,38 @@
+# 开发环境Dockerfile
+FROM python:3.11-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制requirements文件
+COPY requirements.txt .
+COPY app/requirements_canteen.txt .
+
+# 安装Python依赖
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements_canteen.txt
+
+# 安装开发依赖
+RUN pip install --no-cache-dir \
+    pytest \
+    pytest-django \
+    pytest-cov \
+    coverage
+
+# 复制项目文件
+COPY . .
+
+# 创建媒体文件目录
+RUN mkdir -p app/media/avatars app/media/dishes
+
+# 暴露端口
+EXPOSE 8000
+
+# 默认启动命令 (在docker-compose中会被覆盖)
+CMD ["python", "app/manage.py", "runserver", "0.0.0.0:8000"]
