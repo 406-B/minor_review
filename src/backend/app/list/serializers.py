@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Canteen, Tag, Dish, Rating, Review, Floor, Window, UserDishHistory
+from login.models import User as LoginUser
 class WindowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Window
@@ -118,12 +119,13 @@ class DishListSerializer(serializers.ModelSerializer):
 
 class RatingSerializer(serializers.ModelSerializer):
     """评分序列化器"""
-    username = serializers.CharField(source='user.username', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True, help_text="用户账号名")
+    nickname = serializers.CharField(source='user.nickname', read_only=True, help_text="用户昵称")
     dish_name = serializers.CharField(source='dish.name', read_only=True)
 
     class Meta:
         model = Rating
-        fields = ['id', 'user', 'username', 'dish', 'dish_name', 'score', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'username', 'nickname', 'dish', 'dish_name', 'score', 'created_at', 'updated_at']
         read_only_fields = ['user', 'created_at', 'updated_at']
 
     def validate_score(self, value):
@@ -135,7 +137,9 @@ class RatingSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     """评论序列化器"""
-    username = serializers.CharField(source='user.username', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True, help_text="用户账号名")
+    # 兼容 Django AuthUser 无 nickname 字段的情况：从 login.User 表按 username 取昵称
+    nickname = serializers.SerializerMethodField(help_text="用户昵称")
     dish_name = serializers.CharField(source='dish.name', read_only=True)
     user_rating = serializers.SerializerMethodField()
     published_score = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
@@ -147,7 +151,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = [
-            'id', 'user', 'username', 'dish', 'dish_name',
+            'id', 'user', 'username', 'nickname', 'dish', 'dish_name',
             'content', 'images', 'rating', 'user_rating', 'published_score',
             'likes_count', 'created_at', 'updated_at'
         ]
@@ -162,6 +166,17 @@ class ReviewSerializer(serializers.ModelSerializer):
         if obj.rating:
             return obj.rating.score
         return None
+
+    def get_nickname(self, obj):
+        # 优先尝试从关联用户对象上获取（若使用了自定义用户模型并包含 nickname）
+        nick = getattr(obj.user, 'nickname', None)
+        if nick:
+            return nick
+        # 回退到 login.User 表通过 username 查询
+        try:
+            return LoginUser.objects.filter(username=obj.user.username).values_list('nickname', flat=True).first() or obj.user.username
+        except Exception:
+            return obj.user.username
 
     def validate_content(self, value):
         """验证评论内容"""
@@ -184,14 +199,16 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class ReviewListSerializer(serializers.ModelSerializer):
     """评论列表序列化器（简化版）"""
-    username = serializers.CharField(source='user.username', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True, help_text="用户账号名")
+    # 同上，提供 nickname 的回退策略
+    nickname = serializers.SerializerMethodField(help_text="用户昵称")
     user_rating = serializers.SerializerMethodField()
     published_score = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
 
     class Meta:
         model = Review
         fields = [
-            'id', 'user', 'username', 'content', 'images',
+            'id', 'user', 'username', 'nickname', 'content', 'images',
             'user_rating', 'published_score', 'likes_count', 'created_at'
         ]
 
@@ -204,10 +221,20 @@ class ReviewListSerializer(serializers.ModelSerializer):
             return obj.rating.score
         return None
 
+    def get_nickname(self, obj):
+        nick = getattr(obj.user, 'nickname', None)
+        if nick:
+            return nick
+        try:
+            return LoginUser.objects.filter(username=obj.user.username).values_list('nickname', flat=True).first() or obj.user.username
+        except Exception:
+            return obj.user.username
+
 
 class UserDishHistorySerializer(serializers.ModelSerializer):
     """用户菜品历史序列化器"""
-    username = serializers.CharField(source='user.username', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True, help_text="用户账号名")
+    nickname = serializers.CharField(source='user.nickname', read_only=True, help_text="用户昵称")
     dish_name = serializers.CharField(source='dish.name', read_only=True)
     dish_image = serializers.SerializerMethodField()
     canteen_name = serializers.CharField(source='dish.canteen.name', read_only=True)
@@ -218,7 +245,7 @@ class UserDishHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDishHistory
         fields = [
-            'id', 'user', 'username', 'dish', 'dish_name', 'dish_image', 'canteen_name',
+            'id', 'user', 'username', 'nickname', 'dish', 'dish_name', 'dish_image', 'canteen_name',
             'count', 'level', 'level_display', 'level_progress',
             'first_tried_at', 'last_tried_at'
         ]

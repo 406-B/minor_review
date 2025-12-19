@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { isProtectedPath } from '@/constants/permissions.js'
+import { getProfileSections } from '@/api/profile'
 import OnboardingTags from '@/views/OnboardingTags.vue'
 
 const Recommend = () => import('@/views/Recommend.vue')
@@ -26,7 +27,7 @@ const routes = [
   { path: '/achievements', name: 'Achievements', component: () => import('../views/Achievements.vue'), meta: { requiresAuth: true } },
   { path: '/canteen-consumption', name: 'CanteenConsumption', component: () => import('../views/CanteenConsumption.vue'), meta: { requiresAuth: true } },
   { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFound.vue') },
-  { path: '/', redirect: '/canteen' }
+  { path: '/', redirect: '/profile' }
 ];
 
 const router = createRouter({
@@ -74,10 +75,26 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('jwt');
   const needAuth = isProtectedPath(to.path) || to.meta?.requiresAuth
   if (!token && needAuth) {
-    next('/login');
-  } else {
-    next();
+    return next('/login');
   }
+  // 首次登录引导（仅在已登录、非引导页、且未明确跳过时）
+  if (token && to.path !== '/onboarding/tags') {
+    const passed = sessionStorage.getItem('__onboarding_checked') === '1'
+    if (!passed) {
+      sessionStorage.setItem('__onboarding_checked', '1')
+      getProfileSections().then((prof) => {
+        try {
+          const tags = prof?.user?.preference_tags || []
+          if (Array.isArray(tags) && tags.length === 0) {
+            return next('/onboarding/tags')
+          }
+        } catch (_) {}
+        next()
+      }).catch(() => next())
+      return
+    }
+  }
+  next();
 });
 
 
