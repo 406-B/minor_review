@@ -7,7 +7,7 @@
     <SectionTitle>菜品搜索</SectionTitle>
     <el-form :inline="true" :model="searchForm" class="search-form" @submit.prevent="onSearch">
       <el-form-item label="菜品名">
-        <el-input v-model="searchForm.name" placeholder="输入菜品名" clearable />
+        <el-input v-model="searchForm.name" placeholder="输入菜品名" clearable style="min-width: 220px" />
       </el-form-item>
       <el-form-item label="价格区间">
         <el-input-number v-model="searchForm.min_price" :min="0" placeholder="最低价" style="width: 90px" />
@@ -15,12 +15,13 @@
         <el-input-number v-model="searchForm.max_price" :min="0" placeholder="最高价" style="width: 90px" />
       </el-form-item>
       <el-form-item label="标签">
-        <el-select v-model="searchForm.tag_ids" multiple filterable placeholder="选择标签" style="min-width: 120px">
+        <!-- 直接在下拉框内输入文字以筛选标签；必须选择至少一个标签后才能搜索 -->
+        <el-select v-model="searchForm.tag_ids" multiple filterable placeholder="输入以筛选并选择标签" style="min-width: 240px">
           <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="onSearch">搜索</el-button>
+        <el-button type="primary" @click="onSearch" :disabled="!canSearch">搜索</el-button>
       </el-form-item>
     </el-form>
     <div class="dish-list-wrap">
@@ -50,7 +51,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getDishes, getTags } from '@/utils/api/listApi'
 import PageContainer from '@/components/ui/PageContainer.vue'
@@ -70,6 +71,7 @@ const dishes = ref([])
 const tags = ref([])
 const loading = ref(false)
 const varRadiusSm = 'var(--radius-sm)'
+const canSearch = computed(() => !!(searchForm.value.name?.trim() || searchForm.value.tag_ids.length))
 
 const fetchTags = async () => {
   const res = await getTags()
@@ -79,7 +81,7 @@ const fetchTags = async () => {
 const fetchDishes = async () => {
   loading.value = true
   const params = {}
-  if (searchForm.value.name) params.search = searchForm.value.name
+  if (searchForm.value.name?.trim()) params.search = searchForm.value.name.trim()
   if (searchForm.value.min_price) params.min_price = searchForm.value.min_price
   if (searchForm.value.max_price) params.max_price = searchForm.value.max_price
   if (searchForm.value.tag_ids.length) params.tag_ids = searchForm.value.tag_ids
@@ -89,6 +91,7 @@ const fetchDishes = async () => {
 }
 
 function onSearch() {
+  if (!canSearch.value) return
   fetchDishes()
 }
 function goToDish(id) {
@@ -97,9 +100,9 @@ function goToDish(id) {
 
 onMounted(() => {
   fetchTags()
-  // 支持从侧边栏快速搜索
+  // 侧边栏 q 默认作为菜品名搜索
   if (route.query.q) {
-    searchForm.value.name = route.query.q
+    searchForm.value.name = String(route.query.q)
     fetchDishes()
   }
 })
