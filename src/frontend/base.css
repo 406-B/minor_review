@@ -48,8 +48,8 @@ a:hover {
 }
 .el-menu-item.is-active {
   background: #fff3e0 !important;
-  color: orange !important;
-  font-weight: bold;
+  color: #8a4b00 !important; /* 更深的橙棕色，提升可读性 */
+  font-weight: 600;
 }
 .el-menu-item {
   border-radius: 6px;
@@ -58,7 +58,7 @@ a:hover {
 }
 .el-menu-item:hover {
   background: #ffe0b2 !important;
-  color: #ff9800 !important;
+  color: #8a4b00 !important;
 }
 
 /* 主内容区优化 */
