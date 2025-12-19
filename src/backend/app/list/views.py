@@ -128,8 +128,22 @@ def canteen_detail(request, canteen_id):
     # 获取该食堂的所有菜品
     dishes = Dish.objects.filter(canteen=canteen)
 
-    # 支持按标签筛选 - 只通过tag_ids筛选，不通过关键词
-    tag_ids = request.query_params.getlist('tag_ids', None)
+    # 支持按标签筛选（兼容 axios 将数组序列化为 tag_ids[] 的场景）
+    raw_tag_ids = []
+    # 常规：?tag_ids=1&tag_ids=2
+    raw_tag_ids += request.query_params.getlist('tag_ids')
+    # axios 默认：?tag_ids[]=1&tag_ids[]=2
+    raw_tag_ids += request.query_params.getlist('tag_ids[]')
+    # 兼容逗号分隔：?tag_ids=1,2
+    single_csv = request.query_params.get('tag_ids')
+    if single_csv and isinstance(single_csv, str) and ',' in single_csv:
+        raw_tag_ids += single_csv.split(',')
+    # 去空并转为整型
+    try:
+        tag_ids = [int(x) for x in raw_tag_ids if str(x).strip()]
+    except Exception:
+        tag_ids = []
+
     if tag_ids:
         for tag_id in tag_ids:
             dishes = dishes.filter(tags__id=tag_id)
@@ -139,9 +153,9 @@ def canteen_detail(request, canteen_id):
     if min_rating:
         dishes = dishes.filter(rating__gte=float(min_rating))
 
-    # 支持关键词搜索（只匹配菜品名称，不搜索描述、食堂名称、标签）
+    # 支持关键词搜索：仅匹配菜品名称；当提供 tag_ids 时，为避免歧义，忽略文本搜索
     search = request.query_params.get('search', None)
-    if search:
+    if search and not tag_ids:
         dishes = dishes.filter(name__icontains=search)
 
     # 排序
@@ -179,8 +193,17 @@ def dish_list(request):
     if canteen_id:
         queryset = queryset.filter(canteen_id=canteen_id)
 
-    # 按标签筛选（支持多个标签）- 只通过tag_ids筛选，不通过关键词
-    tag_ids = request.query_params.getlist('tag_ids', None)
+    # 按标签筛选（支持多个标签）- 兼容 tag_ids 与 tag_ids[] 以及逗号分隔
+    raw_tag_ids = []
+    raw_tag_ids += request.query_params.getlist('tag_ids')
+    raw_tag_ids += request.query_params.getlist('tag_ids[]')
+    single_csv = request.query_params.get('tag_ids')
+    if single_csv and isinstance(single_csv, str) and ',' in single_csv:
+        raw_tag_ids += single_csv.split(',')
+    try:
+        tag_ids = [int(x) for x in raw_tag_ids if str(x).strip()]
+    except Exception:
+        tag_ids = []
     if tag_ids:
         for tag_id in tag_ids:
             queryset = queryset.filter(tags__id=tag_id)
@@ -199,9 +222,9 @@ def dish_list(request):
     if max_price:
         queryset = queryset.filter(price__lte=float(max_price))
 
-    # 关键词搜索（只匹配菜品名称，不搜索描述、食堂名称、标签）
+    # 关键词搜索：仅匹配菜品名称；当提供 tag_ids 时，为避免歧义，忽略文本搜索
     search = request.query_params.get('search', None)
-    if search:
+    if search and not tag_ids:
         queryset = queryset.filter(name__icontains=search)
 
     # 排序
