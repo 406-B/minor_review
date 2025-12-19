@@ -118,12 +118,13 @@ class DishListSerializer(serializers.ModelSerializer):
 
 class RatingSerializer(serializers.ModelSerializer):
     """评分序列化器"""
-    username = serializers.CharField(source='user.username', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True, help_text="用户账号名")
+    nickname = serializers.CharField(source='user.nickname', read_only=True, help_text="用户昵称")
     dish_name = serializers.CharField(source='dish.name', read_only=True)
 
     class Meta:
         model = Rating
-        fields = ['id', 'user', 'username', 'dish', 'dish_name', 'score', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'username', 'nickname', 'dish', 'dish_name', 'score', 'created_at', 'updated_at']
         read_only_fields = ['user', 'created_at', 'updated_at']
 
     def validate_score(self, value):
@@ -135,7 +136,8 @@ class RatingSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     """评论序列化器"""
-    username = serializers.CharField(source='user.username', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True, help_text="用户账号名")
+    nickname = serializers.CharField(source='user.nickname', read_only=True, help_text="用户昵称")
     dish_name = serializers.CharField(source='dish.name', read_only=True)
     user_rating = serializers.SerializerMethodField()
     published_score = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
@@ -147,7 +149,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = [
-            'id', 'user', 'username', 'dish', 'dish_name',
+            'id', 'user', 'username', 'nickname', 'dish', 'dish_name',
             'content', 'images', 'rating', 'user_rating', 'published_score',
             'likes_count', 'created_at', 'updated_at'
         ]
@@ -184,14 +186,15 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class ReviewListSerializer(serializers.ModelSerializer):
     """评论列表序列化器（简化版）"""
-    username = serializers.CharField(source='user.username', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True, help_text="用户账号名")
+    nickname = serializers.CharField(source='user.nickname', read_only=True, help_text="用户昵称")
     user_rating = serializers.SerializerMethodField()
     published_score = serializers.DecimalField(max_digits=3, decimal_places=2, read_only=True)
 
     class Meta:
         model = Review
         fields = [
-            'id', 'user', 'username', 'content', 'images',
+            'id', 'user', 'username', 'nickname', 'content', 'images',
             'user_rating', 'published_score', 'likes_count', 'created_at'
         ]
 
@@ -207,7 +210,8 @@ class ReviewListSerializer(serializers.ModelSerializer):
 
 class UserDishHistorySerializer(serializers.ModelSerializer):
     """用户菜品历史序列化器"""
-    username = serializers.CharField(source='user.username', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True, help_text="用户账号名")
+    nickname = serializers.CharField(source='user.nickname', read_only=True, help_text="用户昵称")
     dish_name = serializers.CharField(source='dish.name', read_only=True)
     dish_image = serializers.SerializerMethodField()
     canteen_name = serializers.CharField(source='dish.canteen.name', read_only=True)
@@ -218,7 +222,7 @@ class UserDishHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDishHistory
         fields = [
-            'id', 'user', 'username', 'dish', 'dish_name', 'dish_image', 'canteen_name',
+            'id', 'user', 'username', 'nickname', 'dish', 'dish_name', 'dish_image', 'canteen_name',
             'count', 'level', 'level_display', 'level_progress',
             'first_tried_at', 'last_tried_at'
         ]
