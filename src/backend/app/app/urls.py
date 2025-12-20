@@ -20,9 +20,12 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from .health import health_check
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # 健康检查端点
+    path("api/v1/health/", health_check, name="health_check"),
     # API 路由
     path("api/", include("list.urls")),
     path("api/v1/", include("list.urls")),

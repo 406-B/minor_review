@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     "post",
     "login",  # 登录注册应用
     "profile",  # 用户个人资料应用 11/2 yyf
-    "canteen",  # 食堂消费数据应用
+    "canteen.apps.CanteenConfig",  # 食堂消费数据应用
 ]
 
 REST_FRAMEWORK = {
@@ -122,8 +122,16 @@ WSGI_APPLICATION = "app.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "minor_review",
+        "USER": "root",
+        "PASSWORD": "database",
+        "HOST": "localhost",  # 开发环境本地 MySQL
+        "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
 
@@ -163,6 +171,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles" # for Mysql
 
 # Media files (User uploaded content)
 MEDIA_URL = '/media/'
