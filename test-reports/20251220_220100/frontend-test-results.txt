@@ -1,0 +1,36 @@
+
+ RUN  v1.6.1 /app
+      Coverage enabled with v8
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/api/__tests__/listApi.test.js [ src/api/__tests__/listApi.test.js ]
+ FAIL  src/components/__tests__/TopBar.test.js [ src/components/__tests__/TopBar.test.js ]
+ FAIL  src/views/__tests__/DishDetail.test.js [ src/views/__tests__/DishDetail.test.js ]
+Error: Failed to load url /app/src/frontend/src/test-setup.js (resolved id: /app/src/frontend/src/test-setup.js). Does the file exist?
+ ❯ loadAndTransform node_modules/vitest/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51969:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  src/api/__tests__/profileApi.test.js [ src/api/__tests__/profileApi.test.js ]
+ FAIL  src/components/__tests__/DishCard.test.js [ src/components/__tests__/DishCard.test.js ]
+ FAIL  src/components/__tests__/ImageUploader.test.js [ src/components/__tests__/ImageUploader.test.js ]
+ FAIL  src/components/ui/__tests__/EmptyState.test.js [ src/components/ui/__tests__/EmptyState.test.js ]
+Error: Failed to load url /app/src/frontend/src/test-setup.js (resolved id: /app/src/frontend/src/test-setup.js). Does the file exist?
+ ❯ loadAndTransform node_modules/vitest/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51969:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  src/router/__tests__/router.test.js [ src/router/__tests__/router.test.js ]
+ FAIL  src/utils/__tests__/formatters.test.js [ src/utils/__tests__/formatters.test.js ]
+Error: Failed to load url /app/src/frontend/src/test-setup.js (resolved id: /app/src/frontend/src/test-setup.js). Does the file exist?
+ ❯ loadAndTransform node_modules/vitest/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51969:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ Test Files  9 failed (9)
+      Tests  no tests
+   Start at  14:01:14
+   Duration  2.98s (transform 33ms, setup 0ms, collect 0ms, tests 0ms, environment 14.56s, prepare 2.78s)
+

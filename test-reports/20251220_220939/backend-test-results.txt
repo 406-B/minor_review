@@ -1,0 +1,45 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+django: version: 4.2.7, settings: app.settings_test (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: django-4.11.1, cov-7.0.0
+collecting ... collected 198 items / 4 errors
+
+==================================== ERRORS ====================================
+________________________ ERROR collecting list/tests.py ________________________
+import file mismatch:
+imported module 'list.tests' has this __file__ attribute:
+  /app/list/tests
+which is not the same as the test file we want to collect:
+  /app/list/tests.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+_______________________ ERROR collecting login/tests.py ________________________
+import file mismatch:
+imported module 'login.tests' has this __file__ attribute:
+  /app/login/tests
+which is not the same as the test file we want to collect:
+  /app/login/tests.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+____________ ERROR collecting post/tests/test_views_integration.py _____________
+import file mismatch:
+imported module 'test_views_integration' has this __file__ attribute:
+  /app/canteen/tests/test_views_integration.py
+which is not the same as the test file we want to collect:
+  /app/post/tests/test_views_integration.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+___________ ERROR collecting profile/tests/test_views_integration.py ___________
+import file mismatch:
+imported module 'test_views_integration' has this __file__ attribute:
+  /app/canteen/tests/test_views_integration.py
+which is not the same as the test file we want to collect:
+  /app/profile/tests/test_views_integration.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+=========================== short test summary info ============================
+ERROR list/tests.py
+ERROR login/tests.py
+ERROR post/tests/test_views_integration.py
+ERROR profile/tests/test_views_integration.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 4 errors during collection !!!!!!!!!!!!!!!!!!!!
+============================== 4 errors in 39.59s ==============================

@@ -1,0 +1,114 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+django: version: 4.2.7, settings: app.settings_test (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: django-4.11.1, cov-7.0.0
+collecting ... collected 63 items
+
+list/tests/test_models_unit.py::CanteenModelTest::test_canteen_creation PASSED [  1%]
+list/tests/test_models_unit.py::CanteenModelTest::test_canteen_str_method PASSED [  3%]
+list/tests/test_models_unit.py::CanteenModelTest::test_canteen_unique_name PASSED [  4%]
+list/tests/test_models_unit.py::DishModelTest::test_dish_average_rating_calculation PASSED [  6%]
+list/tests/test_models_unit.py::DishModelTest::test_dish_creation PASSED [  7%]
+list/tests/test_models_unit.py::DishModelTest::test_dish_price_validation PASSED [  9%]
+list/tests/test_models_unit.py::DishModelTest::test_dish_str_method PASSED [ 11%]
+list/tests/test_models_unit.py::TagModelTest::test_tag_creation PASSED   [ 12%]
+list/tests/test_models_unit.py::TagModelTest::test_tag_str_method PASSED [ 14%]
+list/tests/test_models_unit.py::TagModelTest::test_tag_unique_name PASSED [ 15%]
+list/tests/test_models_unit.py::FloorModelTest::test_floor_creation PASSED [ 17%]
+list/tests/test_models_unit.py::FloorModelTest::test_floor_str_method PASSED [ 19%]
+list/tests/test_models_unit.py::WindowModelTest::test_window_creation PASSED [ 20%]
+list/tests/test_models_unit.py::WindowModelTest::test_window_str_method PASSED [ 22%]
+list/tests/test_models_unit.py::RatingModelTest::test_rating_creation PASSED [ 23%]
+list/tests/test_models_unit.py::RatingModelTest::test_rating_score_validation PASSED [ 25%]
+list/tests/test_models_unit.py::ReviewModelTest::test_review_creation PASSED [ 26%]
+list/tests/test_models_unit.py::ReviewModelTest::test_review_str_method PASSED [ 28%]
+list/tests/test_models_unit.py::ReviewModelTest::test_review_with_images PASSED [ 30%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_bulk_operations PASSED [ 31%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_creation PASSED [ 33%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_data_validation PASSED [ 34%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_default_values PASSED [ 36%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_json_field_handling PASSED [ 38%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_ordering PASSED [ 39%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_str_method PASSED [ 41%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_unique_user PASSED [ 42%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_update_last_fetched PASSED [ 44%]
+utils/tests/test_jwt.py::JWTGenerationTest::test_generate_jwt_contains_payload_data PASSED [ 46%]
+utils/tests/test_jwt.py::JWTGenerationTest::test_generate_jwt_with_empty_payload PASSED [ 47%]
+utils/tests/test_jwt.py::JWTGenerationTest::test_generate_jwt_with_valid_payload PASSED [ 49%]
+utils/tests/test_jwt.py::JWTVerificationTest::test_verify_jwt_with_invalid_signature PASSED [ 50%]
+utils/tests/test_jwt.py::JWTVerificationTest::test_verify_jwt_with_malformed_token PASSED [ 52%]
+utils/tests/test_jwt.py::JWTVerificationTest::test_verify_jwt_with_none PASSED [ 53%]
+utils/tests/test_jwt.py::JWTVerificationTest::test_verify_valid_jwt PASSED [ 55%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_different_passwords_produce_different_hashes PASSED [ 57%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_empty_password PASSED [ 58%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_long_password PASSED [ 60%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_password PASSED [ 61%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_same_password_produces_same_hash PASSED [ 63%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_special_characters PASSED [ 65%]
+utils/tests/test_authentication.py::LoginRequiredDecoratorTest::test_login_required_with_invalid_token PASSED [ 66%]
+utils/tests/test_authentication.py::LoginRequiredDecoratorTest::test_login_required_with_malformed_header PASSED [ 68%]
+utils/tests/test_authentication.py::LoginRequiredDecoratorTest::test_login_required_with_valid_token PASSED [ 69%]
+utils/tests/test_authentication.py::LoginRequiredDecoratorTest::test_login_required_without_token PASSED [ 71%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_access_protected_resource_without_auth PASSED [ 73%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_invalid_login_credentials PASSED [ 74%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_jwt_token_contains_user_info PASSED [ 76%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_login_nonexistent_user PASSED [ 77%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_logout PASSED [ 79%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_register_duplicate_username PASSED [ 80%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_register_login_flow PASSED [ 82%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_register_missing_fields PASSED [ 84%]
+login/tests/test_authentication.py::UserInfoTest::test_get_current_user_info PASSED [ 85%]
+login/tests/test_authentication.py::UserInfoTest::test_get_user_info_by_id PASSED [ 87%]
+login/tests/test_authentication.py::UserInfoTest::test_get_user_info_by_nonexistent_id PASSED [ 88%]
+login/tests/test_authentication.py::UserInfoTest::test_get_user_info_with_invalid_jwt PASSED [ 90%]
+login/tests/test_authentication.py::UserInfoTest::test_login_empty_credentials PASSED [ 92%]
+login/tests/test_authentication.py::UserInfoTest::test_logout_without_auth PASSED [ 93%]
+login/tests/test_authentication.py::UserInfoTest::test_register_invalid_password_format PASSED [ 95%]
+login/tests/test_authentication.py::UserInfoTest::test_register_invalid_username_format PASSED [ 96%]
+login/tests/test_authentication.py::UserInfoTest::test_register_missing_nickname PASSED [ 98%]
+login/tests/test_authentication.py::UserInfoTest::test_register_missing_username PASSED [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.14-final-0 _______________
+
+Name                             Stmts   Miss   Cover
+-----------------------------------------------------
+canteen/__init__.py                  0      0 100.00%
+canteen/admin.py                    17      6  64.71%
+canteen/apps.py                      5      0 100.00%
+canteen/controllers.py              56     47  16.07%
+canteen/models.py                   16      0 100.00%
+canteen/serializers.py              14      0 100.00%
+canteen/services.py                423    402   4.96%
+canteen/tests.py                     0      0 100.00%
+canteen/urls.py                      3      0 100.00%
+canteen/views.py                   110     69  37.27%
+list/__init__.py                     0      0 100.00%
+list/admin.py                       92     22  76.09%
+list/apps.py                         4      0 100.00%
+list/models.py                     145     25  82.76%
+list/serializers.py                191     75  60.73%
+list/tests.py                        1      1   0.00%
+list/urls.py                         4      0 100.00%
+list/views.py                      592    503  15.03%
+login/__init__.py                    0      0 100.00%
+login/admin.py                       8      0 100.00%
+login/apps.py                        4      0 100.00%
+login/controllers.py                32      6  81.25%
+login/models.py                      9      0 100.00%
+login/tests.py                       1      1   0.00%
+login/urls.py                        3      0 100.00%
+login/views.py                      73      9  87.67%
+utils/__init__.py                    0      0 100.00%
+utils/audit.py                      69     69   0.00%
+utils/authentication.py             21      1  95.24%
+utils/jwt.py                        55      3  94.55%
+utils/register_params_check.py      18      2  88.89%
+-----------------------------------------------------
+TOTAL                             1966   1241  36.88%
+Coverage HTML written to dir /reports/backend-coverage-html
+Coverage XML written to file /reports/backend-coverage.xml
+============================== 63 passed in 4.42s ==============================

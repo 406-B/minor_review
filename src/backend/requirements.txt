@@ -31,3 +31,9 @@ scrypt==0.8.24
 # HTTP 请求和加密（用于食堂数据爬取）
 requests==2.31.0
 pycryptodome==3.19.0
+
+# 测试框架
+pytest==7.4.3
+pytest-django==4.7.0
+pytest-cov==4.1.0
+coverage==7.3.2

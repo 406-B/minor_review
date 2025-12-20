@@ -4,22 +4,25 @@
 """
 from django.test import TestCase
 from decimal import Decimal
-from django.contrib.auth.models import User
+from login.models import User  # 使用 login.models.User 而不是 django.contrib.auth.models.User
 
 from canteen.models import CanteenConsumption
+from utils.jwt import encrypt_password
 
 
 class CanteenConsumptionModelTest(TestCase):
     """食堂消费记录模型单元测试"""
 
     def setUp(self):
-        self.user = User.objects.create_user(
+        self.user = User.objects.create(
             username='testuser',
-            password='testpass123'
+            password=encrypt_password('testpass123'),
+            nickname='测试用户'
         )
 
     def test_canteen_consumption_creation(self):
         """测试食堂消费记录创建"""
+        # JSONField 不能直接存储 Decimal，需要转换为字符串或浮点数
         consumption = CanteenConsumption.objects.create(
             user=self.user,
             idserial='2023000001',
@@ -27,9 +30,9 @@ class CanteenConsumptionModelTest(TestCase):
             total_amount=Decimal('150.50'),
             canteen_count=3,
             canteen_data={
-                '清华园食堂': Decimal('80.00'),
-                '紫荆园食堂': Decimal('45.50'),
-                '桃李园食堂': Decimal('25.00')
+                '清华园食堂': float(Decimal('80.00')),
+                '紫荆园食堂': float(Decimal('45.50')),
+                '桃李园食堂': float(Decimal('25.00'))
             }
         )
 
@@ -103,10 +106,10 @@ class CanteenConsumptionModelTest(TestCase):
 
         self.assertEqual(consumption.canteen_data, {})
 
-        # 测试包含Decimal的字典
+        # 测试包含金额的字典（JSONField需要可序列化的类型）
         canteen_data = {
-            '食堂A': Decimal('10.50'),
-            '食堂B': Decimal('20.75')
+            '食堂A': float(Decimal('10.50')),
+            '食堂B': float(Decimal('20.75'))
         }
         consumption.canteen_data = canteen_data
         consumption.save()
@@ -127,9 +130,10 @@ class CanteenConsumptionModelTest(TestCase):
         # 等待一小段时间确保时间戳不同
         time.sleep(0.01)
 
-        user2 = User.objects.create_user(
+        user2 = User.objects.create(
             username='user2',
-            password='pass2'
+            password=encrypt_password('pass2'),
+            nickname='用户2'
         )
         consumption2 = CanteenConsumption.objects.create(
             user=user2,
@@ -168,9 +172,10 @@ class CanteenConsumptionModelTest(TestCase):
         # 批量创建用户和消费记录
         consumptions = []
         for data in users_data:
-            user = User.objects.create_user(
+            user = User.objects.create(
                 username=data['username'],
-                password='testpass'
+                password=encrypt_password('testpass'),
+                nickname=f'用户{data["username"]}'
             )
             consumption = CanteenConsumption.objects.create(
                 user=user,

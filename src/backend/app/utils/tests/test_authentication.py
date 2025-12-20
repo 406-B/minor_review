@@ -4,10 +4,12 @@
 """
 from django.test import TestCase, RequestFactory
 from django.http import JsonResponse
-from django.contrib.auth.models import User
+from rest_framework.response import Response
+from rest_framework import status
 
-from utils.jwt import generate_jwt, login_required
+from utils.jwt import generate_jwt, verify_jwt
 from login.models import User as CustomUser
+from utils.authentication import JWTAuthentication
 
 
 class LoginRequiredDecoratorTest(TestCase):
@@ -15,21 +17,19 @@ class LoginRequiredDecoratorTest(TestCase):
 
     def setUp(self):
         self.factory = RequestFactory()
-        self.user = User.objects.create_user(
+        # 使用 login.models.User
+        self.user = CustomUser.objects.create(
             username='testuser',
-            password='testpass123'
+            password='encrypted_password',
+            nickname='测试用户'
         )
-
-        # 创建一个简单的被装饰视图
-        @login_required
-        def protected_view(request):
-            return JsonResponse({'message': 'success', 'user': request.user.username})
-
-        self.protected_view = protected_view
+        self.user.is_staff = False
+        self.user.is_superuser = False
+        self.user.is_active = True
 
     def test_login_required_with_valid_token(self):
         """测试有效token访问受保护视图"""
-        # 生成JWT
+        # 生成JWT（使用正确的用户ID）
         payload = {'user_id': self.user.id, 'nickname': 'testuser'}
         token = generate_jwt(payload)
 
@@ -37,33 +37,43 @@ class LoginRequiredDecoratorTest(TestCase):
         request = self.factory.get('/api/protected/')
         request.META['HTTP_AUTHORIZATION'] = f'Bearer {token}'
 
-        response = self.protected_view(request)
+        # 使用JWTAuthentication进行认证
+        auth = JWTAuthentication()
+        result = auth.authenticate(request)
 
-        # 应该成功返回
-        self.assertEqual(response.status_code, 200)
+        # 应该成功认证
+        self.assertIsNotNone(result)
+        if result:
+            user, payload = result
+            self.assertEqual(user.id, self.user.id)
 
     def test_login_required_without_token(self):
         """测试无token访问受保护视图"""
         request = self.factory.get('/api/protected/')
 
-        response = self.protected_view(request)
+        # 使用JWTAuthentication进行认证
+        auth = JWTAuthentication()
+        result = auth.authenticate(request)
 
-        # 应该返回401
-        self.assertEqual(response.status_code, 401)
+        # 应该返回None（未认证）
+        self.assertIsNone(result)
 
     def test_login_required_with_invalid_token(self):
         """测试无效token访问受保护视图"""
         request = self.factory.get('/api/protected/')
         request.META['HTTP_AUTHORIZATION'] = 'Bearer invalid_token_xyz'
 
-        response = self.protected_view(request)
+        # 使用JWTAuthentication进行认证
+        auth = JWTAuthentication()
+        result = auth.authenticate(request)
 
-        # 应该返回401
-        self.assertEqual(response.status_code, 401)
+        # 应该返回None（无效token）
+        self.assertIsNone(result)
 
     def test_login_required_with_malformed_header(self):
         """测试格式错误的Authorization header"""
         request = self.factory.get('/api/protected/')
+        auth = JWTAuthentication()
 
         # 测试各种格式错误
         malformed_headers = [
@@ -75,6 +85,7 @@ class LoginRequiredDecoratorTest(TestCase):
 
         for header in malformed_headers:
             request.META['HTTP_AUTHORIZATION'] = header
-            response = self.protected_view(request)
-            self.assertEqual(response.status_code, 401)
+            result = auth.authenticate(request)
+            # 格式错误的header应该返回None
+            self.assertIsNone(result)
 

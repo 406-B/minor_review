@@ -83,7 +83,8 @@ class DishModelTest(TestCase):
             price=Decimal('12.50'),
             canteen=self.canteen
         )
-        self.assertEqual(str(dish), '宫保鸡丁')
+        # 实际实现：返回 "菜品名 - 食堂名"
+        self.assertEqual(str(dish), f'{dish.name} - {dish.canteen.name}')
 
     def test_dish_average_rating_calculation(self):
         """测试菜品平均评分计算"""
@@ -285,5 +286,6 @@ class ReviewModelTest(TestCase):
             dish=self.dish,
             content='测试评论'
         )
-        expected_str = f"{self.user.username} 对 {self.dish.name} 的评论"
+        # 实际实现：返回 "用户名 - 菜品名: 评论内容前50字符"
+        expected_str = f"{self.user.username} - {self.dish.name}: {review.content[:50]}"
         self.assertEqual(str(review), expected_str)

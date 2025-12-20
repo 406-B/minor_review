@@ -1,0 +1,14 @@
+测试覆盖率摘要
+生成时间: Sat Dec 20 22:05:18 CST 2025
+
+后端代码覆盖率:
+TOTAL                             1966   1241  36.88%
+
+前端测试状态:
+ FAIL  src/api/__tests__/profileApi.test.js [ src/api/__tests__/profileApi.test.js ]
+ FAIL  src/router/__tests__/router.test.js [ src/router/__tests__/router.test.js ]
+ FAIL  src/components/ui/__tests__/EmptyState.test.js [ src/components/ui/__tests__/EmptyState.test.js ]
+ FAIL  src/utils/__tests__/formatters.test.js [ src/utils/__tests__/formatters.test.js ]
+ FAIL  src/views/__tests__/DishDetail.test.js [ src/views/__tests__/DishDetail.test.js ]
+ Test Files  9 failed (9)
+      Tests  no tests

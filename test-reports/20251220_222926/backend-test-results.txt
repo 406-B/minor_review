@@ -1,0 +1,1687 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+django: version: 4.2.7, settings: app.settings_test (from env)
+rootdir: /app
+configfile: pytest.ini
+plugins: django-4.11.1, cov-7.0.0
+collecting ... collected 275 items
+
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_failure FAILED [  0%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_invalid_data FAILED [  0%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_success FAILED [  1%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_unauthorized FAILED [  1%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_without_idserial FAILED [  1%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_get_consumption_no_data FAILED [  2%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_get_consumption_success FAILED [  2%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_get_consumption_unauthorized FAILED [  2%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_refresh_consumption_not_bound FAILED [  3%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_refresh_consumption_success FAILED [  3%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_refresh_consumption_with_cookie FAILED [  4%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_unbind_consumption_not_bound FAILED [  4%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_unbind_consumption_success FAILED [  4%]
+canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_unbind_consumption_unauthorized FAILED [  5%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_bulk_operations PASSED [  5%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_creation PASSED [  5%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_data_validation PASSED [  6%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_default_values PASSED [  6%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_json_field_handling PASSED [  6%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_ordering PASSED [  7%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_str_method PASSED [  7%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_unique_user PASSED [  8%]
+canteen/tests/test_models_unit.py::CanteenConsumptionModelTest::test_canteen_consumption_update_last_fetched PASSED [  8%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_add_tag_to_dish_success PASSED [  8%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_check_in_dish_success PASSED [  9%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_create_review_success FAILED [  9%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_create_tag_admin_only PASSED [  9%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_create_tag_non_admin PASSED [ 10%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_delete_review_success FAILED [ 10%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_canteen_detail FAILED [ 10%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_canteen_floors PASSED [ 11%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_canteen_list PASSED [ 11%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_dish_detail PASSED [ 12%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_dish_list FAILED [ 12%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_food_calendar FAILED [ 12%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_hot_dishes PASSED [ 13%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_new_dishes PASSED [ 13%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_reviews_list FAILED [ 13%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_tags_list PASSED [ 14%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_user_achievements FAILED [ 14%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_user_dish_history FAILED [ 14%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_user_dish_stats FAILED [ 15%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_like_review_success FAILED [ 15%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_rate_dish_success FAILED [ 16%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_rate_dish_unauthorized FAILED [ 16%]
+list/tests/test_list_integration.py::ListViewsIntegrationTest::test_update_review_success FAILED [ 16%]
+list/tests/test_models.py::CanteenModelTest::test_canteen_creation PASSED [ 17%]
+list/tests/test_models.py::CanteenModelTest::test_canteen_str_representation PASSED [ 17%]
+list/tests/test_models.py::CanteenModelTest::test_canteen_unique_name PASSED [ 17%]
+list/tests/test_models.py::FloorModelTest::test_floor_creation PASSED    [ 18%]
+list/tests/test_models.py::FloorModelTest::test_floor_str_representation PASSED [ 18%]
+list/tests/test_models.py::WindowModelTest::test_window_creation PASSED  [ 18%]
+list/tests/test_models.py::WindowModelTest::test_window_str_representation PASSED [ 19%]
+list/tests/test_models.py::TagModelTest::test_tag_creation PASSED        [ 19%]
+list/tests/test_models.py::TagModelTest::test_tag_str_representation PASSED [ 20%]
+list/tests/test_models.py::TagModelTest::test_tag_unique_name PASSED     [ 20%]
+list/tests/test_models.py::DishModelTest::test_dish_creation PASSED      [ 20%]
+list/tests/test_models.py::DishModelTest::test_dish_str_representation PASSED [ 21%]
+list/tests/test_models.py::DishModelTest::test_dish_tags_relationship PASSED [ 21%]
+list/tests/test_models.py::DishModelTest::test_increment_view_count PASSED [ 21%]
+list/tests/test_models.py::DishModelTest::test_pending_tags_relationship PASSED [ 22%]
+list/tests/test_models.py::DishModelTest::test_price_cannot_be_negative PASSED [ 22%]
+list/tests/test_models.py::DishModelTest::test_rating_range_validation PASSED [ 22%]
+list/tests/test_models.py::RatingModelTest::test_rating_creation PASSED  [ 23%]
+list/tests/test_models.py::RatingModelTest::test_rating_str_representation PASSED [ 23%]
+list/tests/test_models.py::RatingModelTest::test_score_range_validation PASSED [ 24%]
+list/tests/test_models.py::RatingModelTest::test_unique_user_dish_rating PASSED [ 24%]
+list/tests/test_models.py::ReviewModelTest::test_images_default_value PASSED [ 24%]
+list/tests/test_models.py::ReviewModelTest::test_likes_count_default_value PASSED [ 25%]
+list/tests/test_models.py::ReviewModelTest::test_review_creation PASSED  [ 25%]
+list/tests/test_models.py::ReviewModelTest::test_review_creation_with_images PASSED [ 25%]
+list/tests/test_models.py::ReviewModelTest::test_review_str_representation PASSED [ 26%]
+list/tests/test_models.py::ReviewModelTest::test_review_with_rating PASSED [ 26%]
+list/tests/test_models_unit.py::CanteenModelTest::test_canteen_creation PASSED [ 26%]
+list/tests/test_models_unit.py::CanteenModelTest::test_canteen_str_method PASSED [ 27%]
+list/tests/test_models_unit.py::CanteenModelTest::test_canteen_unique_name PASSED [ 27%]
+list/tests/test_models_unit.py::DishModelTest::test_dish_average_rating_calculation PASSED [ 28%]
+list/tests/test_models_unit.py::DishModelTest::test_dish_creation PASSED [ 28%]
+list/tests/test_models_unit.py::DishModelTest::test_dish_price_validation PASSED [ 28%]
+list/tests/test_models_unit.py::DishModelTest::test_dish_str_method PASSED [ 29%]
+list/tests/test_models_unit.py::TagModelTest::test_tag_creation PASSED   [ 29%]
+list/tests/test_models_unit.py::TagModelTest::test_tag_str_method PASSED [ 29%]
+list/tests/test_models_unit.py::TagModelTest::test_tag_unique_name PASSED [ 30%]
+list/tests/test_models_unit.py::FloorModelTest::test_floor_creation PASSED [ 30%]
+list/tests/test_models_unit.py::FloorModelTest::test_floor_str_method PASSED [ 30%]
+list/tests/test_models_unit.py::WindowModelTest::test_window_creation PASSED [ 31%]
+list/tests/test_models_unit.py::WindowModelTest::test_window_str_method PASSED [ 31%]
+list/tests/test_models_unit.py::RatingModelTest::test_rating_creation PASSED [ 32%]
+list/tests/test_models_unit.py::RatingModelTest::test_rating_score_validation PASSED [ 32%]
+list/tests/test_models_unit.py::ReviewModelTest::test_review_creation PASSED [ 32%]
+list/tests/test_models_unit.py::ReviewModelTest::test_review_str_method PASSED [ 33%]
+list/tests/test_models_unit.py::ReviewModelTest::test_review_with_images PASSED [ 33%]
+list/tests/test_serializers.py::CanteenSerializerTest::test_canteen_serializer PASSED [ 33%]
+list/tests/test_serializers.py::CanteenSerializerTest::test_canteen_serializer_with_null_coordinates PASSED [ 34%]
+list/tests/test_serializers.py::DishSerializerTest::test_dish_serializer PASSED [ 34%]
+list/tests/test_serializers.py::DishListSerializerTest::test_dish_list_serializer PASSED [ 34%]
+list/tests/test_serializers.py::TagSerializerTest::test_tag_serializer PASSED [ 35%]
+list/tests/test_serializers.py::FloorWindowSerializerTest::test_floor_serializer PASSED [ 35%]
+list/tests/test_serializers.py::FloorWindowSerializerTest::test_window_serializer PASSED [ 36%]
+list/tests/test_serializers.py::RatingSerializerTest::test_rating_serializer PASSED [ 36%]
+list/tests/test_serializers.py::ReviewSerializerTest::test_review_list_serializer PASSED [ 36%]
+list/tests/test_serializers.py::ReviewSerializerTest::test_review_serializer PASSED [ 37%]
+list/tests/test_serializers.py::UserDishHistorySerializerTest::test_user_dish_history_serializer PASSED [ 37%]
+list/tests/test_serializers.py::SerializerValidationTest::test_dish_serializer_validation PASSED [ 37%]
+list/tests/test_serializers.py::SerializerValidationTest::test_rating_serializer_validation PASSED [ 38%]
+list/tests/test_serializers.py::SerializerFieldTest::test_canteen_serializer_meta_fields PASSED [ 38%]
+list/tests/test_serializers.py::SerializerFieldTest::test_dish_serializer_calculated_fields FAILED [ 38%]
+list/tests/test_serializers.py::SerializerFieldTest::test_dish_serializer_readonly_fields PASSED [ 39%]
+list/tests/test_views.py::CanteenViewsTest::test_canteen_detail_endpoint PASSED [ 39%]
+list/tests/test_views.py::CanteenViewsTest::test_canteen_detail_not_found PASSED [ 40%]
+list/tests/test_views.py::CanteenViewsTest::test_canteen_list_endpoint PASSED [ 40%]
+list/tests/test_views.py::CanteenViewsTest::test_canteen_list_ordering PASSED [ 40%]
+list/tests/test_views.py::CanteenViewsTest::test_canteen_list_search PASSED [ 41%]
+list/tests/test_views.py::FloorWindowViewsTest::test_canteen_floors_endpoint PASSED [ 41%]
+list/tests/test_views.py::DishViewsTest::test_dish_detail_endpoint PASSED [ 41%]
+list/tests/test_views.py::DishViewsTest::test_dish_detail_increments_view_count PASSED [ 42%]
+list/tests/test_views.py::DishViewsTest::test_dish_list_endpoint PASSED  [ 42%]
+list/tests/test_views.py::DishViewsTest::test_dish_list_filter_by_canteen PASSED [ 42%]
+list/tests/test_views.py::DishViewsTest::test_dish_list_filter_by_price_range PASSED [ 43%]
+list/tests/test_views.py::DishViewsTest::test_dish_list_filter_by_rating PASSED [ 43%]
+list/tests/test_views.py::DishViewsTest::test_dish_list_filter_by_tag PASSED [ 44%]
+list/tests/test_views.py::DishViewsTest::test_dish_list_ordering_by_price PASSED [ 44%]
+list/tests/test_views.py::DishViewsTest::test_dish_list_ordering_by_rating PASSED [ 44%]
+list/tests/test_views.py::DishViewsTest::test_dish_list_search PASSED    [ 45%]
+list/tests/test_views.py::DishViewsTest::test_hot_dishes_endpoint PASSED [ 45%]
+list/tests/test_views.py::DishViewsTest::test_new_dishes_endpoint PASSED [ 45%]
+list/tests/test_views.py::RatingViewsTest::test_rate_dish_invalid_range_too_high PASSED [ 46%]
+list/tests/test_views.py::RatingViewsTest::test_rate_dish_invalid_range_too_low PASSED [ 46%]
+list/tests/test_views.py::RatingViewsTest::test_rate_dish_missing_rating PASSED [ 46%]
+list/tests/test_views.py::RatingViewsTest::test_rate_dish_success PASSED [ 47%]
+list/tests/test_views.py::RatingViewsTest::test_rate_dish_unauthorized FAILED [ 47%]
+list/tests/test_views.py::RatingViewsTest::test_rate_dish_updates_average FAILED [ 48%]
+list/tests/test_views.py::RatingViewsTest::test_update_existing_rating PASSED [ 48%]
+list/tests/test_views.py::ReviewViewsTest::test_admin_can_delete_any_review FAILED [ 48%]
+list/tests/test_views.py::ReviewViewsTest::test_cannot_update_others_review FAILED [ 49%]
+list/tests/test_views.py::ReviewViewsTest::test_create_review_success FAILED [ 49%]
+list/tests/test_views.py::ReviewViewsTest::test_create_review_with_rating FAILED [ 49%]
+list/tests/test_views.py::ReviewViewsTest::test_delete_own_review FAILED [ 50%]
+list/tests/test_views.py::ReviewViewsTest::test_get_review_list FAILED   [ 50%]
+list/tests/test_views.py::ReviewViewsTest::test_prevent_duplicate_review FAILED [ 50%]
+list/tests/test_views.py::ReviewViewsTest::test_update_own_review FAILED [ 51%]
+list/tests/test_views.py::TagViewsTest::test_create_tag_as_admin PASSED  [ 51%]
+list/tests/test_views.py::TagViewsTest::test_create_tag_duplicate PASSED [ 52%]
+list/tests/test_views.py::TagViewsTest::test_tag_list_endpoint PASSED    [ 52%]
+list/tests/test_views.py::MyReviewsViewsTest::test_get_my_reviews PASSED [ 52%]
+list/tests/test_views.py::MyReviewsViewsTest::test_get_my_reviews_ordering PASSED [ 53%]
+list/tests/test_views.py::MyReviewsViewsTest::test_get_my_reviews_with_pagination PASSED [ 53%]
+list/tests/test_views.py::LikeReviewViewsTest::test_like_review_success PASSED [ 53%]
+list/tests/test_views.py::LikeReviewViewsTest::test_unlike_review_success FAILED [ 54%]
+list/tests/test_views.py::CheckInViewsTest::test_check_in_dish_daily_limit PASSED [ 54%]
+list/tests/test_views.py::CheckInViewsTest::test_check_in_dish_multiple_times PASSED [ 54%]
+list/tests/test_views.py::CheckInViewsTest::test_check_in_dish_success PASSED [ 55%]
+list/tests/test_views.py::UserDishHistoryViewsTest::test_get_user_dish_history FAILED [ 55%]
+list/tests/test_views.py::UserDishHistoryViewsTest::test_get_user_dish_history_filter_by_level FAILED [ 56%]
+list/tests/test_views.py::UserDishHistoryViewsTest::test_get_user_dish_stats PASSED [ 56%]
+list/tests/test_views.py::FoodCalendarViewsTest::test_get_day_dishes PASSED [ 56%]
+list/tests/test_views.py::FoodCalendarViewsTest::test_get_day_dishes_invalid_date PASSED [ 57%]
+list/tests/test_views.py::FoodCalendarViewsTest::test_get_day_dishes_missing_date PASSED [ 57%]
+list/tests/test_views.py::FoodCalendarViewsTest::test_get_food_calendar PASSED [ 57%]
+list/tests/test_views.py::TagManagementViewsTest::test_add_tag_as_admin PASSED [ 58%]
+list/tests/test_views.py::TagManagementViewsTest::test_add_tag_as_regular_user FAILED [ 58%]
+list/tests/test_views.py::TagManagementViewsTest::test_approve_pending_tags PASSED [ 58%]
+list/tests/test_views.py::TagManagementViewsTest::test_reject_pending_tags PASSED [ 59%]
+list/tests/test_views.py::DishStatisticsViewsTest::test_hot_dishes_endpoint PASSED [ 59%]
+list/tests/test_views.py::DishStatisticsViewsTest::test_new_dishes_endpoint PASSED [ 60%]
+list/tests/test_views.py::ReviewManagementViewsTest::test_admin_can_delete_any_review PASSED [ 60%]
+list/tests/test_views.py::ReviewManagementViewsTest::test_cannot_update_others_review PASSED [ 60%]
+list/tests/test_views.py::ReviewManagementViewsTest::test_delete_review_success PASSED [ 61%]
+list/tests/test_views.py::ReviewManagementViewsTest::test_update_review_success PASSED [ 61%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_access_protected_resource_without_auth PASSED [ 61%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_invalid_login_credentials PASSED [ 62%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_jwt_token_contains_user_info PASSED [ 62%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_login_nonexistent_user PASSED [ 62%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_logout PASSED [ 63%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_register_duplicate_username PASSED [ 63%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_register_login_flow PASSED [ 64%]
+login/tests/test_authentication.py::AuthenticationFlowTest::test_register_missing_fields PASSED [ 64%]
+login/tests/test_authentication.py::UserInfoTest::test_get_current_user_info PASSED [ 64%]
+login/tests/test_authentication.py::UserInfoTest::test_get_user_info_by_id PASSED [ 65%]
+login/tests/test_authentication.py::UserInfoTest::test_get_user_info_by_nonexistent_id PASSED [ 65%]
+login/tests/test_authentication.py::UserInfoTest::test_get_user_info_with_invalid_jwt PASSED [ 65%]
+login/tests/test_authentication.py::UserInfoTest::test_login_empty_credentials PASSED [ 66%]
+login/tests/test_authentication.py::UserInfoTest::test_logout_without_auth PASSED [ 66%]
+login/tests/test_authentication.py::UserInfoTest::test_register_invalid_password_format PASSED [ 66%]
+login/tests/test_authentication.py::UserInfoTest::test_register_invalid_username_format PASSED [ 67%]
+login/tests/test_authentication.py::UserInfoTest::test_register_missing_nickname PASSED [ 67%]
+login/tests/test_authentication.py::UserInfoTest::test_register_missing_username PASSED [ 68%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_get_user_info_authenticated FAILED [ 68%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_get_user_info_by_id FAILED [ 68%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_get_user_info_unauthenticated FAILED [ 69%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_login_failure FAILED [ 69%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_login_missing_fields FAILED [ 69%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_login_success FAILED [ 70%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_logout_success FAILED [ 70%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_logout_unauthenticated FAILED [ 70%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_register_user_duplicate_username FAILED [ 71%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_register_user_invalid_email FAILED [ 71%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_register_user_missing_fields FAILED [ 72%]
+login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_register_user_success FAILED [ 72%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_admin_can_delete_any_post FAILED [ 72%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_admin_can_update_any_post FAILED [ 73%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_cannot_update_others_post FAILED [ 73%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_create_post_missing_required_fields FAILED [ 73%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_create_post_success FAILED [ 74%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_create_post_unauthorized FAILED [ 74%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_delete_own_post FAILED [ 74%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_get_post_detail FAILED [ 75%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_get_posts_list FAILED [ 75%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_like_post FAILED [ 76%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_unlike_post FAILED [ 76%]
+post/tests/test_post_integration.py::PostViewsIntegrationTest::test_update_own_post FAILED [ 76%]
+post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_create_comment_success FAILED [ 77%]
+post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_delete_own_comment FAILED [ 77%]
+post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_get_comments_list FAILED [ 77%]
+post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_reply_to_comment FAILED [ 78%]
+post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_update_own_comment FAILED [ 78%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_add_preference_tags_success FAILED [ 78%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_admin_audit_content_approve_post FAILED [ 79%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_admin_audit_content_reject_review FAILED [ 79%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_admin_get_pending_contents FAILED [ 80%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_liked_posts_success FAILED [ 80%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_my_comments_success FAILED [ 80%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_my_posts_pagination FAILED [ 81%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_my_posts_success FAILED [ 81%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_preference_tags_success FAILED [ 81%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_profile_success PASSED [ 82%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_profile_unauthorized PASSED [ 82%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_recent_posts_success FAILED [ 82%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_recommended_dishes_no_preferences FAILED [ 83%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_recommended_dishes_with_preferences FAILED [ 83%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_stats_success FAILED [ 84%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_non_admin_cannot_get_pending_contents FAILED [ 84%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_set_preference_tags_success FAILED [ 84%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_password_missing_fields FAILED [ 85%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_password_passwords_not_match FAILED [ 85%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_password_success FAILED [ 85%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_password_wrong_old_password FAILED [ 86%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_profile_invalid_data FAILED [ 86%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_profile_no_changes FAILED [ 86%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_profile_partial_update FAILED [ 87%]
+profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_profile_success FAILED [ 87%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_audit_content_api_error PASSED [ 88%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_audit_content_fail PASSED [ 88%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_audit_content_long_content_truncation PASSED [ 88%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_audit_content_no_api_key PASSED [ 89%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_audit_content_pass PASSED [ 89%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_audit_content_reason_truncation PASSED [ 89%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_audit_content_with_type_and_title PASSED [ 90%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_call_deepseek_api_error_status PASSED [ 90%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_call_deepseek_api_invalid_response_format FAILED [ 90%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_call_deepseek_api_request_exception FAILED [ 91%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_call_deepseek_api_success PASSED [ 91%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_parse_response_invalid_json PASSED [ 92%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_parse_response_json_in_text PASSED [ 92%]
+utils/tests/test_audit.py::ContentAuditServiceTest::test_parse_response_valid_json PASSED [ 92%]
+utils/tests/test_audit.py::AuditContentFunctionTest::test_audit_content_function_fail PASSED [ 93%]
+utils/tests/test_audit.py::AuditContentFunctionTest::test_audit_content_function_pass PASSED [ 93%]
+utils/tests/test_audit.py::AuditContentFunctionTest::test_audit_content_function_with_params PASSED [ 93%]
+utils/tests/test_authentication.py::LoginRequiredDecoratorTest::test_login_required_with_invalid_token PASSED [ 94%]
+utils/tests/test_authentication.py::LoginRequiredDecoratorTest::test_login_required_with_malformed_header PASSED [ 94%]
+utils/tests/test_authentication.py::LoginRequiredDecoratorTest::test_login_required_with_valid_token PASSED [ 94%]
+utils/tests/test_authentication.py::LoginRequiredDecoratorTest::test_login_required_without_token PASSED [ 95%]
+utils/tests/test_jwt.py::JWTGenerationTest::test_generate_jwt_contains_payload_data PASSED [ 95%]
+utils/tests/test_jwt.py::JWTGenerationTest::test_generate_jwt_with_empty_payload PASSED [ 96%]
+utils/tests/test_jwt.py::JWTGenerationTest::test_generate_jwt_with_valid_payload PASSED [ 96%]
+utils/tests/test_jwt.py::JWTVerificationTest::test_verify_jwt_with_invalid_signature PASSED [ 96%]
+utils/tests/test_jwt.py::JWTVerificationTest::test_verify_jwt_with_malformed_token PASSED [ 97%]
+utils/tests/test_jwt.py::JWTVerificationTest::test_verify_jwt_with_none PASSED [ 97%]
+utils/tests/test_jwt.py::JWTVerificationTest::test_verify_valid_jwt PASSED [ 97%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_different_passwords_produce_different_hashes PASSED [ 98%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_empty_password PASSED [ 98%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_long_password PASSED [ 98%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_password PASSED [ 99%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_same_password_produces_same_hash PASSED [ 99%]
+utils/tests/test_jwt.py::PasswordEncryptionTest::test_encrypt_special_characters PASSED [100%]
+
+=================================== FAILURES ===================================
+____________ CanteenViewsIntegrationTest.test_bind_idserial_failure ____________
+canteen/tests/test_canteen_integration.py:177: in test_bind_idserial_failure
+    self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+E   AssertionError: 404 != 500
+---------------------------- Captured stdout setup -----------------------------
+Operations to perform:
+  Synchronize unmigrated apps: admin, auth, authtoken, canteen, contenttypes, django_filters, drf_spectacular, list, login, messages, post, profile, rest_framework, sessions, staticfiles, user
+  Apply all migrations: (none)
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_admin_log
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_content_type
+    Creating table django_session
+    Creating table authtoken_token
+    Creating table list_floor
+    Creating table list_window
+    Creating table list_canteen
+    Creating table list_tag
+    Creating table list_dish
+    Creating table list_rating
+    Creating table list_review
+    Creating table list_userdishhistory
+    Creating table list_dishcheckinrecord
+    Creating table post_post
+    Creating table post_comment
+    Creating table post_like
+    Creating table post_report
+    Creating table login_user
+    Creating table canteen_consumption
+    Running deferred SQL...
+Running migrations:
+  No migrations to apply.
+---------------------------- Captured stderr setup -----------------------------
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:29:59.486070
+expiry: 2025-12-21 14:29:59.486070
+now: 2025-12-20 14:29:59.486302
+expiry: 2025-12-21 14:29:59.486302
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/bind-idserial/
+_________ CanteenViewsIntegrationTest.test_bind_idserial_invalid_data __________
+canteen/tests/test_canteen_integration.py:192: in test_bind_idserial_invalid_data
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E   AssertionError: 404 != 400
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:29:59.681764
+expiry: 2025-12-21 14:29:59.681764
+now: 2025-12-20 14:29:59.681884
+expiry: 2025-12-21 14:29:59.681884
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/bind-idserial/
+____________ CanteenViewsIntegrationTest.test_bind_idserial_success ____________
+canteen/tests/test_canteen_integration.py:121: in test_bind_idserial_success
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 404 != 200
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:29:59.810521
+expiry: 2025-12-21 14:29:59.810521
+now: 2025-12-20 14:29:59.810632
+expiry: 2025-12-21 14:29:59.810632
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/bind-idserial/
+_________ CanteenViewsIntegrationTest.test_bind_idserial_unauthorized __________
+canteen/tests/test_canteen_integration.py:207: in test_bind_idserial_unauthorized
+    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+E   AssertionError: 404 != 401
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:29:59.941190
+expiry: 2025-12-21 14:29:59.941190
+now: 2025-12-20 14:29:59.941311
+expiry: 2025-12-21 14:29:59.941311
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/bind-idserial/
+_______ CanteenViewsIntegrationTest.test_bind_idserial_without_idserial ________
+canteen/tests/test_canteen_integration.py:154: in test_bind_idserial_without_idserial
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 404 != 200
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:00.072646
+expiry: 2025-12-21 14:30:00.072646
+now: 2025-12-20 14:30:00.072814
+expiry: 2025-12-21 14:30:00.072814
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/bind-idserial/
+___________ CanteenViewsIntegrationTest.test_get_consumption_no_data ___________
+canteen/tests/test_canteen_integration.py:63: in test_get_consumption_no_data
+    self.assertEqual(response.data['code'], 404)
+                     ^^^^^^^^^^^^^
+E   AttributeError: 'HttpResponseNotFound' object has no attribute 'data'
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:00.203975
+expiry: 2025-12-21 14:30:00.203975
+now: 2025-12-20 14:30:00.204094
+expiry: 2025-12-21 14:30:00.204094
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/consumption/
+___________ CanteenViewsIntegrationTest.test_get_consumption_success ___________
+canteen/tests/test_canteen_integration.py:71: in test_get_consumption_success
+    consumption = CanteenConsumption.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:369: in __set__
+    super().__set__(instance, value)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "CanteenConsumption.user" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:00.333983
+expiry: 2025-12-21 14:30:00.333983
+now: 2025-12-20 14:30:00.334138
+expiry: 2025-12-21 14:30:00.334138
+________ CanteenViewsIntegrationTest.test_get_consumption_unauthorized _________
+canteen/tests/test_canteen_integration.py:96: in test_get_consumption_unauthorized
+    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+E   AssertionError: 404 != 401
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:00.558709
+expiry: 2025-12-21 14:30:00.558709
+now: 2025-12-20 14:30:00.558831
+expiry: 2025-12-21 14:30:00.558831
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/consumption/
+________ CanteenViewsIntegrationTest.test_refresh_consumption_not_bound ________
+canteen/tests/test_canteen_integration.py:290: in test_refresh_consumption_not_bound
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E   AssertionError: 404 != 400
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:00.689203
+expiry: 2025-12-21 14:30:00.689203
+now: 2025-12-20 14:30:00.689313
+expiry: 2025-12-21 14:30:00.689313
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/refresh-consumption/
+_________ CanteenViewsIntegrationTest.test_refresh_consumption_success _________
+canteen/tests/test_canteen_integration.py:215: in test_refresh_consumption_success
+    CanteenConsumption.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:369: in __set__
+    super().__set__(instance, value)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "CanteenConsumption.user" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:00.818956
+expiry: 2025-12-21 14:30:00.818956
+now: 2025-12-20 14:30:00.819025
+expiry: 2025-12-21 14:30:00.819025
+_______ CanteenViewsIntegrationTest.test_refresh_consumption_with_cookie _______
+canteen/tests/test_canteen_integration.py:250: in test_refresh_consumption_with_cookie
+    CanteenConsumption.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:369: in __set__
+    super().__set__(instance, value)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "CanteenConsumption.user" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:01.012130
+expiry: 2025-12-21 14:30:01.012130
+now: 2025-12-20 14:30:01.012225
+expiry: 2025-12-21 14:30:01.012225
+________ CanteenViewsIntegrationTest.test_unbind_consumption_not_bound _________
+canteen/tests/test_canteen_integration.py:329: in test_unbind_consumption_not_bound
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E   AssertionError: 404 != 400
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:01.232033
+expiry: 2025-12-21 14:30:01.232033
+now: 2025-12-20 14:30:01.232153
+expiry: 2025-12-21 14:30:01.232153
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/unbind/
+_________ CanteenViewsIntegrationTest.test_unbind_consumption_success __________
+canteen/tests/test_canteen_integration.py:300: in test_unbind_consumption_success
+    CanteenConsumption.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:369: in __set__
+    super().__set__(instance, value)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "CanteenConsumption.user" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:01.364369
+expiry: 2025-12-21 14:30:01.364369
+now: 2025-12-20 14:30:01.364509
+expiry: 2025-12-21 14:30:01.364509
+_______ CanteenViewsIntegrationTest.test_unbind_consumption_unauthorized _______
+canteen/tests/test_canteen_integration.py:337: in test_unbind_consumption_unauthorized
+    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+E   AssertionError: 404 != 401
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:01.563909
+expiry: 2025-12-21 14:30:01.563909
+now: 2025-12-20 14:30:01.564045
+expiry: 2025-12-21 14:30:01.564045
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/canteen/unbind/
+_____________ ListViewsIntegrationTest.test_create_review_success ______________
+list/tests/test_list_integration.py:186: in test_create_review_success
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+E   AssertionError: 400 != 201
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Bad Request: /api/dishes/1/reviews/create/
+_____________ ListViewsIntegrationTest.test_delete_review_success ______________
+list/tests/test_list_integration.py:244: in test_delete_review_success
+    review = Review.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: Review() got unexpected keyword arguments: 'score'
+_______________ ListViewsIntegrationTest.test_get_canteen_detail _______________
+list/tests/test_list_integration.py:61: in test_get_canteen_detail
+    self.assertEqual(response.data['data']['name'], '测试食堂')
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'name'
+_________________ ListViewsIntegrationTest.test_get_dish_list __________________
+list/tests/test_list_integration.py:89: in test_get_dish_list
+    self.assertGreater(len(response.data['data']['dishes']), 0)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: list indices must be integers or slices, not str
+_______________ ListViewsIntegrationTest.test_get_food_calendar ________________
+list/tests/test_list_integration.py:330: in test_get_food_calendar
+    UserDishHistory.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: UserDishHistory() got unexpected keyword arguments: 'action_type', 'created_at'
+________________ ListViewsIntegrationTest.test_get_reviews_list ________________
+list/tests/test_list_integration.py:197: in test_get_reviews_list
+    Review.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: Review() got unexpected keyword arguments: 'score'
+_____________ ListViewsIntegrationTest.test_get_user_achievements ______________
+list/tests/test_list_integration.py:349: in test_get_user_achievements
+    DishCheckInRecord.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: DishCheckInRecord() got unexpected keyword arguments: 'check_in_date'
+_____________ ListViewsIntegrationTest.test_get_user_dish_history ______________
+list/tests/test_list_integration.py:296: in test_get_user_dish_history
+    UserDishHistory.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: UserDishHistory() got unexpected keyword arguments: 'action_type'
+______________ ListViewsIntegrationTest.test_get_user_dish_stats _______________
+list/tests/test_list_integration.py:313: in test_get_user_dish_stats
+    DishCheckInRecord.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: DishCheckInRecord() got unexpected keyword arguments: 'check_in_date'
+______________ ListViewsIntegrationTest.test_like_review_success _______________
+list/tests/test_list_integration.py:263: in test_like_review_success
+    review = Review.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: Review() got unexpected keyword arguments: 'score'
+_______________ ListViewsIntegrationTest.test_rate_dish_success ________________
+list/tests/test_list_integration.py:128: in test_rate_dish_success
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 400 != 200
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Bad Request: /api/dishes/1/rate/
+_____________ ListViewsIntegrationTest.test_rate_dish_unauthorized _____________
+list/tests/test_list_integration.py:148: in test_rate_dish_unauthorized
+    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+E   AssertionError: 403 != 401
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Forbidden: /api/dishes/1/rate/
+_____________ ListViewsIntegrationTest.test_update_review_success ______________
+list/tests/test_list_integration.py:215: in test_update_review_success
+    review = Review.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: Review() got unexpected keyword arguments: 'score'
+__________ SerializerFieldTest.test_dish_serializer_calculated_fields __________
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:89: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/sqlite3/base.py:328: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   sqlite3.IntegrityError: UNIQUE constraint failed: list_rating.user_id, list_rating.dish_id
+
+The above exception was the direct cause of the following exception:
+list/tests/test_serializers.py:355: in test_dish_serializer_calculated_fields
+    Rating.objects.create(user=user, dish=self.dish, score=Decimal('3.5'))
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:658: in create
+    obj.save(force_insert=True, using=self.db)
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:814: in save
+    self.save_base(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:877: in save_base
+    updated = self._save_table(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1020: in _save_table
+    results = self._do_insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:1061: in _do_insert
+    return manager._insert(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:1805: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/sql/compiler.py:1822: in execute_sql
+    cursor.execute(sql, params)
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:67: in execute
+    return self._execute_with_wrappers(
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:80: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:84: in _execute
+    with self.db.wrap_database_errors:
+/usr/local/lib/python3.11/site-packages/django/db/utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+/usr/local/lib/python3.11/site-packages/django/db/backends/utils.py:89: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/backends/sqlite3/base.py:328: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.IntegrityError: UNIQUE constraint failed: list_rating.user_id, list_rating.dish_id
+_________________ RatingViewsTest.test_rate_dish_unauthorized __________________
+list/tests/test_views.py:305: in test_rate_dish_unauthorized
+    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+E   AssertionError: 403 != 401
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Forbidden: /api/v1/dishes/1/rate/
+________________ RatingViewsTest.test_rate_dish_updates_average ________________
+list/tests/test_views.py:294: in test_rate_dish_updates_average
+    self.assertEqual(float(self.dish.rating), 4.5)
+E   AssertionError: 0.0 != 4.5
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/dish/1/rate/
+WARNING  django.request:log.py:241 Not Found: /api/dish/1/rate/
+_______________ ReviewViewsTest.test_admin_can_delete_any_review _______________
+list/tests/test_views.py:519: in test_admin_can_delete_any_review
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 404 != 200
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/review/1/
+_______________ ReviewViewsTest.test_cannot_update_others_review _______________
+list/tests/test_views.py:486: in test_cannot_update_others_review
+    self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+E   AssertionError: 404 != 403
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/review/1/
+__________________ ReviewViewsTest.test_create_review_success __________________
+list/tests/test_views.py:405: in test_create_review_success
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+E   AssertionError: 404 != 201
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/dish/1/review/
+________________ ReviewViewsTest.test_create_review_with_rating ________________
+list/tests/test_views.py:424: in test_create_review_with_rating
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+E   AssertionError: 404 != 201
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/dish/1/review/
+____________________ ReviewViewsTest.test_delete_own_review ____________________
+list/tests/test_views.py:498: in test_delete_own_review
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 404 != 200
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/review/1/
+_____________________ ReviewViewsTest.test_get_review_list _____________________
+list/tests/test_views.py:390: in test_get_review_list
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 404 != 200
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/dish/1/reviews/
+________________ ReviewViewsTest.test_prevent_duplicate_review _________________
+list/tests/test_views.py:447: in test_prevent_duplicate_review
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E   AssertionError: 404 != 400
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/dish/1/review/
+____________________ ReviewViewsTest.test_update_own_review ____________________
+list/tests/test_views.py:463: in test_update_own_review
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 404 != 200
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/review/1/
+________________ LikeReviewViewsTest.test_unlike_review_success ________________
+list/tests/test_views.py:746: in test_unlike_review_success
+    self.assertFalse(response.data['liked'])
+E   AssertionError: True is not false
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/review/1/like/
+_____________ UserDishHistoryViewsTest.test_get_user_dish_history ______________
+list/tests/test_views.py:857: in test_get_user_dish_history
+    self.assertEqual(len(response.data['data']), 2)
+E   AssertionError: 4 != 2
+_____ UserDishHistoryViewsTest.test_get_user_dish_history_filter_by_level ______
+list/tests/test_views.py:878: in test_get_user_dish_history_filter_by_level
+    self.assertEqual(len(response.data['data']), 1)
+E   AssertionError: 4 != 1
+_____________ TagManagementViewsTest.test_add_tag_as_regular_user ______________
+list/tests/test_views.py:1351: in test_add_tag_as_regular_user
+    self.assertIn('审核', response.data['message'])
+E   AssertionError: '审核' not found in '标签添加成功'
+__________ LoginViewsIntegrationTest.test_get_user_info_authenticated __________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+______________ LoginViewsIntegrationTest.test_get_user_info_by_id ______________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+_________ LoginViewsIntegrationTest.test_get_user_info_unauthenticated _________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+_________________ LoginViewsIntegrationTest.test_login_failure _________________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+_____________ LoginViewsIntegrationTest.test_login_missing_fields ______________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+_________________ LoginViewsIntegrationTest.test_login_success _________________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+________________ LoginViewsIntegrationTest.test_logout_success _________________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+____________ LoginViewsIntegrationTest.test_logout_unauthenticated _____________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+_______ LoginViewsIntegrationTest.test_register_user_duplicate_username ________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+__________ LoginViewsIntegrationTest.test_register_user_invalid_email __________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+_________ LoginViewsIntegrationTest.test_register_user_missing_fields __________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+_____________ LoginViewsIntegrationTest.test_register_user_success _____________
+login/tests/test_login_integration.py:26: in setUp
+    self.custom_user = CustomUser.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:567: in __init__
+    raise TypeError(
+E   TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+___________ PostViewsIntegrationTest.test_admin_can_delete_any_post ____________
+post/tests/test_post_integration.py:264: in test_admin_can_delete_any_post
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:25.623115
+expiry: 2025-12-21 14:30:25.623115
+now: 2025-12-20 14:30:25.623241
+expiry: 2025-12-21 14:30:25.623241
+___________ PostViewsIntegrationTest.test_admin_can_update_any_post ____________
+post/tests/test_post_integration.py:220: in test_admin_can_update_any_post
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:25.878826
+expiry: 2025-12-21 14:30:25.878826
+now: 2025-12-20 14:30:25.878942
+expiry: 2025-12-21 14:30:25.878942
+___________ PostViewsIntegrationTest.test_cannot_update_others_post ____________
+post/tests/test_post_integration.py:195: in test_cannot_update_others_post
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:26.117869
+expiry: 2025-12-21 14:30:26.117869
+now: 2025-12-20 14:30:26.118126
+expiry: 2025-12-21 14:30:26.118126
+______ PostViewsIntegrationTest.test_create_post_missing_required_fields _______
+post/tests/test_post_integration.py:142: in test_create_post_missing_required_fields
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E   AssertionError: 404 != 400
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:26.446892
+expiry: 2025-12-21 14:30:26.446892
+now: 2025-12-20 14:30:26.447077
+expiry: 2025-12-21 14:30:26.447077
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/posts/
+______________ PostViewsIntegrationTest.test_create_post_success _______________
+post/tests/test_post_integration.py:103: in test_create_post_success
+    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+E   AssertionError: 404 != 201
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:26.604425
+expiry: 2025-12-21 14:30:26.604425
+now: 2025-12-20 14:30:26.604606
+expiry: 2025-12-21 14:30:26.604606
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/posts/
+____________ PostViewsIntegrationTest.test_create_post_unauthorized ____________
+post/tests/test_post_integration.py:125: in test_create_post_unauthorized
+    self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+E   AssertionError: 404 != 401
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:26.762675
+expiry: 2025-12-21 14:30:26.762675
+now: 2025-12-20 14:30:26.762795
+expiry: 2025-12-21 14:30:26.762795
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/posts/
+________________ PostViewsIntegrationTest.test_delete_own_post _________________
+post/tests/test_post_integration.py:246: in test_delete_own_post
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:26.921758
+expiry: 2025-12-21 14:30:26.921758
+now: 2025-12-20 14:30:26.921877
+expiry: 2025-12-21 14:30:26.921877
+________________ PostViewsIntegrationTest.test_get_post_detail _________________
+post/tests/test_post_integration.py:146: in test_get_post_detail
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:27.146938
+expiry: 2025-12-21 14:30:27.146938
+now: 2025-12-20 14:30:27.147060
+expiry: 2025-12-21 14:30:27.147060
+_________________ PostViewsIntegrationTest.test_get_posts_list _________________
+post/tests/test_post_integration.py:67: in test_get_posts_list
+    Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:27.392158
+expiry: 2025-12-21 14:30:27.392158
+now: 2025-12-20 14:30:27.392327
+expiry: 2025-12-21 14:30:27.392327
+___________________ PostViewsIntegrationTest.test_like_post ____________________
+post/tests/test_post_integration.py:280: in test_like_post
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:27.628726
+expiry: 2025-12-21 14:30:27.628726
+now: 2025-12-20 14:30:27.628879
+expiry: 2025-12-21 14:30:27.628879
+__________________ PostViewsIntegrationTest.test_unlike_post ___________________
+post/tests/test_post_integration.py:298: in test_unlike_post
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:27.877368
+expiry: 2025-12-21 14:30:27.877368
+now: 2025-12-20 14:30:27.877496
+expiry: 2025-12-21 14:30:27.877496
+________________ PostViewsIntegrationTest.test_update_own_post _________________
+post/tests/test_post_integration.py:163: in test_update_own_post
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:28.136414
+expiry: 2025-12-21 14:30:28.136414
+now: 2025-12-20 14:30:28.136539
+expiry: 2025-12-21 14:30:28.136539
+___________ CommentViewsIntegrationTest.test_create_comment_success ____________
+post/tests/test_post_integration.py:330: in setUp
+    self.post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+_____________ CommentViewsIntegrationTest.test_delete_own_comment ______________
+post/tests/test_post_integration.py:330: in setUp
+    self.post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+______________ CommentViewsIntegrationTest.test_get_comments_list ______________
+post/tests/test_post_integration.py:330: in setUp
+    self.post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+______________ CommentViewsIntegrationTest.test_reply_to_comment _______________
+post/tests/test_post_integration.py:330: in setUp
+    self.post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+_____________ CommentViewsIntegrationTest.test_update_own_comment ______________
+post/tests/test_post_integration.py:330: in setUp
+    self.post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+_________ ProfileViewsIntegrationTest.test_add_preference_tags_success _________
+profile/tests/test_profile_integration.py:436: in test_add_preference_tags_success
+    self.user.preference_tags.add(self.tag)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'User' object has no attribute 'preference_tags'
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:29.770862
+expiry: 2025-12-21 14:30:29.770862
+now: 2025-12-20 14:30:29.771119
+expiry: 2025-12-21 14:30:29.771119
+______ ProfileViewsIntegrationTest.test_admin_audit_content_approve_post _______
+profile/tests/test_profile_integration.py:527: in test_admin_audit_content_approve_post
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:29.938409
+expiry: 2025-12-21 14:30:29.938409
+now: 2025-12-20 14:30:29.938667
+expiry: 2025-12-21 14:30:29.938667
+______ ProfileViewsIntegrationTest.test_admin_audit_content_reject_review ______
+profile/tests/test_profile_integration.py:573: in test_admin_audit_content_reject_review
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 404 != 200
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:30.172411
+expiry: 2025-12-21 14:30:30.172411
+now: 2025-12-20 14:30:30.172538
+expiry: 2025-12-21 14:30:30.172538
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/v1/profileaudit/review/1/
+_________ ProfileViewsIntegrationTest.test_admin_get_pending_contents __________
+profile/tests/test_profile_integration.py:501: in test_admin_get_pending_contents
+    Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:30.363642
+expiry: 2025-12-21 14:30:30.363642
+now: 2025-12-20 14:30:30.363779
+expiry: 2025-12-21 14:30:30.363779
+___________ ProfileViewsIntegrationTest.test_get_liked_posts_success ___________
+profile/tests/test_profile_integration.py:342: in test_get_liked_posts_success
+    post1 = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:30.597090
+expiry: 2025-12-21 14:30:30.597090
+now: 2025-12-20 14:30:30.597208
+expiry: 2025-12-21 14:30:30.597208
+___________ ProfileViewsIntegrationTest.test_get_my_comments_success ___________
+profile/tests/test_profile_integration.py:369: in test_get_my_comments_success
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:30.857916
+expiry: 2025-12-21 14:30:30.857916
+now: 2025-12-20 14:30:30.858036
+expiry: 2025-12-21 14:30:30.858036
+___________ ProfileViewsIntegrationTest.test_get_my_posts_pagination ___________
+profile/tests/test_profile_integration.py:303: in test_get_my_posts_pagination
+    Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:31.087403
+expiry: 2025-12-21 14:30:31.087403
+now: 2025-12-20 14:30:31.087523
+expiry: 2025-12-21 14:30:31.087523
+____________ ProfileViewsIntegrationTest.test_get_my_posts_success _____________
+profile/tests/test_profile_integration.py:277: in test_get_my_posts_success
+    Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:31.339053
+expiry: 2025-12-21 14:30:31.339053
+now: 2025-12-20 14:30:31.339177
+expiry: 2025-12-21 14:30:31.339177
+_________ ProfileViewsIntegrationTest.test_get_preference_tags_success _________
+profile/tests/test_profile_integration.py:398: in test_get_preference_tags_success
+    self.user.preference_tags.add(self.tag)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'User' object has no attribute 'preference_tags'
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:31.575492
+expiry: 2025-12-21 14:30:31.575492
+now: 2025-12-20 14:30:31.575654
+expiry: 2025-12-21 14:30:31.575654
+__________ ProfileViewsIntegrationTest.test_get_recent_posts_success ___________
+profile/tests/test_profile_integration.py:324: in test_get_recent_posts_success
+    Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:32.052736
+expiry: 2025-12-21 14:30:32.052736
+now: 2025-12-20 14:30:32.052865
+expiry: 2025-12-21 14:30:32.052865
+____ ProfileViewsIntegrationTest.test_get_recommended_dishes_no_preferences ____
+profile/tests/test_profile_integration.py:493: in test_get_recommended_dishes_no_preferences
+    self.assertEqual(response.data['code'], 404)
+                     ^^^^^^^^^^^^^
+E   AttributeError: 'HttpResponseNotFound' object has no attribute 'data'
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:32.306354
+expiry: 2025-12-21 14:30:32.306354
+now: 2025-12-20 14:30:32.306492
+expiry: 2025-12-21 14:30:32.306492
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/v1/profilerecommended-dishes/
+___ ProfileViewsIntegrationTest.test_get_recommended_dishes_with_preferences ___
+profile/tests/test_profile_integration.py:459: in test_get_recommended_dishes_with_preferences
+    self.user.preference_tags.add(self.tag)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'User' object has no attribute 'preference_tags'
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:32.468195
+expiry: 2025-12-21 14:30:32.468195
+now: 2025-12-20 14:30:32.468334
+expiry: 2025-12-21 14:30:32.468334
+______________ ProfileViewsIntegrationTest.test_get_stats_success ______________
+profile/tests/test_profile_integration.py:249: in test_get_stats_success
+    post = Post.objects.create(
+/usr/local/lib/python3.11/site-packages/django/db/models/manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/query.py:656: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/site-packages/django/db/models/base.py:543: in __init__
+    _setattr(self, field.name, rel_obj)
+/usr/local/lib/python3.11/site-packages/django/db/models/fields/related_descriptors.py:266: in __set__
+    raise ValueError(
+E   ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:32.633821
+expiry: 2025-12-21 14:30:32.633821
+now: 2025-12-20 14:30:32.633943
+expiry: 2025-12-21 14:30:32.633943
+____ ProfileViewsIntegrationTest.test_non_admin_cannot_get_pending_contents ____
+profile/tests/test_profile_integration.py:520: in test_non_admin_cannot_get_pending_contents
+    self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+E   AssertionError: 404 != 403
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:32.899533
+expiry: 2025-12-21 14:30:32.899533
+now: 2025-12-20 14:30:32.899702
+expiry: 2025-12-21 14:30:32.899702
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/v1/profilepending-contents/
+_________ ProfileViewsIntegrationTest.test_set_preference_tags_success _________
+profile/tests/test_profile_integration.py:423: in test_set_preference_tags_success
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 404 != 200
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:33.077993
+expiry: 2025-12-21 14:30:33.077993
+now: 2025-12-20 14:30:33.078138
+expiry: 2025-12-21 14:30:33.078138
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/v1/profilepreference-tags/
+_______ ProfileViewsIntegrationTest.test_update_password_missing_fields ________
+profile/tests/test_profile_integration.py:242: in test_update_password_missing_fields
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E   AssertionError: 404 != 400
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:33.254551
+expiry: 2025-12-21 14:30:33.254551
+now: 2025-12-20 14:30:33.254688
+expiry: 2025-12-21 14:30:33.254688
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/v1/profileupdate-password/
+_____ ProfileViewsIntegrationTest.test_update_password_passwords_not_match _____
+profile/tests/test_profile_integration.py:223: in test_update_password_passwords_not_match
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E   AssertionError: 404 != 400
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:33.446073
+expiry: 2025-12-21 14:30:33.446073
+now: 2025-12-20 14:30:33.446442
+expiry: 2025-12-21 14:30:33.446442
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/v1/profileupdate-password/
+___________ ProfileViewsIntegrationTest.test_update_password_success ___________
+profile/tests/test_profile_integration.py:185: in test_update_password_success
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 404 != 200
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:33.726629
+expiry: 2025-12-21 14:30:33.726629
+now: 2025-12-20 14:30:33.726766
+expiry: 2025-12-21 14:30:33.726766
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/v1/profileupdate-password/
+_____ ProfileViewsIntegrationTest.test_update_password_wrong_old_password ______
+profile/tests/test_profile_integration.py:204: in test_update_password_wrong_old_password
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E   AssertionError: 404 != 400
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:33.888271
+expiry: 2025-12-21 14:30:33.888271
+now: 2025-12-20 14:30:33.888403
+expiry: 2025-12-21 14:30:33.888403
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Not Found: /api/v1/profileupdate-password/
+_________ ProfileViewsIntegrationTest.test_update_profile_invalid_data _________
+profile/tests/test_profile_integration.py:167: in test_update_profile_invalid_data
+    self.assertIn(response.status_code, [200, 400])
+E   AssertionError: 405 not found in [200, 400]
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:34.049720
+expiry: 2025-12-21 14:30:34.049720
+now: 2025-12-20 14:30:34.049864
+expiry: 2025-12-21 14:30:34.049864
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Method Not Allowed: /api/v1/profile
+__________ ProfileViewsIntegrationTest.test_update_profile_no_changes __________
+profile/tests/test_profile_integration.py:147: in test_update_profile_no_changes
+    self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E   AssertionError: 405 != 400
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:34.210963
+expiry: 2025-12-21 14:30:34.210963
+now: 2025-12-20 14:30:34.211083
+expiry: 2025-12-21 14:30:34.211083
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Method Not Allowed: /api/v1/profile
+________ ProfileViewsIntegrationTest.test_update_profile_partial_update ________
+profile/tests/test_profile_integration.py:133: in test_update_profile_partial_update
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 405 != 200
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:34.374720
+expiry: 2025-12-21 14:30:34.374720
+now: 2025-12-20 14:30:34.374849
+expiry: 2025-12-21 14:30:34.374849
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Method Not Allowed: /api/v1/profile
+___________ ProfileViewsIntegrationTest.test_update_profile_success ____________
+profile/tests/test_profile_integration.py:109: in test_update_profile_success
+    self.assertEqual(response.status_code, status.HTTP_200_OK)
+E   AssertionError: 405 != 200
+----------------------------- Captured stdout call -----------------------------
+now: 2025-12-20 14:30:34.542997
+expiry: 2025-12-21 14:30:34.542997
+now: 2025-12-20 14:30:34.543138
+expiry: 2025-12-21 14:30:34.543138
+------------------------------ Captured log call -------------------------------
+WARNING  django.request:log.py:241 Method Not Allowed: /api/v1/profile
+____ ContentAuditServiceTest.test_call_deepseek_api_invalid_response_format ____
+utils/tests/test_audit.py:182: in test_call_deepseek_api_invalid_response_format
+    result = self.service._call_deepseek_api("测试提示")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+utils/audit.py:125: in _call_deepseek_api
+    content = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   IndexError: list index out of range
+_______ ContentAuditServiceTest.test_call_deepseek_api_request_exception _______
+utils/tests/test_audit.py:169: in test_call_deepseek_api_request_exception
+    result = self.service._call_deepseek_api("测试提示")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+utils/audit.py:121: in _call_deepseek_api
+    response = requests.post(url, headers=headers, json=data, timeout=30)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1124: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1128: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1183: in _execute_mock_call
+    raise effect
+E   Exception: 网络错误
+=============================== warnings summary ===============================
+list/tests/test_views.py::FoodCalendarViewsTest::test_get_food_calendar
+  /usr/local/lib/python3.11/site-packages/django/db/models/fields/__init__.py:1595: RuntimeWarning: DateTimeField DishCheckInRecord.checked_in_at received a naive datetime (2025-12-01 00:00:00) while time zone support is active.
+    warnings.warn(
+
+list/tests/test_views.py::FoodCalendarViewsTest::test_get_food_calendar
+  /usr/local/lib/python3.11/site-packages/django/db/models/fields/__init__.py:1595: RuntimeWarning: DateTimeField DishCheckInRecord.checked_in_at received a naive datetime (2025-12-31 23:59:59) while time zone support is active.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.11.14-final-0 _______________
+
+Name                             Stmts   Miss   Cover
+-----------------------------------------------------
+canteen/__init__.py                  0      0 100.00%
+canteen/admin.py                    17      6  64.71%
+canteen/apps.py                      5      0 100.00%
+canteen/controllers.py              56     47  16.07%
+canteen/models.py                   16      0 100.00%
+canteen/serializers.py              14      0 100.00%
+canteen/services.py                423    402   4.96%
+canteen/tests.py                     0      0 100.00%
+canteen/urls.py                      3      0 100.00%
+canteen/views.py                   110     69  37.27%
+list/__init__.py                     0      0 100.00%
+list/admin.py                       92     22  76.09%
+list/apps.py                         4      0 100.00%
+list/models.py                     145      4  97.24%
+list/serializers.py                191     34  82.20%
+list/urls.py                         4      0 100.00%
+list/views.py                      592    209  64.70%
+login/__init__.py                    0      0 100.00%
+login/admin.py                       8      0 100.00%
+login/apps.py                        4      0 100.00%
+login/controllers.py                32      6  81.25%
+login/models.py                      9      0 100.00%
+login/urls.py                        3      0 100.00%
+login/views.py                      73      9  87.67%
+post/__init__.py                     0      0 100.00%
+post/admin.py                       68     21  69.12%
+post/apps.py                         4      0 100.00%
+post/controllers.py                131    114  12.98%
+post/models.py                      68      0 100.00%
+post/serializers.py                145     62  57.24%
+post/tests.py                        1      0 100.00%
+post/urls.py                         3      0 100.00%
+post/views.py                      164    105  35.98%
+profile/__init__.py                  0      0 100.00%
+profile/admin.py                     1      0 100.00%
+profile/apps.py                      5      0 100.00%
+profile/controllers.py              26     23  11.54%
+profile/models.py                    1      0 100.00%
+profile/serializers.py             114     31  72.81%
+profile/tests.py                     1      0 100.00%
+profile/urls.py                      3      0 100.00%
+profile/views.py                   395    310  21.52%
+utils/__init__.py                    0      0 100.00%
+utils/audit.py                      69     12  82.61%
+utils/authentication.py             21      1  95.24%
+utils/jwt.py                        55      2  96.36%
+utils/register_params_check.py      18      2  88.89%
+-----------------------------------------------------
+TOTAL                             3094   1491  51.81%
+Coverage HTML written to dir /reports/backend-coverage-html
+Coverage XML written to file /reports/backend-coverage.xml
+=========================== short test summary info ============================
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_failure - AssertionError: 404 != 500
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_invalid_data - AssertionError: 404 != 400
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_success - AssertionError: 404 != 200
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_unauthorized - AssertionError: 404 != 401
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_bind_idserial_without_idserial - AssertionError: 404 != 200
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_get_consumption_no_data - AttributeError: 'HttpResponseNotFound' object has no attribute 'data'
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_get_consumption_success - ValueError: Cannot assign "<User: testuser>": "CanteenConsumption.user" must be a "User" instance.
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_get_consumption_unauthorized - AssertionError: 404 != 401
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_refresh_consumption_not_bound - AssertionError: 404 != 400
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_refresh_consumption_success - ValueError: Cannot assign "<User: testuser>": "CanteenConsumption.user" must be a "User" instance.
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_refresh_consumption_with_cookie - ValueError: Cannot assign "<User: testuser>": "CanteenConsumption.user" must be a "User" instance.
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_unbind_consumption_not_bound - AssertionError: 404 != 400
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_unbind_consumption_success - ValueError: Cannot assign "<User: testuser>": "CanteenConsumption.user" must be a "User" instance.
+FAILED canteen/tests/test_canteen_integration.py::CanteenViewsIntegrationTest::test_unbind_consumption_unauthorized - AssertionError: 404 != 401
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_create_review_success - AssertionError: 400 != 201
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_delete_review_success - TypeError: Review() got unexpected keyword arguments: 'score'
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_canteen_detail - KeyError: 'name'
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_dish_list - TypeError: list indices must be integers or slices, not str
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_food_calendar - TypeError: UserDishHistory() got unexpected keyword arguments: 'action_type', 'created_at'
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_reviews_list - TypeError: Review() got unexpected keyword arguments: 'score'
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_user_achievements - TypeError: DishCheckInRecord() got unexpected keyword arguments: 'check_in_date'
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_user_dish_history - TypeError: UserDishHistory() got unexpected keyword arguments: 'action_type'
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_get_user_dish_stats - TypeError: DishCheckInRecord() got unexpected keyword arguments: 'check_in_date'
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_like_review_success - TypeError: Review() got unexpected keyword arguments: 'score'
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_rate_dish_success - AssertionError: 400 != 200
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_rate_dish_unauthorized - AssertionError: 403 != 401
+FAILED list/tests/test_list_integration.py::ListViewsIntegrationTest::test_update_review_success - TypeError: Review() got unexpected keyword arguments: 'score'
+FAILED list/tests/test_serializers.py::SerializerFieldTest::test_dish_serializer_calculated_fields - django.db.utils.IntegrityError: UNIQUE constraint failed: list_rating.user_id, list_rating.dish_id
+FAILED list/tests/test_views.py::RatingViewsTest::test_rate_dish_unauthorized - AssertionError: 403 != 401
+FAILED list/tests/test_views.py::RatingViewsTest::test_rate_dish_updates_average - AssertionError: 0.0 != 4.5
+FAILED list/tests/test_views.py::ReviewViewsTest::test_admin_can_delete_any_review - AssertionError: 404 != 200
+FAILED list/tests/test_views.py::ReviewViewsTest::test_cannot_update_others_review - AssertionError: 404 != 403
+FAILED list/tests/test_views.py::ReviewViewsTest::test_create_review_success - AssertionError: 404 != 201
+FAILED list/tests/test_views.py::ReviewViewsTest::test_create_review_with_rating - AssertionError: 404 != 201
+FAILED list/tests/test_views.py::ReviewViewsTest::test_delete_own_review - AssertionError: 404 != 200
+FAILED list/tests/test_views.py::ReviewViewsTest::test_get_review_list - AssertionError: 404 != 200
+FAILED list/tests/test_views.py::ReviewViewsTest::test_prevent_duplicate_review - AssertionError: 404 != 400
+FAILED list/tests/test_views.py::ReviewViewsTest::test_update_own_review - AssertionError: 404 != 200
+FAILED list/tests/test_views.py::LikeReviewViewsTest::test_unlike_review_success - AssertionError: True is not false
+FAILED list/tests/test_views.py::UserDishHistoryViewsTest::test_get_user_dish_history - AssertionError: 4 != 2
+FAILED list/tests/test_views.py::UserDishHistoryViewsTest::test_get_user_dish_history_filter_by_level - AssertionError: 4 != 1
+FAILED list/tests/test_views.py::TagManagementViewsTest::test_add_tag_as_regular_user - AssertionError: '审核' not found in '标签添加成功'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_get_user_info_authenticated - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_get_user_info_by_id - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_get_user_info_unauthenticated - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_login_failure - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_login_missing_fields - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_login_success - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_logout_success - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_logout_unauthenticated - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_register_user_duplicate_username - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_register_user_invalid_email - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_register_user_missing_fields - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED login/tests/test_login_integration.py::LoginViewsIntegrationTest::test_register_user_success - TypeError: User() got unexpected keyword arguments: 'email', 'mobile'
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_admin_can_delete_any_post - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_admin_can_update_any_post - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_cannot_update_others_post - ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_create_post_missing_required_fields - AssertionError: 404 != 400
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_create_post_success - AssertionError: 404 != 201
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_create_post_unauthorized - AssertionError: 404 != 401
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_delete_own_post - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_get_post_detail - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_get_posts_list - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_like_post - ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_unlike_post - ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::PostViewsIntegrationTest::test_update_own_post - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_create_comment_success - ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_delete_own_comment - ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_get_comments_list - ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_reply_to_comment - ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+FAILED post/tests/test_post_integration.py::CommentViewsIntegrationTest::test_update_own_comment - ValueError: Cannot assign "<User: otheruser>": "Post.author" must be a "User" instance.
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_add_preference_tags_success - AttributeError: 'User' object has no attribute 'preference_tags'
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_admin_audit_content_approve_post - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_admin_audit_content_reject_review - AssertionError: 404 != 200
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_admin_get_pending_contents - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_liked_posts_success - ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_my_comments_success - ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_my_posts_pagination - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_my_posts_success - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_preference_tags_success - AttributeError: 'User' object has no attribute 'preference_tags'
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_recent_posts_success - ValueError: Cannot assign "<User: testuser>": "Post.author" must be a "User" instance.
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_recommended_dishes_no_preferences - AttributeError: 'HttpResponseNotFound' object has no attribute 'data'
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_recommended_dishes_with_preferences - AttributeError: 'User' object has no attribute 'preference_tags'
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_get_stats_success - ValueError: Cannot assign "<User: admin>": "Post.author" must be a "User" instance.
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_non_admin_cannot_get_pending_contents - AssertionError: 404 != 403
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_set_preference_tags_success - AssertionError: 404 != 200
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_password_missing_fields - AssertionError: 404 != 400
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_password_passwords_not_match - AssertionError: 404 != 400
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_password_success - AssertionError: 404 != 200
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_password_wrong_old_password - AssertionError: 404 != 400
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_profile_invalid_data - AssertionError: 405 not found in [200, 400]
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_profile_no_changes - AssertionError: 405 != 400
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_profile_partial_update - AssertionError: 405 != 200
+FAILED profile/tests/test_profile_integration.py::ProfileViewsIntegrationTest::test_update_profile_success - AssertionError: 405 != 200
+FAILED utils/tests/test_audit.py::ContentAuditServiceTest::test_call_deepseek_api_invalid_response_format - IndexError: list index out of range
+FAILED utils/tests/test_audit.py::ContentAuditServiceTest::test_call_deepseek_api_request_exception - Exception: 网络错误
+============ 96 failed, 179 passed, 2 warnings in 68.69s (0:01:08) =============
