@@ -36,6 +36,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { register, login } from '@/api/listApi';
+import { getProfileSections } from '@/api/profile';
 import PageContainer from '@/components/ui/PageContainer.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
 import { ElMessageBox } from 'element-plus'
@@ -102,7 +103,14 @@ const onRegister = async () => {
     console.log('✅ 注册成功，用户信息已保存到 localStorage:', userInfo)
     
     window.$message?.success?.('注册成功，已为你登录')
-    router.push('/onboarding/tags');
+    try {
+      const prof = await getProfileSections()
+      const tags = prof?.user?.preference_tags || []
+      if (Array.isArray(tags) && tags.length === 0) {
+        return router.push('/onboarding/tags')
+      }
+    } catch (_) { /* 忽略错误，继续进入个人主页 */ }
+    router.push('/profile');
   } catch (err) {
     // 提取后端错误
     const data = err?.response?.data || {}

@@ -1,16 +1,33 @@
 <template>
   <div class="control-panel">
-    <button class="btn logout" @click="onLogout">登出账号</button>
+    <button v-if="isAuthed" class="btn logout" @click="onLogout">登出账号</button>
     <!-- 未来可在此添加更多控制按钮 -->
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/api/request'
 
 const router = useRouter()
 const emit = defineEmits(['logged-out'])
+
+const isAuthed = ref(!!localStorage.getItem('jwt'))
+
+onMounted(() => {
+  const onStorage = (e) => {
+    if (e.key === 'jwt') isAuthed.value = !!e.newValue
+  }
+  window.addEventListener('storage', onStorage)
+  // store reference for cleanup
+  ;(isAuthed)._onStorage = onStorage
+})
+onUnmounted(() => {
+  try {
+    window.removeEventListener('storage', (isAuthed)._onStorage)
+  } catch (e) {}
+})
 
 const onLogout = async () => {
   try {
@@ -26,6 +43,9 @@ const onLogout = async () => {
   try { localStorage.removeItem('userInfo') } catch (e) { /* ignore */ }
   console.log('✅ 已清除本地用户信息')
 
+  // 更新本地状态，隐藏按钮
+  try { isAuthed.value = false } catch (e) { /* ignore */ }
+
   // 通知父组件已登出
   emit('logged-out')
 
@@ -35,7 +55,22 @@ const onLogout = async () => {
 </script>
 
 <style scoped>
-.control-panel { display: flex; gap: 0.75rem; margin-top: 1rem; }
-.btn { padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid rgba(0,0,0,0.08); background: #fff; cursor: pointer }
+.control-panel {
+  display: flex;
+  gap: 0.75rem;
+  /* 在 profile-wrap 内右下角对齐消费记录/推荐区 */
+  position: absolute;
+  right: 28px;
+  bottom: 18px;
+  z-index: 1200;
+}
+.btn {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
 .logout { color: #c00 }
 </style>

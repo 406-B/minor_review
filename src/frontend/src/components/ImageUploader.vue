@@ -185,8 +185,8 @@ function removeImage(index) {
 
 .upload-box:hover,
 .upload-box-empty:hover {
-	border-color: #409eff;
-	background: #ecf5ff;
+	border-color: var(--color-accent);
+	background: var(--color-accent-weak);
 }
 
 .upload-icon {

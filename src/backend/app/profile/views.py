@@ -917,8 +917,14 @@ def get_recommended_dishes(request):
     推荐逻辑：
     1. 匹配用户偏好标签的菜品
     2. 优先级：标签匹配度 > 评分 > 热度(view_count)
+
+    支持综合推荐模式（mode=mix）：
+    - 将热度推荐和tag推荐各取0.5系数进行融合
     """
     user = request.user
+
+    # 获取推荐模式参数
+    mode = request.GET.get('mode', 'pref')  # 'pref': 按偏好推荐, 'mix': 综合推荐
 
     # 获取用户偏好标签
     user_tags = user.preference_tags.all()
@@ -934,21 +940,75 @@ def get_recommended_dishes(request):
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
 
-    # 查询包含用户偏好标签的菜品
-    dishes = Dish.objects.filter(
-        tags__in=user_tags
-    ).annotate(
-        matched_tags_count=Count('tags', filter=Q(tags__in=user_tags))
-    ).distinct().select_related('canteen')
+    if mode == 'mix':
+        # 综合推荐模式：热度推荐和tag推荐各取0.5系数
+        # 1. 获取热度推荐（按view_count和rating排序）
+        hot_dishes = Dish.objects.all().order_by('-view_count', '-rating')
+        hot_limit = min(100, hot_dishes.count())  # 取前100个热门菜品
+        hot_dishes_list = list(hot_dishes[:hot_limit])
 
-    # 按标签匹配度 + 评分 + 热度排序
-    dishes = dishes.order_by('-matched_tags_count', '-rating', '-view_count')
+        # 2. 获取tag推荐（按标签匹配度排序）
+        tag_dishes = Dish.objects.filter(
+            tags__in=user_tags
+        ).annotate(
+            matched_tags_count=Count('tags', filter=Q(tags__in=user_tags))
+        ).distinct().select_related('canteen').order_by('-matched_tags_count', '-rating', '-view_count')
+        tag_limit = min(100, tag_dishes.count())  # 取前100个tag匹配菜品
+        tag_dishes_list = list(tag_dishes[:tag_limit])
 
-    # 分页
-    total = dishes.count()
-    start = (page - 1) * page_size
-    end = start + page_size
-    dishes = dishes[start:end]
+        # 3. 创建菜品ID到排名的映射（归一化分数）
+        hot_scores = {}
+        tag_scores = {}
+
+        # 热度推荐分数：排名越靠前分数越高（归一化到0-1）
+        for idx, dish in enumerate(hot_dishes_list):
+            # 使用倒数排名，第一名得1分，最后一名接近0分
+            hot_scores[dish.id] = 1.0 - (idx / max(len(hot_dishes_list), 1))
+
+        # Tag推荐分数：排名越靠前分数越高（归一化到0-1）
+        for idx, dish in enumerate(tag_dishes_list):
+            tag_scores[dish.id] = 1.0 - (idx / max(len(tag_dishes_list), 1))
+
+        # 4. 合并所有菜品并计算综合分数
+        all_dish_ids = set(hot_scores.keys()) | set(tag_scores.keys())
+        dish_scores = {}
+
+        for dish_id in all_dish_ids:
+            hot_score = hot_scores.get(dish_id, 0.0)
+            tag_score = tag_scores.get(dish_id, 0.0)
+            # 综合分数 = 0.5 * 热度分数 + 0.5 * Tag分数
+            dish_scores[dish_id] = 0.5 * hot_score + 0.5 * tag_score
+
+        # 5. 获取所有菜品并按综合分数排序
+        dishes_queryset = Dish.objects.filter(id__in=all_dish_ids).select_related('canteen')
+        dishes_list = list(dishes_queryset)
+
+        # 按综合分数排序
+        dishes_list.sort(key=lambda d: dish_scores.get(d.id, 0.0), reverse=True)
+
+        # 6. 分页
+        total = len(dishes_list)
+        start = (page - 1) * page_size
+        end = start + page_size
+        dishes = dishes_list[start:end]
+
+    else:
+        # 按偏好推荐模式（原有逻辑）
+        # 查询包含用户偏好标签的菜品
+        dishes = Dish.objects.filter(
+            tags__in=user_tags
+        ).annotate(
+            matched_tags_count=Count('tags', filter=Q(tags__in=user_tags))
+        ).distinct().select_related('canteen')
+
+        # 按标签匹配度 + 评分 + 热度排序
+        dishes = dishes.order_by('-matched_tags_count', '-rating', '-view_count')
+
+        # 分页
+        total = dishes.count()
+        start = (page - 1) * page_size
+        end = start + page_size
+        dishes = dishes[start:end]
 
     # 序列化
     dish_serializer = DishListSerializer(dishes, many=True)
@@ -962,7 +1022,8 @@ def get_recommended_dishes(request):
             'total': total,
             'page': page,
             'page_size': page_size,
-            'user_tags': tag_serializer.data
+            'user_tags': tag_serializer.data,
+            'mode': mode
         }
     }, status=status.HTTP_200_OK)
 

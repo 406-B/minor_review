@@ -3,7 +3,7 @@
 		<div class="sidebar-search">
 			<el-input
 				v-model="searchText"
-				placeholder="搜索菜品/标签/价格"
+				placeholder="搜索菜品名"
 				size="small"
 				@keyup.enter="goSearch"
 				clearable
@@ -54,12 +54,9 @@ function handleSelect(key) {
 	emit('update:active-canteen', String(key))
 }
 function goSearch() {
-	if (searchText.value.trim()) {
-		router.push({ name: 'DishSearch', query: { q: searchText.value.trim() } })
-		searchText.value = ''
-	} else {
-		router.push({ name: 'DishSearch' })
-	}
+	const q = searchText.value.trim()
+	router.push(q ? { name: 'DishSearch', query: { q } } : { name: 'DishSearch' })
+	searchText.value = ''
 }
 </script>
 

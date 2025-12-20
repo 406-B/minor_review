@@ -268,7 +268,7 @@ const handleSubmit = async () => {
   height: 18px;
   margin-right: 10px;
   cursor: pointer;
-  accent-color: #409EFF;
+  accent-color: var(--color-accent);
 }
 
 .checkbox-item span {
@@ -292,7 +292,7 @@ textarea {
 
 textarea:focus {
   outline: none;
-  border-color: #409EFF;
+  border-color: var(--color-accent);
 }
 
 textarea.is-required {
