@@ -1,6 +1,5 @@
 // 受限路由与权限常量（仅前端 UX 层使用，后端仍做最终鉴权）
 export const PROTECTED_PATHS = [
-  '/profile',
   '/community',
   '/community/create',
 ]
