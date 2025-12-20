@@ -16,6 +16,11 @@ echo "=========================================="
 echo "Starting E2E Test Environment"
 echo "=========================================="
 
+# 预检查：清理可能的冲突
+echo "Running pre-check and cleanup..."
+bash "$(dirname "$0")/e2e_precheck.sh" || true
+
+echo ""
 echo "Building and bringing up services..."
 sudo docker compose $COMPOSE_FILES up -d --build db redis backend frontend nginx
 
