@@ -2,9 +2,9 @@
   <div class="app-top-bar">
     <div class="title" @click="safeGo('/')">小众点评</div>
     <nav class="nav" aria-label="主导航">
-  <span v-if="isAuthed" class="item" :class="{ active: isActive('/profile') }" @click="safeGo('/profile')">个人主页</span>
+  <span class="item" :class="{ active: isActive('/profile') }" @click="safeGo('/profile')">个人主页</span>
       <span class="item" :class="{ active: isActive('/canteen') }" @click="safeGo('/canteen')">食堂浏览</span>
-      <span v-if="isAuthed" class="item" :class="{ active: isActive('/community') }" @click="safeGo('/community')">美食论坛</span>
+      <span class="item" :class="{ active: isActive('/community') }" @click="safeGo('/community')">美食论坛</span>
     </nav>
     <template v-if="!isAuthed">
       <div class="unauth-wrap">
@@ -29,11 +29,7 @@ const isActive = (path) => route.path.startsWith(path)
 const isAuthed = computed(() => !!localStorage.getItem('jwt'))
 
 function safeGo(path) {
-  if (!isAuthed.value && isProtectedPath(path)) {
-    // 未登录跳 profile 或社区 → 去 login
-    window.$message?.warning?.('请先登录')
-    return go('/login')
-  }
+  // 允许未登录用户访问页面（页面内自行决定是否遮罩或限制交互）
   go(path)
 }
 </script>
