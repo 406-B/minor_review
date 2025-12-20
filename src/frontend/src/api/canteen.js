@@ -12,7 +12,7 @@ const BASE_URL = '/v1/canteen'
 export const getConsumption = async () => {
   try {
     const response = await request.get(`${BASE_URL}/consumption/`)
-    return response.data
+    return response
   } catch (err) {
     throw err
   }
@@ -34,7 +34,7 @@ export const bindAccount = async (idserial = null, browserType = 'chrome') => {
     const response = await request.post(`${BASE_URL}/bind/`, data, {
       timeout: 300000 // 5分钟 = 300秒 = 300000毫秒
     })
-    return response.data
+    return response
   } catch (err) {
     throw err
   }
@@ -59,7 +59,7 @@ export const refreshConsumption = async (servicehall = null, browserType = 'chro
     const response = await request.post(`${BASE_URL}/refresh/`, data, {
       timeout: 300000 // 5分钟
     })
-    return response.data
+    return response
   } catch (err) {
     throw err
   }
@@ -72,7 +72,84 @@ export const refreshConsumption = async (servicehall = null, browserType = 'chro
 export const unbindAccount = async () => {
   try {
     const response = await request.delete(`${BASE_URL}/unbind/`)
-    return response.data
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 启动自动登录流程
+ * @param {string} username - 学号
+ * @param {string} password - 密码
+ * @param {string} browserType - 浏览器类型 (chrome/firefox/edge)
+ * @param {boolean} headless - 是否使用无头模式
+ * @returns {Promise}
+ */
+export const startAutoLogin = async (username, password, browserType = 'chrome', headless = true) => {
+  try {
+    // 该接口可能会触发后端打开浏览器并等待用户操作，可能耗时较长，增加超时时间到5分钟
+    const response = await request.post(`${BASE_URL}/auto-login/start/`, {
+      idserial: username,
+      password,
+      browser_type: browserType,
+      headless
+    }, {
+      timeout: 300000 // 5分钟
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 提交验证码
+ * @param {string} sessionId - 会话 ID
+ * @param {string} verificationCode - 验证码
+ * @returns {Promise}
+ */
+export const submitVerificationCode = async (sessionId, verificationCode) => {
+  try {
+    const response = await request.post(`${BASE_URL}/auto-login/submit-code/`, {
+      session_id: sessionId,
+      verification_code: verificationCode
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 查询登录状态
+ * @param {string} sessionId - 会话 ID
+ * @returns {Promise}
+ */
+export const checkLoginStatus = async (sessionId) => {
+  try {
+    const response = await request.get(`${BASE_URL}/auto-login/status/`, {
+      params: { session_id: sessionId }
+    })
+    return response
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * 使用 Cookie 获取消费数据
+ * @param {string} idserial - 学号
+ * @param {string} servicehall - servicehall cookie
+ * @returns {Promise}
+ */
+export const fetchWithCookie = async (idserial, servicehall) => {
+  try {
+    const response = await request.post(`${BASE_URL}/fetch-with-cookie/`, {
+      idserial,
+      servicehall
+    })
+    return response  // 已经被拦截器解包过了，直接返回
   } catch (err) {
     throw err
   }

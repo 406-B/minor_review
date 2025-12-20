@@ -29,6 +29,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { login } from '@/api/listApi';
+import { getProfileSections } from '@/api/profile';
 import PageContainer from '@/components/ui/PageContainer.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
 
@@ -53,7 +54,14 @@ const onLogin = async () => {
     localStorage.setItem('userInfo', JSON.stringify(userInfo));
     console.log('✅ 用户信息已保存到 localStorage:', userInfo);
     
-    router.push('/home');
+    try {
+      const prof = await getProfileSections();
+      const tags = prof?.user?.preference_tags || [];
+      if (Array.isArray(tags) && tags.length === 0) {
+        return router.push('/onboarding/tags');
+      }
+    } catch (_) { /* 忽略拉取资料失败，继续进入个人主页 */ }
+    router.push('/profile');
   } catch (err) {
     console.error('login error', err); // 调试：错误信息
     const msg = err.response?.data?.message;
