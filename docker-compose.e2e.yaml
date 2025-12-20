@@ -8,12 +8,12 @@ services:
     working_dir: /e2e
     environment:
       # 在容器内指向 nginx 服务（compose 网络内服务名）
-      CYPRESS_BASE_URL: http://nginx_e2e
+      CYPRESS_BASE_URL: http://nginx:80
     volumes:
       - ./:/e2e:cached
-      - /tmp/.X11-unix:/tmp/.X11-unix:ro
     depends_on:
-      - nginx
+      nginx:
+        condition: service_healthy
     networks:
       - nginx_network
     entrypoint: ["/bin/sh", "-c"]
@@ -32,12 +32,18 @@ services:
       - "33307:3306" # avoid collision with production mapping
     volumes:
       - minor_review_mysql_data_e2e:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./init_e2e.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - backend_network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pdatabase"]
       interval: 10s
       timeout: 5s
       retries: 5
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
 
   # Redis cache for E2E (isolate from any production cache)
   redis:
@@ -47,6 +53,13 @@ services:
       - "6380:6379"
     volumes:
       - minor_review_redis_data_e2e:/data
+    networks:
+      - backend_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Override backend env to point at E2E DB/Redis (these keys merge with base compose)
   backend:
@@ -59,18 +72,31 @@ services:
       MYSQL_PASSWORD: database
       REDIS_HOST: redis
       REDIS_PORT: 6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - backend_network
+      - nginx_network
 
   # Ensure nginx upstream points to backend service name inside compose network
   nginx:
     container_name: minor_review_nginx_e2e
+    ports:
+      - "8081:80"  # 使用不同端口避免与生产环境的 80 端口冲突
+      - "8443:443"
     environment:
       UPSTREAM_HOST: backend
       UPSTREAM_PORT: 8000
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
     networks:
       - nginx_network
-      - backend_network
 
   # Frontend override to avoid name conflicts
   frontend:
