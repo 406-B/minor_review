@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # Cypress 测试容器，基于官方包含版镜像
+  cypress:
+    image: cypress/included:13.6.0
+    container_name: minor_review_cypress
+    working_dir: /e2e
+    environment:
+      # 在容器内指向 nginx 服务（compose 网络内服务名）
+      CYPRESS_BASE_URL: http://nginx
+    volumes:
+      - ./:/e2e:cached
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    depends_on:
+      - nginx
+    entrypoint: ["/bin/sh", "-c"]
+    command: "npx cypress run"
+
+  # E2E isolated stateful services (same images as production, separate volumes/ports)
+  db:
+    image: mysql:8.0
+    container_name: minor_review_db_e2e
+    environment:
+      MYSQL_ROOT_PASSWORD: database
+      MYSQL_DATABASE: minor_review_e2e
+      MYSQL_USER: root
+      MYSQL_PASSWORD: database
+    ports:
+      - "33307:3306" # avoid collision with production mapping
+    volumes:
+      - minor_review_mysql_data_e2e:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pdatabase"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis cache for E2E (isolate from any production cache)
+  redis:
+    image: redis:6.2
+    container_name: minor_review_redis_e2e
+    ports:
+      - "6380:6379"
+    volumes:
+      - minor_review_redis_data_e2e:/data
+
+  # Override backend env to point at E2E DB/Redis (these keys merge with base compose)
+  backend:
+    environment:
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minor_review_e2e
+      MYSQL_USER: root
+      MYSQL_PASSWORD: database
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  # Ensure nginx upstream points to backend service name inside compose network
+  nginx:
+    environment:
+      UPSTREAM_HOST: backend
+      UPSTREAM_PORT: 8000
+
+volumes:
+  minor_review_mysql_data_e2e:
+    name: minor_review_mysql_data_e2e
+  minor_review_redis_data_e2e:
+    name: minor_review_redis_data_e2e
