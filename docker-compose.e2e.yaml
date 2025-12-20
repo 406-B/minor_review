@@ -4,16 +4,18 @@ services:
   # Cypress 测试容器，基于官方包含版镜像
   cypress:
     image: cypress/included:13.6.0
-    container_name: minor_review_cypress
+    container_name: minor_review_cypress_e2e
     working_dir: /e2e
     environment:
       # 在容器内指向 nginx 服务（compose 网络内服务名）
-      CYPRESS_BASE_URL: http://nginx
+      CYPRESS_BASE_URL: http://nginx_e2e
     volumes:
       - ./:/e2e:cached
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
     depends_on:
       - nginx
+    networks:
+      - nginx_network
     entrypoint: ["/bin/sh", "-c"]
     command: "npx cypress run"
 
@@ -48,6 +50,7 @@ services:
 
   # Override backend env to point at E2E DB/Redis (these keys merge with base compose)
   backend:
+    container_name: minor_review_backend_e2e
     environment:
       MYSQL_HOST: db
       MYSQL_PORT: 3306
@@ -56,15 +59,37 @@ services:
       MYSQL_PASSWORD: database
       REDIS_HOST: redis
       REDIS_PORT: 6379
+    networks:
+      - backend_network
 
   # Ensure nginx upstream points to backend service name inside compose network
   nginx:
+    container_name: minor_review_nginx_e2e
     environment:
       UPSTREAM_HOST: backend
       UPSTREAM_PORT: 8000
+    networks:
+      - nginx_network
+      - backend_network
+
+  # Frontend override to avoid name conflicts
+  frontend:
+    container_name: minor_review_frontend_e2e
+    networks:
+      - nginx_network
 
 volumes:
   minor_review_mysql_data_e2e:
     name: minor_review_mysql_data_e2e
   minor_review_redis_data_e2e:
     name: minor_review_redis_data_e2e
+  minor_review_media_e2e:
+    name: minor_review_media_e2e
+  minor_review_static_e2e:
+    name: minor_review_static_e2e
+
+networks:
+  nginx_network:
+    name: minor_review_nginx_net_e2e
+  backend_network:
+    name: minor_review_backend_net_e2e
