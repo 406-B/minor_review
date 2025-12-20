@@ -1,0 +1,89 @@
+{
+  "posts": [
+    {
+      "id": 1,
+      "title": "食堂新菜品推荐",
+      "content": "今天在第一食堂发现了一道新菜，味道超级棒！强烈推荐给大家。",
+      "authorId": 1,
+      "authorName": "alice",
+      "authorAvatar": "/avatars/alice.jpg",
+      "category": "美食推荐",
+      "likes": 25,
+      "comments": 8,
+      "views": 156,
+      "createdAt": "2024-01-15T09:00:00Z",
+      "updatedAt": "2024-01-15T09:00:00Z",
+      "tags": ["美食", "推荐", "第一食堂"]
+    },
+    {
+      "id": 2,
+      "title": "如何在食堂吃得健康又美味",
+      "content": "分享一些我在食堂的饮食经验，希望对大家有帮助...",
+      "authorId": 2,
+      "authorName": "bob",
+      "authorAvatar": "/avatars/bob.jpg",
+      "category": "生活分享",
+      "likes": 42,
+      "comments": 15,
+      "views": 289,
+      "createdAt": "2024-01-14T14:30:00Z",
+      "updatedAt": "2024-01-14T14:30:00Z",
+      "tags": ["健康", "饮食", "经验分享"]
+    },
+    {
+      "id": 3,
+      "title": "第二食堂麻辣烫测评",
+      "content": "今天去尝试了第二食堂的麻辣烫，给大家做个详细的测评...",
+      "authorId": 1,
+      "authorName": "alice",
+      "authorAvatar": "/avatars/alice.jpg",
+      "category": "美食测评",
+      "likes": 38,
+      "comments": 12,
+      "views": 234,
+      "createdAt": "2024-01-13T11:00:00Z",
+      "updatedAt": "2024-01-13T11:00:00Z",
+      "tags": ["测评", "麻辣烫", "第二食堂"],
+      "images": ["/images/posts/malatang-1.jpg", "/images/posts/malatang-2.jpg"]
+    }
+  ],
+  "comments": [
+    {
+      "id": 1,
+      "postId": 1,
+      "userId": 2,
+      "username": "bob",
+      "userAvatar": "/avatars/bob.jpg",
+      "content": "看起来不错，我明天去试试！",
+      "likes": 5,
+      "createdAt": "2024-01-15T10:15:00Z",
+      "replies": []
+    },
+    {
+      "id": 2,
+      "postId": 1,
+      "userId": 3,
+      "username": "charlie",
+      "userAvatar": "/avatars/charlie.jpg",
+      "content": "请问是哪个窗口呀？",
+      "likes": 2,
+      "createdAt": "2024-01-15T11:30:00Z",
+      "replies": [
+        {
+          "id": 3,
+          "userId": 1,
+          "username": "alice",
+          "content": "在二楼最右边的窗口",
+          "createdAt": "2024-01-15T12:00:00Z"
+        }
+      ]
+    }
+  ],
+  "categories": [
+    { "id": 1, "name": "美食推荐", "count": 245 },
+    { "id": 2, "name": "美食测评", "count": 189 },
+    { "id": 3, "name": "生活分享", "count": 156 },
+    { "id": 4, "name": "求助提问", "count": 98 },
+    { "id": 5, "name": "闲聊灌水", "count": 312 }
+  ]
+}
