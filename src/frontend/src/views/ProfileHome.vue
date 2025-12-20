@@ -3,7 +3,17 @@
     <template #header>
       <AppTopBar />
     </template>
-    <ProfileInfo :user="user" />
+    <div class="profile-wrap">
+      <div class="profile-header">
+        <!-- personal info card: always visible; when not authed show hint text on this card -->
+        <div class="profile-info-card">
+          <ProfileInfo v-if="isAuthed" :user="user" />
+          <div v-else class="profile-info-placeholder">
+            <div class="placeholder-title">个人主页</div>
+            <div class="placeholder-text">登录以体验更多个性化内容，和社区成员一同探索美食世界！</div>
+          </div>
+        </div>
+      </div>
 
     <!-- 偏好标签展示 -->
     <div class="pref-tags" v-if="user && user.preference_tags">
@@ -21,13 +31,18 @@
     </div>
 
     <!-- 美食日历 -->
+    
+      <!-- blur overlay will be injected at end of profile-wrap -->
     <div class="col full-width">
       <SectionCard class="equal-card" title="美食日历">
         <template #actions>
-          <button class="link" @click.prevent="viewFullCalendar">查看完整日历</button>
+            <button v-if="isAuthed" class="link" @click.prevent="viewFullCalendar">查看完整日历</button>
         </template>
         <template #content>
-          <FoodCalendar :days="7" />
+          <div class="card-content-wrap">
+            <FoodCalendar :days="7" />
+            <div v-if="!isAuthed" class="component-overlay"><div class="overlay-label">登录后查看详细内容</div></div>
+          </div>
         </template>
       </SectionCard>
     </div>
@@ -37,12 +52,15 @@
       <div class="col left">
         <SectionCard class="equal-card" title="已发布内容">
           <template #actions>
-            <button class="link" @click.prevent="viewAllPublished">查看全部</button>
+            <button v-if="isAuthed" class="link" @click.prevent="viewAllPublished">查看全部</button>
           </template>
           <template #content>
-            <div class="posts">
-              <PostItem v-for="p in published" :key="p.id" :post="p" :showStats="false" />
-              <p v-if="!published || published.length === 0" class="empty">暂无已发布内容</p>
+            <div class="card-content-wrap">
+              <div class="posts">
+                <PostItem v-for="p in published" :key="p.id" :post="p" :showStats="false" />
+                <p v-if="!published || published.length === 0" class="empty">暂无已发布内容</p>
+              </div>
+              <div v-if="!isAuthed" class="component-overlay"><div class="overlay-label">登录后查看详细内容</div></div>
             </div>
           </template>
         </SectionCard>
@@ -51,17 +69,20 @@
       <div class="col right">
         <SectionCard class="equal-card" title="我的互动">
           <template #content>
-            <div class="interactions">
-              <InteractionStat
-                v-for="(it, i) in interactions"
-                :key="i"
-                :name="it.name"
-                :count="it.count"
-                :to="it.to"
-                @navigate="onNavigate"
-              />
+            <div class="card-content-wrap">
+              <div class="interactions">
+                <InteractionStat
+                  v-for="(it, i) in interactions"
+                  :key="i"
+                  :name="it.name"
+                  :count="it.count"
+                  :to="it.to"
+                  @navigate="onNavigate"
+                ></InteractionStat>
+              </div>
+              <p v-if="loading" class="hint">加载中...</p>
+              <div v-if="!isAuthed" class="component-overlay"><div class="overlay-label">登录后查看详细内容</div></div>
             </div>
-            <p v-if="loading" class="hint">加载中...</p>
           </template>
         </SectionCard>
       </div>
@@ -72,10 +93,11 @@
       <div class="col">
         <SectionCard class="equal-card" title="我的成就">
           <template #actions>
-            <button class="link" @click.prevent="openAllAchievements">查看全部</button>
+            <button v-if="isAuthed" class="link" @click.prevent="openAllAchievements">查看全部</button>
           </template>
           <template #content>
-            <div class="achi-cards">
+            <div class="card-content-wrap">
+              <div class="achi-cards">
               <div class="achi-card bronze" @click="goAchievements('bronze')">
                 <div class="icon" aria-hidden="true">🥉</div>
                 <div class="achi-stack">
@@ -104,6 +126,8 @@
                   <div class="achi-label">院士</div>
                 </div>
               </div>
+              </div>
+              <div v-if="!isAuthed" class="component-overlay"><div class="overlay-label">登录后查看详细内容</div></div>
             </div>
           </template>
         </SectionCard>
@@ -113,22 +137,23 @@
       <div class="col">
         <SectionCard class="equal-card" title="个性化推荐">
           <template #actions>
-            <el-select v-model="recoSource" size="small" style="width: 120px; margin-right: 8px">
+            <el-select v-if="isAuthed" v-model="recoSource" size="small" style="width: 120px; margin-right: 8px">
               <el-option label="综合" value="mix" />
               <el-option label="偏好" value="pref" />
               <el-option label="热度" value="hot" />
             </el-select>
-            <button class="link" @click.prevent="viewAllRecommend">查看全部</button>
+            <button v-if="isAuthed" class="link" @click.prevent="viewAllRecommend">查看全部</button>
           </template>
           <template #content>
-            <!-- 加载中文案占位 -->
-            <div v-if="recoLoading" class="loading-placeholder">正在努力加载中（>.<）</div>
-            <div
-              v-else-if="reco.dishes && reco.dishes.length"
-              class="slider"
-              @mouseenter="pauseAuto"
-              @mouseleave="resumeAuto"
-            >
+            <div class="card-content-wrap">
+              <!-- 加载中文案占位 -->
+              <div v-if="recoLoading" class="loading-placeholder">正在努力加载中（&gt;.&lt;）</div>
+              <div
+                v-else-if="reco.dishes && reco.dishes.length"
+                class="slider"
+                @mouseenter="pauseAuto"
+                @mouseleave="resumeAuto"
+              >
               <button
                 v-if="pages.length > 1"
                 class="nav prev"
@@ -136,7 +161,6 @@
                 @click="onPrev"
                 aria-label="上一页"
               >
-                ‹
               </button>
               <div
                 class="slides"
@@ -170,7 +194,6 @@
                 @click="onNext"
                 aria-label="下一页"
               >
-                ›
               </button>
               <div v-if="pages.length > 1" class="dots">
                 <span
@@ -178,10 +201,12 @@
                   :key="'dot-' + i"
                   :class="['dot', { active: i === activeDot }]"
                   @click="goToPage(i)"
-                />
+                  ></span>
               </div>
-            </div>
+              </div>
             <el-empty v-else-if="recoFetched" description="暂无推荐数据" />
+            <div v-if="!isAuthed" class="component-overlay"><div class="overlay-label">登录后查看详细内容</div></div>
+            </div>
           </template>
         </SectionCard>
       </div>
@@ -190,12 +215,17 @@
     <!-- 消费记录 -->
     <div class="grid bottom-grid">
       <div class="col left">
-        <ConsumptionCard class="equal-card" />
+        <div class="card-content-wrap">
+          <ConsumptionCard class="equal-card" />
+          <div v-if="!isAuthed" class="component-overlay"><div class="overlay-label">登录后查看详细内容</div></div>
+        </div>
       </div>
     </div>
 
     <!-- 控制组件板块（在底部） -->
     <ControlPanel />
+
+    </div> <!-- .profile-wrap -->
   </PageContainer>
 </template>
 
@@ -226,6 +256,8 @@ import ConsumptionCard from '@/components/ConsumptionCard.vue';
 import FoodCalendar from '@/components/FoodCalendar.vue';
 
 const router = useRouter();
+const isAuthed = computed(() => !!localStorage.getItem('jwt'));
+const goLogin = () => router.push('/login');
 const published = ref([]);
 const interactions = ref([]);
 const user = ref({});
@@ -550,6 +582,9 @@ watch(
   },
   { deep: true }
 );
+
+// expose auth helper to template
+const __internal = { isAuthed };
 </script>
 
 <style scoped>
@@ -1042,4 +1077,31 @@ watch(
   background-origin: border-box;
   background-clip: content-box, border-box;
 }
+
+/* Profile wrap and unauth overlays */
+.profile-wrap { position: relative; }
+.profile-header { margin-bottom: 12px; }
+.profile-info-card { display:block; }
+.profile-info-placeholder { padding:14px; border-radius:10px; background: linear-gradient(180deg,#fff,#fff); border:1px solid rgba(0,0,0,0.04); }
+.profile-info-placeholder .placeholder-title { font-size:1.1rem; font-weight:600; margin-bottom:6px }
+.profile-info-placeholder .placeholder-text { color:var(--color-muted); font-size:14px }
+
+/* per-component overlay when unauthenticated */
+.card-content-wrap { position: relative; }
+.card-content-wrap { height: 100%; }
+/* 如果 card-content-wrap 内包含嵌套的 SectionCard，使其 header 在遮罩之上 */
+.card-content-wrap :deep(.section-card) .header { position: relative; z-index: 60; }
+.component-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index: 40;
+  pointer-events: auto; /* block interactions when covered */
+}
+.component-overlay .overlay-label { color: var(--color-muted); font-size: 14px }
 </style>

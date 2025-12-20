@@ -187,9 +187,12 @@ const drawDonutChart = () => {
   const entries = Object.entries(canteenData)
   const total = entries.reduce((sum, [, amount]) => sum + parseFloat(amount), 0)
 
-  // 颜色方案
+  // 颜色方案：优先使用 CSS 主题色，回退到硬编码值
+  const _css = getComputedStyle(document.documentElement)
+  const cssAccent = (_css.getPropertyValue('--color-accent') || '').trim() || '#ffa000'
+  const cssAccentWeak = (_css.getPropertyValue('--color-accent-weak') || '').trim() || '#ffecb3'
   const colors = [
-    '#409EFF', '#67C23A', '#E6A23C', '#F56C6C',
+    cssAccent, '#67C23A', '#E6A23C', '#F56C6C',
     '#909399', '#00D4AA', '#FF6B9D', '#C990C0'
   ]
 
@@ -243,7 +246,8 @@ const loadConsumption = async () => {
       // 404 是正常情况（未绑定），不显示错误
       console.log('[ConsumptionCard] 用户未绑定学号（404）')
     } else if (err?.response?.status === 401) {
-      window.$message?.error?.('请先登录')
+      // 未登录时不弹窗，交由界面遮罩或导航处理
+      console.log('[ConsumptionCard] 未登录，跳过提示')
     } else {
       const errorMsg = err?.response?.data?.message || '加载消费数据失败，请稍后重试'
       window.$message?.error?.(errorMsg)
@@ -357,9 +361,30 @@ const handleStartLogin = async () => {
       window.$message?.error?.('登录失败，请重试')
     }
   } catch (err) {
-    console.error('[ConsumptionCard] 启动登录失败:', err)
-    const errorMsg = err?.response?.data?.error || err?.response?.data?.message || err?.message || '登录失败'
-    window.$message?.error?.(errorMsg)
+    console.error('[ConsumptionCard] 绑定失败:', {
+      error: err,
+      status: err?.response?.status,
+      data: err?.response?.data,
+      message: err?.message
+    })
+    
+    // 根据错误类型提供详细的用户提示
+    const errorMsg = err?.response?.data?.message || ''
+    
+    if (errorMsg.includes('超时') || errorMsg.includes('timeout')) {
+      window.$message?.error?.('登录超时，请确保在5分钟内完成登录')
+    } else if (errorMsg.includes('浏览器') || errorMsg.includes('driver') || errorMsg.includes('Driver')) {
+      window.$message?.error?.('浏览器驱动未安装或配置错误，请联系管理员')
+    } else if (errorMsg.includes('cookie')) {
+      window.$message?.error?.('无法获取登录凭证，请确保已成功登录一卡通系统')
+    } else if (err?.response?.status === 401) {
+      // 绑定流程中遇到 401，避免弹窗打断用户流程（页面上已有遮罩提示）
+      console.log('[ConsumptionCard] 绑定时未登录，跳过提示')
+    } else if (err?.response?.status === 500) {
+      window.$message?.error?.(errorMsg || '服务器错误，请稍后重试')
+    } else {
+      window.$message?.error?.(errorMsg || '绑定失败，请重试')
+    }
   } finally {
     binding.value = false
   }
@@ -516,7 +541,7 @@ defineExpose({
 
 .bind-btn {
   padding: 8px 24px;
-  background: #409EFF;
+  background: var(--color-accent);
   color: white;
   border: none;
   border-radius: 4px;
@@ -526,7 +551,7 @@ defineExpose({
 }
 
 .bind-btn:hover {
-  background: #66B1FF;
+  background: var(--brand-700);
 }
 
 /* 加载状态 */
@@ -647,7 +672,7 @@ defineExpose({
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #409EFF;
+  border-color: var(--color-accent);
 }
 
 .field-hint {
@@ -658,8 +683,8 @@ defineExpose({
 }
 
 .dialog-tip {
-  background: #F0F9FF;
-  border-left: 3px solid #409EFF;
+  background: var(--color-accent-weak);
+  border-left: 3px solid var(--color-accent);
   padding: 12px;
   margin: 16px 0;
   font-size: 13px;
@@ -707,12 +732,12 @@ defineExpose({
 }
 
 .confirm-btn {
-  background: #409EFF;
+  background: var(--color-accent);
   color: white;
 }
 
 .confirm-btn:hover:not(:disabled) {
-  background: #66B1FF;
+  background: var(--color-accent-weak);
 }
 
 .cancel-btn:disabled,
@@ -722,7 +747,7 @@ defineExpose({
 }
 
 .link {
-  color: #409EFF;
+  color: var(--color-accent);
   background: none;
   border: none;
   cursor: pointer;
@@ -731,7 +756,7 @@ defineExpose({
 }
 
 .link:hover {
-  color: #66B1FF;
+  color: var(--color-accent-weak);
 }
 
 /* 验证码提示 */
