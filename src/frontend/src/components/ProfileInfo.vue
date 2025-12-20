@@ -65,7 +65,7 @@ const handleEdit = () => {
 .name { margin: 0; }
 .edit-btn {
   padding: 0.4rem 1rem;
-  background-color: #2b8aef;
+  background-color: var(--color-accent);
   color: white;
   border: none;
   border-radius: 6px;
@@ -74,7 +74,7 @@ const handleEdit = () => {
   transition: background-color 0.2s;
 }
 .edit-btn:hover {
-  background-color: #1a73d9;
+  background-color: var(--brand-700);
 }
 .meta-list { margin: 0.5rem 0 0; padding-left: 1rem; }
 .bio { margin: 0.25rem 0; color: #555 }

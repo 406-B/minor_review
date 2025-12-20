@@ -76,7 +76,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getMyPosts } from '@/api/community'
+import { getMyPosts, getCommentList } from '@/api/community'
 import PageContainer from '@/components/ui/PageContainer.vue'
 import AppTopBar from '@/components/ui/AppTopBar.vue'
 
@@ -99,20 +99,33 @@ async function loadComments() {
       
       // 收集所有帖子的评论
       const allComments = []
-      for (const post of posts) {
-        if (post.comments && post.comments.length > 0) {
-          // 为每个评论添加帖子信息
-          post.comments.forEach(comment => {
-            allComments.push({
-              ...comment,
-              post_id: post.id,
-              post_subject: post.subject,
-              author_name: comment.author?.nickname || comment.author?.username,
-              author_avatar: comment.author?.avatar
+      // 如果后端未在帖子对象中嵌入评论，使用单独的接口并行拉取
+      await Promise.all(posts.map(async (post) => {
+        try {
+          let comments = post.comments || []
+          if ((!comments || comments.length === 0)) {
+            const cRes = await getCommentList(post.id, 1, 200)
+            if (cRes && cRes.code === 200 && Array.isArray(cRes.data?.comments)) {
+              comments = cRes.data.comments
+            } else if (cRes && Array.isArray(cRes.data)) {
+              comments = cRes.data
+            }
+          }
+          if (comments && comments.length > 0) {
+            comments.forEach(comment => {
+              allComments.push({
+                ...comment,
+                post_id: post.id,
+                post_subject: post.subject,
+                author_name: comment.author?.nickname || comment.author?.username,
+                author_avatar: comment.author?.avatar
+              })
             })
-          })
+          }
+        } catch (e) {
+          console.error('拉取帖子评论失败', post.id, e)
         }
-      }
+      }))
       
       // 按时间排序（最新的在前）
       allComments.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
