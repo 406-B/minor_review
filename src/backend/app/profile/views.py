@@ -385,7 +385,16 @@ def get_pending_contents(request):
     user = request.user
 
     # 检查是否为管理员
-    if not (user.is_staff or user.is_superuser):
+    # 由于 request.user 是 login.models.User，我们需要查询对应的 auth.User
+    from django.contrib.auth.models import User as AuthUser
+    try:
+        auth_user = AuthUser.objects.get(username=user.username)
+        if not (auth_user.is_staff or auth_user.is_superuser):
+            return Response({
+                'code': 403,
+                'message': '权限不足，仅管理员可访问'
+            }, status=status.HTTP_403_FORBIDDEN)
+    except AuthUser.DoesNotExist:
         return Response({
             'code': 403,
             'message': '权限不足，仅管理员可访问'
@@ -484,7 +493,16 @@ def audit_content(request, content_type, content_id):
     user = request.user
 
     # 检查是否为管理员
-    if not (user.is_staff or user.is_superuser):
+    # 由于 request.user 是 login.models.User，我们需要查询对应的 auth.User
+    from django.contrib.auth.models import User as AuthUser
+    try:
+        auth_user = AuthUser.objects.get(username=user.username)
+        if not (auth_user.is_staff or auth_user.is_superuser):
+            return Response({
+                'code': 403,
+                'message': '权限不足，仅管理员可访问'
+            }, status=status.HTTP_403_FORBIDDEN)
+    except AuthUser.DoesNotExist:
         return Response({
             'code': 403,
             'message': '权限不足，仅管理员可访问'

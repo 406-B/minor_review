@@ -73,7 +73,7 @@
       <el-empty v-if="!reviews.length" description="暂无评论" />
       <el-card v-for="review in reviews" :key="review.id" class="review-card">
         <div class="review-header">
-          <span class="review-user">{{ review.nickname }}</span>
+          <span class="review-user">{{ review.nickname || review.username || review.user_name }}</span>
           <el-rate :model-value="Number(review.user_rating || 0)" disabled :max="5" show-score />
         </div>
         <div class="review-content">{{ review.content }}</div>
