@@ -117,3 +117,5 @@ a.out
 *.test
 *.prof
 
+src/backend/chrome-installer/google-chrome-stable.deb
+src/backend/chrome-installer/chromedriver-linux64.zip
