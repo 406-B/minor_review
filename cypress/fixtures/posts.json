@@ -2,8 +2,8 @@
   "posts": [
     {
       "id": 1,
-      "title": "食堂新菜品推荐",
-      "content": "今天在第一食堂发现了一道新菜，味道超级棒！强烈推荐给大家。",
+      "title": "宫保鸡丁强烈推荐！",
+      "content": "今天在第一食堂吃到超级好吃的宫保鸡丁，鸡肉嫩滑，花生酥脆，酸甜适中！强烈推荐给大家尝试。性价比超高，才12元一份！",
       "authorId": 1,
       "authorName": "alice",
       "authorAvatar": "/avatars/alice.jpg",
@@ -13,12 +13,21 @@
       "views": 156,
       "createdAt": "2024-01-15T09:00:00Z",
       "updatedAt": "2024-01-15T09:00:00Z",
-      "tags": ["美食", "推荐", "第一食堂"]
+      "tags": ["美食", "推荐", "第一食堂"],
+      "dish": {
+        "id": 1,
+        "name": "宫保鸡丁",
+        "price": 12.0,
+        "canteen": "第一食堂",
+        "floor": "二楼",
+        "window": "川菜窗口",
+        "image": "/media/dishes/gongbao.jpg"
+      }
     },
     {
       "id": 2,
       "title": "如何在食堂吃得健康又美味",
-      "content": "分享一些我在食堂的饮食经验，希望对大家有帮助...",
+      "content": "分享一些我在食堂的饮食经验：1. 多选蒸菜少选炸菜 2. 荤素搭配均衡 3. 少油少盐 4. 多吃蔬菜水果。希望对大家有帮助！",
       "authorId": 2,
       "authorName": "bob",
       "authorAvatar": "/avatars/bob.jpg",
@@ -33,7 +42,7 @@
     {
       "id": 3,
       "title": "第二食堂麻辣烫测评",
-      "content": "今天去尝试了第二食堂的麻辣烫，给大家做个详细的测评...",
+      "content": "今天去尝试了第二食堂的麻辣烫，给大家做个详细的测评。环境干净整洁，菜品新鲜，汤底麻辣适中，价格按重量计算很公道。推荐豆腐皮、金针菇和午餐肉的搭配！",
       "authorId": 1,
       "authorName": "alice",
       "authorAvatar": "/avatars/alice.jpg",
@@ -44,7 +53,127 @@
       "createdAt": "2024-01-13T11:00:00Z",
       "updatedAt": "2024-01-13T11:00:00Z",
       "tags": ["测评", "麻辣烫", "第二食堂"],
-      "images": ["/images/posts/malatang-1.jpg", "/images/posts/malatang-2.jpg"]
+      "images": ["/images/posts/malatang-1.jpg", "/images/posts/malatang-2.jpg"],
+      "dish": {
+        "id": 5,
+        "name": "麻辣烫",
+        "price": 15.0,
+        "canteen": "第二食堂",
+        "floor": "一楼",
+        "window": "麻辣烫窗口",
+        "image": "/media/dishes/malatang.jpg"
+      }
+    },
+    {
+      "id": 4,
+      "title": "糖醋排骨真的绝了！",
+      "content": "第一食堂三楼新开的粤菜窗口，糖醋排骨做得太好吃了！酸甜比例完美，排骨外酥里嫩，每块都裹满了酱汁。虽然18元有点小贵，但份量足，值得一试！",
+      "authorId": 4,
+      "authorName": "tester123",
+      "authorAvatar": "/avatars/tester123.jpg",
+      "category": "美食推荐",
+      "likes": 56,
+      "comments": 18,
+      "views": 312,
+      "createdAt": "2024-01-16T12:30:00Z",
+      "updatedAt": "2024-01-16T12:30:00Z",
+      "tags": ["推荐", "糖醋排骨", "第一食堂"],
+      "dish": {
+        "id": 3,
+        "name": "糖醋排骨",
+        "price": 18.0,
+        "canteen": "第一食堂",
+        "floor": "三楼",
+        "window": "粤菜窗口",
+        "image": "/media/dishes/tangcu.jpg"
+      }
+    },
+    {
+      "id": 5,
+      "title": "今天午餐吃什么？求推荐！",
+      "content": "纠结症患者每天最痛苦的时刻就是选午餐...大家有什么推荐吗？最近吃腻了炒菜，想换换口味。",
+      "authorId": 3,
+      "authorName": "charlie",
+      "authorAvatar": "/avatars/charlie.jpg",
+      "category": "求助提问",
+      "likes": 12,
+      "comments": 25,
+      "views": 178,
+      "createdAt": "2024-01-17T10:45:00Z",
+      "updatedAt": "2024-01-17T10:45:00Z",
+      "tags": ["求助", "推荐", "午餐"]
+    },
+    {
+      "id": 6,
+      "title": "红烧肉盖浇饭性价比之王",
+      "content": "第二食堂二楼的红烧肉盖浇饭，只要14元！肉块大，肥瘦相间，酱汁浓郁拌饭超级香。而且米饭管饱，学生党必选！",
+      "authorId": 4,
+      "authorName": "tester123",
+      "authorAvatar": "/avatars/tester123.jpg",
+      "category": "美食推荐",
+      "likes": 68,
+      "comments": 22,
+      "views": 445,
+      "createdAt": "2024-01-18T13:15:00Z",
+      "updatedAt": "2024-01-18T13:15:00Z",
+      "tags": ["性价比", "红烧肉", "盖浇饭"],
+      "dish": {
+        "id": 7,
+        "name": "红烧肉盖浇饭",
+        "price": 14.0,
+        "canteen": "第二食堂",
+        "floor": "二楼",
+        "window": "盖浇饭窗口",
+        "image": "/media/dishes/hongshao.jpg"
+      }
+    },
+    {
+      "id": 7,
+      "title": "西红柿炒蛋的家乡味道",
+      "content": "虽然只是普通的西红柿炒蛋，但第一食堂一楼的这道菜做得特别有家的味道。西红柿酸甜，鸡蛋嫩滑，想家的时候就点这个。",
+      "authorId": 2,
+      "authorName": "bob",
+      "authorAvatar": "/avatars/bob.jpg",
+      "category": "美食分享",
+      "likes": 34,
+      "comments": 9,
+      "views": 198,
+      "createdAt": "2024-01-19T11:20:00Z",
+      "updatedAt": "2024-01-19T11:20:00Z",
+      "tags": ["家常菜", "西红柿炒蛋", "第一食堂"],
+      "dish": {
+        "id": 2,
+        "name": "西红柿炒蛋",
+        "price": 8.0,
+        "canteen": "第一食堂",
+        "floor": "一楼",
+        "window": "家常菜窗口",
+        "image": "/media/dishes/xihongshi.jpg"
+      }
+    },
+    {
+      "id": 8,
+      "title": "周末特供：水煮鱼片",
+      "content": "第二食堂周末限定的水煮鱼片，20元一份但量超大！鱼片新鲜嫩滑，麻辣鲜香，可以两个人分着吃。强烈推荐周末去尝试！",
+      "authorId": 1,
+      "authorName": "alice",
+      "authorAvatar": "/avatars/alice.jpg",
+      "category": "美食推荐",
+      "likes": 89,
+      "comments": 31,
+      "views": 567,
+      "createdAt": "2024-01-20T14:00:00Z",
+      "updatedAt": "2024-01-20T14:00:00Z",
+      "tags": ["周末特供", "水煮鱼", "第二食堂"],
+      "dish": {
+        "id": 9,
+        "name": "水煮鱼片",
+        "price": 20.0,
+        "canteen": "第二食堂",
+        "floor": "二楼",
+        "window": "川菜窗口",
+        "image": "/media/dishes/shuizhu.jpg"
+      }
     }
   ],
   "comments": [
@@ -73,8 +202,187 @@
           "id": 3,
           "userId": 1,
           "username": "alice",
-          "content": "在二楼最右边的窗口",
+          "content": "在二楼最右边的窗口，川菜那边",
           "createdAt": "2024-01-15T12:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "postId": 1,
+      "userId": 4,
+      "username": "tester123",
+      "userAvatar": "/avatars/tester123.jpg",
+      "content": "昨天刚吃过，确实很不错！👍",
+      "likes": 8,
+      "createdAt": "2024-01-15T15:20:00Z",
+      "replies": []
+    },
+    {
+      "id": 5,
+      "postId": 3,
+      "userId": 2,
+      "username": "bob",
+      "userAvatar": "/avatars/bob.jpg",
+      "content": "麻辣烫的汤底是哪种？微辣还是中辣？",
+      "likes": 3,
+      "createdAt": "2024-01-13T12:30:00Z",
+      "replies": [
+        {
+          "id": 6,
+          "userId": 1,
+          "username": "alice",
+          "content": "可以选的，我点的中辣刚刚好",
+          "createdAt": "2024-01-13T13:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "postId": 3,
+      "userId": 4,
+      "username": "tester123",
+      "userAvatar": "/avatars/tester123.jpg",
+      "content": "这家麻辣烫我也经常吃，性价比很高",
+      "likes": 4,
+      "createdAt": "2024-01-13T16:45:00Z",
+      "replies": []
+    },
+    {
+      "id": 8,
+      "postId": 4,
+      "userId": 1,
+      "username": "alice",
+      "userAvatar": "/avatars/alice.jpg",
+      "content": "看你的描述好想吃啊！今晚就去试试",
+      "likes": 6,
+      "createdAt": "2024-01-16T13:15:00Z",
+      "replies": [
+        {
+          "id": 9,
+          "userId": 4,
+          "username": "tester123",
+          "content": "记得早点去，晚了可能卖完😄",
+          "createdAt": "2024-01-16T13:30:00Z"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "postId": 4,
+      "userId": 2,
+      "username": "bob",
+      "userAvatar": "/avatars/bob.jpg",
+      "content": "18元确实有点贵，但看起来值得",
+      "likes": 2,
+      "createdAt": "2024-01-16T14:00:00Z",
+      "replies": []
+    },
+    {
+      "id": 11,
+      "postId": 5,
+      "userId": 4,
+      "username": "tester123",
+      "userAvatar": "/avatars/tester123.jpg",
+      "content": "推荐第二食堂的麻辣烫或者第一食堂的盖浇饭",
+      "likes": 5,
+      "createdAt": "2024-01-17T11:00:00Z",
+      "replies": []
+    },
+    {
+      "id": 12,
+      "postId": 5,
+      "userId": 1,
+      "username": "alice",
+      "userAvatar": "/avatars/alice.jpg",
+      "content": "可以试试日式拉面，最近新开的窗口",
+      "likes": 7,
+      "createdAt": "2024-01-17T11:15:00Z",
+      "replies": [
+        {
+          "id": 13,
+          "userId": 3,
+          "username": "charlie",
+          "content": "好的谢谢！在哪个食堂呀？",
+          "createdAt": "2024-01-17T11:30:00Z"
+        },
+        {
+          "id": 14,
+          "userId": 1,
+          "username": "alice",
+          "content": "第三食堂二楼，新开的日料区",
+          "createdAt": "2024-01-17T11:45:00Z"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "postId": 6,
+      "userId": 1,
+      "username": "alice",
+      "userAvatar": "/avatars/alice.jpg",
+      "content": "14元真的很便宜了！明天就去吃",
+      "likes": 9,
+      "createdAt": "2024-01-18T13:45:00Z",
+      "replies": []
+    },
+    {
+      "id": 16,
+      "postId": 6,
+      "userId": 3,
+      "username": "charlie",
+      "userAvatar": "/avatars/charlie.jpg",
+      "content": "学生党表示已经吃了一个月了😂",
+      "likes": 12,
+      "createdAt": "2024-01-18T14:20:00Z",
+      "replies": [
+        {
+          "id": 17,
+          "userId": 4,
+          "username": "tester123",
+          "content": "哈哈我也是，性价比真的无敌",
+          "createdAt": "2024-01-18T14:35:00Z"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "postId": 7,
+      "userId": 4,
+      "username": "tester123",
+      "userAvatar": "/avatars/tester123.jpg",
+      "content": "西红柿炒蛋永远是最温暖的菜",
+      "likes": 11,
+      "createdAt": "2024-01-19T12:00:00Z",
+      "replies": []
+    },
+    {
+      "id": 19,
+      "postId": 8,
+      "userId": 2,
+      "username": "bob",
+      "userAvatar": "/avatars/bob.jpg",
+      "content": "20元两个人吃太划算了！周末约起来",
+      "likes": 15,
+      "createdAt": "2024-01-20T14:30:00Z",
+      "replies": []
+    },
+    {
+      "id": 20,
+      "postId": 8,
+      "userId": 3,
+      "username": "charlie",
+      "userAvatar": "/avatars/charlie.jpg",
+      "content": "请问辣度怎么样？我不太能吃辣",
+      "likes": 4,
+      "createdAt": "2024-01-20T15:00:00Z",
+      "replies": [
+        {
+          "id": 21,
+          "userId": 1,
+          "username": "alice",
+          "content": "可以要求少放辣椒，老板人很好的",
+          "createdAt": "2024-01-20T15:15:00Z"
         }
       ]
     }

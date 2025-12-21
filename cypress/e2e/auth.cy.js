@@ -1,204 +1,238 @@
 /**
- * 认证功能端到端测试
- * 测试用户登录、注册、登出等功能
+ * E2E 认证流程测试
+ * 测试流程：注册 -> 登录 -> 登出 -> 再次登录
+ * 每个环节包含：空表单测试、不合法输入测试、正常流程测试
  */
 
-describe('用户认证流程', () => {
-  beforeEach(() => {
-    cy.visit('/');
-  });
+describe('E2E 认证流程测试', () => {
+  const testUser = {
+    username: 'tester123',
+    password: '123456Aa-',
+    nickname: '测试用户123'
+  }
 
-  describe('用户登录', () => {
-    it('应该能够成功登录', () => {
-      cy.visit('/login');
-      
-      // 填写登录表单
-      cy.get('[data-cy=username-input], input[name="username"], input[placeholder*="用户名"]')
-        .type('testuser');
-      cy.get('[data-cy=password-input], input[name="password"], input[type="password"]')
-        .type('password123');
-      
-      // 提交表单
-      cy.get('[data-cy=login-button], button[type="submit"]').click();
-      
-      // 验证登录成功
-      cy.url().should('not.include', '/login');
-      cy.window().its('localStorage').invoke('getItem', 'token').should('exist');
-    });
+  // 在所有测试之前清理状态
+  before(() => {
+    cy.clearLocalStorage()
+  })
 
-    it('应该显示无效凭据错误', () => {
-      cy.visit('/login');
-      
-      cy.get('[data-cy=username-input], input[name="username"], input[placeholder*="用户名"]')
-        .type('wronguser');
-      cy.get('[data-cy=password-input], input[name="password"], input[type="password"]')
-        .type('wrongpassword');
-      
-      cy.get('[data-cy=login-button], button[type="submit"]').click();
-      
-      // 验证显示错误消息
-      cy.contains(/用户名或密码错误|Invalid credentials|登录失败/i).should('be.visible');
-      cy.url().should('include', '/login');
-    });
+  // 每个测试后清理状态
+  afterEach(() => {
+    cy.clearLocalStorage()
+  })
 
-    it('应该验证必填字段', () => {
-      cy.visit('/login');
-      
-      // 尝试提交空表单
-      cy.get('[data-cy=login-button], button[type="submit"]').click();
-      
-      // 检查 HTML5 验证或自定义验证消息
-      cy.get('input[name="username"]').then(($input) => {
-        expect($input[0].validationMessage || $input[0].checkValidity()).to.exist;
-      });
-    });
+  describe('步骤1: 用户注册', () => {
+    beforeEach(() => {
+      cy.visit('/register')
+    })
 
-    it('应该能够查看和隐藏密码', () => {
-      cy.visit('/login');
-      
-      const password = 'password123';
-      cy.get('input[type="password"]').type(password);
-      
-      // 点击显示密码按钮（如果存在）
-      cy.get('button[aria-label*="显示"], button[aria-label*="Show"], .password-toggle').then(($btn) => {
-        if ($btn.length > 0) {
-          cy.wrap($btn).click();
-          cy.get('input[type="text"]').should('have.value', password);
-        }
-      });
-    });
-  });
-
-  describe('用户注册', () => {
-    it('应该能够成功注册新用户', () => {
-      cy.visit('/register');
-      
-      const timestamp = Date.now();
-      const testUser = {
-        username: `testuser_${timestamp}`,
-        email: `test_${timestamp}@example.com`,
-        password: 'Password123!',
-        confirmPassword: 'Password123!'
-      };
-      
-      // 填写注册表单
-      cy.get('input[name="username"]').type(testUser.username);
-      cy.get('input[name="email"], input[type="email"]').type(testUser.email);
-      cy.get('input[name="password"]').first().type(testUser.password);
-      cy.get('input[name="confirmPassword"], input[name="password_confirm"]')
-        .type(testUser.confirmPassword);
+    it('应当能够成功注册新用户', () => {
+      // 填写表单
+      cy.get('input[autocomplete="username"]').type(testUser.username)
+      cy.get('input[autocomplete="new-password"]').type(testUser.password)
+      cy.get('input').eq(2).type(testUser.nickname) // 昵称字段
       
       // 提交注册
-      cy.get('button[type="submit"]').click();
+      cy.get('button.register-btn').click()
       
-      // 验证注册成功 - 可能跳转到登录页或直接登录
-      cy.url().should('match', /\/(login|home|dashboard)/);
-    });
+      // 验证注册成功后跳转 (注册成功后自动登录，跳转到 /profile 或 /onboarding/tags)
+      cy.url().should('not.include', '/register')
+      cy.url().should('match', /\/(profile|onboarding\/tags)/)
+      
+      // 验证 JWT token 已保存
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('jwt')).to.exist
+      })
+      
+      // 验证用户信息已保存
+      cy.window().then((win) => {
+        const userInfo = JSON.parse(win.localStorage.getItem('userInfo'))
+        expect(userInfo).to.exist
+        expect(userInfo.username).to.equal(testUser.username)
+      })
+    })
 
-    it('应该在密码不匹配时显示错误', () => {
-      cy.visit('/register');
+    it('应当拒绝空表单提交', () => {
+      // 直接点击注册按钮（不填写任何信息）
+      cy.get('button.register-btn').click()
       
-      cy.get('input[name="username"]').type('testuser');
-      cy.get('input[name="email"]').type('test@example.com');
-      cy.get('input[name="password"]').first().type('Password123!');
-      cy.get('input[name="confirmPassword"], input[name="password_confirm"]')
-        .type('DifferentPassword123!');
+      // 应当留在注册页面
+      cy.url().should('include', '/register')
       
-      cy.get('button[type="submit"]').click();
-      
-      cy.contains(/密码不匹配|Passwords do not match|不一致/i).should('be.visible');
-    });
+      // 应当不存在 JWT token
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('jwt')).to.not.exist
+      })
+    })
 
-    it('应该在用户名已存在时显示错误', () => {
-      cy.visit('/register');
+    it('应当拒绝不合法的用户名（不符合格式要求）', () => {
+      // 测试纯数字用户名
+      cy.get('input[autocomplete="username"]').type('123456')
+      cy.get('input[autocomplete="new-password"]').type(testUser.password)
+      cy.get('input').eq(2).type(testUser.nickname)
+      cy.get('button.register-btn').click()
       
-      // 使用已存在的用户名
-      cy.get('input[name="username"]').type('testuser');
-      cy.get('input[name="email"]').type('newemail@example.com');
-      cy.get('input[name="password"]').first().type('Password123!');
-      cy.get('input[name="confirmPassword"], input[name="password_confirm"]')
-        .type('Password123!');
-      
-      cy.get('button[type="submit"]').click();
-      
-      // 验证错误消息
-      cy.contains(/用户名已存在|Username already exists|已被占用/i, { timeout: 10000 })
-        .should('be.visible');
-    });
+      // 应当留在注册页面（前端校验拦截）
+      cy.url().should('include', '/register')
+    })
 
-    it('应该验证邮箱格式', () => {
-      cy.visit('/register');
+    it('应当拒绝不合法的密码（不符合强度要求）', () => {
+      // 测试弱密码
+      cy.get('input[autocomplete="username"]').type(testUser.username)
+      cy.get('input[autocomplete="new-password"]').type('12345678') // 缺少大小写字母和符号
+      cy.get('input').eq(2).type(testUser.nickname)
+      cy.get('button.register-btn').click()
       
-      cy.get('input[name="email"]').type('invalid-email');
-      cy.get('input[name="username"]').click(); // 触发失焦验证
-      
-      // 检查 HTML5 验证或自定义验证
-      cy.get('input[name="email"]').then(($input) => {
-        expect($input[0].validity.valid).to.be.false;
-      });
-    });
-  });
+      // 应当留在注册页面（前端校验拦截）
+      cy.url().should('include', '/register')
+    })
 
-  describe('用户登出', () => {
+    it('应当拒绝空昵称', () => {
+      cy.get('input[autocomplete="username"]').type(testUser.username)
+      cy.get('input[autocomplete="new-password"]').type(testUser.password)
+      // 昵称留空
+      cy.get('button.register-btn').click()
+      
+      // 应当留在注册页面
+      cy.url().should('include', '/register')
+    })
+  })
+
+  describe('步骤2: 用户登录', () => {
+    // 确保测试用户已注册（从步骤1获得）
+    before(() => {
+      // 如果步骤1已创建用户，这里直接测试登录
+      cy.clearLocalStorage()
+    })
+
+    beforeEach(() => {
+      cy.visit('/login')
+    })
+
+    it('应当能够使用已注册账号成功登录', () => {
+      // 使用已注册的测试账号登录
+      cy.get('input[autocomplete="username"]').type(testUser.username)
+      cy.get('input[autocomplete="current-password"]').type(testUser.password)
+      
+      // 点击登录按钮
+      cy.get('button.login-btn').click()
+      
+      // 验证跳转到个人主页或标签设置页
+      cy.url().should('not.include', '/login')
+      cy.url().should('match', /\/(profile|onboarding\/tags)/)
+      
+      // 验证 JWT token 存在
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('jwt')).to.exist
+      })
+      
+      // 验证用户信息存在
+      cy.window().then((win) => {
+        const userInfo = JSON.parse(win.localStorage.getItem('userInfo'))
+        expect(userInfo).to.exist
+        expect(userInfo.username).to.equal(testUser.username)
+      })
+    })
+
+    it('应当拒绝空表单提交', () => {
+      // 不填写任何信息直接点击登录
+      cy.get('button.login-btn').click()
+      
+      // 应当留在登录页面
+      cy.url().should('include', '/login')
+    })
+
+    it('应当拒绝错误的用户名', () => {
+      cy.get('input[autocomplete="username"]').type('wronguser999')
+      cy.get('input[autocomplete="current-password"]').type(testUser.password)
+      cy.get('button.login-btn').click()
+      
+      // 应当留在登录页面
+      cy.url().should('include', '/login')
+      
+      // 不应存在 token
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('jwt')).to.not.exist
+      })
+    })
+
+    it('应当拒绝错误的密码', () => {
+      cy.get('input[autocomplete="username"]').type(testUser.username)
+      cy.get('input[autocomplete="current-password"]').type('WrongPass123-')
+      cy.get('button.login-btn').click()
+      
+      // 应当留在登录页面
+      cy.url().should('include', '/login')
+      
+      // 不应存在 token
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('jwt')).to.not.exist
+      })
+    })
+  })
+
+  describe('步骤3: 用户登出', () => {
     beforeEach(() => {
       // 先登录
-      cy.visit('/login');
-      cy.get('input[name="username"]').type('testuser');
-      cy.get('input[name="password"]').type('password123');
-      cy.get('button[type="submit"]').click();
-      cy.url().should('not.include', '/login');
-    });
-
-    it('应该能够成功登出', () => {
-      // 查找并点击登出按钮
-      cy.get('[data-cy=logout-button], button:contains("登出"), button:contains("Logout"), a:contains("退出")')
-        .click();
+      cy.visit('/login')
+      cy.get('input[autocomplete="username"]').type(testUser.username)
+      cy.get('input[autocomplete="current-password"]').type(testUser.password)
+      cy.get('button.login-btn').click()
       
-      // 验证登出成功
-      cy.url().should('match', /\/(login|home|$)/);
-      cy.window().its('localStorage').invoke('getItem', 'token').should('not.exist');
-    });
+      // 等待跳转完成
+      cy.url().should('not.include', '/login')
+      cy.url().should('match', /\/(profile|onboarding\/tags)/)
+    })
 
-    it('登出后应该无法访问受保护的页面', () => {
-      // 先登出
-      cy.get('[data-cy=logout-button], button:contains("登出"), button:contains("Logout")')
-        .click();
+    it('应当能够成功登出', () => {
+      // 访问个人主页（确保能看到登出按钮）
+      cy.visit('/profile')
       
-      // 尝试访问受保护的页面
-      cy.visit('/profile');
+      // 点击登出按钮（ControlPanel 组件中的登出按钮）
+      cy.contains('button', '登出账号').click()
       
-      // 应该被重定向到登录页
-      cy.url().should('include', '/login');
-    });
-  });
+      // 验证跳转到登录页
+      cy.url().should('include', '/login')
+      
+      // 验证 JWT token 已清除
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('jwt')).to.be.null
+      })
+      
+      // 验证用户信息已清除
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('userInfo')).to.be.null
+      })
+    })
+  })
 
-  describe('会话管理', () => {
-    it('应该保持登录状态在页面刷新后', () => {
-      // 登录
-      cy.visit('/login');
-      cy.get('input[name="username"]').type('testuser');
-      cy.get('input[name="password"]').type('password123');
-      cy.get('button[type="submit"]').click();
-      cy.url().should('not.include', '/login');
-      
-      // 刷新页面
-      cy.reload();
-      
-      // 验证仍然登录
-      cy.url().should('not.include', '/login');
-      cy.window().its('localStorage.token').should('exist');
-    });
+  describe('步骤4: 再次登录验证', () => {
+    before(() => {
+      // 确保已登出
+      cy.clearLocalStorage()
+    })
 
-    it('未登录时访问受保护页面应该重定向到登录', () => {
-      cy.visit('/profile');
-      cy.url().should('include', '/login');
-    });
-  });
+    beforeEach(() => {
+      cy.visit('/login')
+    })
 
-  describe('密码找回', () => {
-    it('应该显示忘记密码链接', () => {
-      cy.visit('/login');
-      cy.contains(/忘记密码|Forgot password/i).should('be.visible');
-    });
-  });
-});
+    it('应当能够在登出后再次登录', () => {
+      // 使用相同账号再次登录
+      cy.get('input[autocomplete="username"]').type(testUser.username)
+      cy.get('input[autocomplete="current-password"]').type(testUser.password)
+      cy.get('button.login-btn').click()
+      
+      // 验证登录成功
+      cy.url().should('not.include', '/login')
+      cy.url().should('match', /\/(profile|onboarding\/tags)/)
+      
+      // 验证 token 和用户信息重新创建
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('jwt')).to.exist
+        const userInfo = JSON.parse(win.localStorage.getItem('userInfo'))
+        expect(userInfo).to.exist
+        expect(userInfo.username).to.equal(testUser.username)
+      })
+    })
+  })
+})

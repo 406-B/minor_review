@@ -10,7 +10,7 @@ set -euo pipefail
 #   4) 运行 Cypress 容器执行 E2E 测试
 
 export COMPOSE_PROJECT_NAME=minor_review_e2e
-COMPOSE_FILES="-f docker-compose.yaml -f docker-compose.e2e.yaml"
+COMPOSE_FILES="-f docker-compose.e2e.yaml"
 
 echo "=========================================="
 echo "Starting E2E Test Environment"
@@ -43,17 +43,39 @@ echo "Running migrations..."
 sudo docker compose $COMPOSE_FILES exec -T backend python manage.py makemigrations --noinput || true
 sudo docker compose $COMPOSE_FILES exec -T backend python manage.py migrate --noinput
 
-# 可选：加载 fixtures（如果你放置了 fixtures 文件）
-if [ -d "cypress/fixtures" ]; then
-  echo "Loading fixtures (if any)..."
-  # 尝试加载常见 fixtures 文件
-  for f in cypress/fixtures/*.json; do
-    [ -e "$f" ] || continue
-    filename=$(basename "$f")
-    echo "  loaddata $filename"
-    sudo docker compose $COMPOSE_FILES exec -T backend python manage.py loaddata "cypress/fixtures/$filename" || true
-  done
+echo "Ensuring test user exists..."
+sudo docker compose $COMPOSE_FILES exec -T backend python manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model(); User.objects.filter(username='tester123').exists() or User.objects.create_user('tester123','tester123@example.com','123456Aa-')"
+
+echo "Creating other test users..."
+sudo docker compose $COMPOSE_FILES exec -T backend python manage.py shell -c "
+from django.contrib.auth import get_user_model
+User = get_user_model()
+# Create alice (id=1)
+if not User.objects.filter(username='alice').exists():
+    User.objects.create_user('alice', 'alice@example.com', 'password123')
+    print('Created user: alice')
+# Create bob (id=2)
+if not User.objects.filter(username='bob').exists():
+    User.objects.create_user('bob', 'bob@example.com', 'password123')
+    print('Created user: bob')
+# Create charlie (id=3)
+if not User.objects.filter(username='charlie').exists():
+    User.objects.create_user('charlie', 'charlie@example.com', 'password123')
+    print('Created user: charlie')
+print('All test users ready')
+" || true
+
+echo "Initializing test data..."
+# 运行数据初始化脚本（如果存在）
+if [ -f "src/backend/app/data_filing/populate_database.py" ]; then
+  echo "Running populate_database.py..."
+  sudo docker compose $COMPOSE_FILES exec -T backend python data_filing/populate_database.py || true
 fi
+
+echo ""
+echo "Note: Cypress fixtures (cypress/fixtures/*.json) are used by Cypress tests directly"
+echo "      and do not need to be loaded into Django database."
+echo ""
 
 echo "Running Cypress tests in docker..."
 sudo docker compose $COMPOSE_FILES run --rm cypress
