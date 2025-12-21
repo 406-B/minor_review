@@ -6,15 +6,86 @@ import base64
 import json
 import uuid
 import threading
+import logging
+import os
+import time
 from typing import Dict, Optional
 
 import requests
+import redis
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
-# 全局登录会话管理
-LOGIN_SESSIONS = {}
-SESSION_LOCK = threading.Lock()
+# Redis客户端配置
+try:
+    REDIS_CLIENT = redis.Redis(
+        host=os.getenv('REDIS_HOST', 'localhost'),
+        port=int(os.getenv('REDIS_PORT', 6379)),
+        db=int(os.getenv('REDIS_DB', 0)),
+        decode_responses=True,
+        socket_connect_timeout=5
+    )
+    # 测试连接
+    REDIS_CLIENT.ping()
+    logging.getLogger(__name__).info("Redis连接成功")
+except Exception as e:
+    logging.getLogger(__name__).error(f"Redis连接失败: {str(e)}")
+    REDIS_CLIENT = None
+
+# 本地driver管理（仅在当前worker进程中有效）
+_LOCAL_DRIVERS = {}
+_DRIVER_LOCK = threading.Lock()
+
+# Redis会话过期时间（秒）
+SESSION_EXPIRE_TIME = 600  # 10分钟
+
+
+def _get_session_from_redis(session_id: str) -> Optional[Dict]:
+    """从Redis获取会话数据"""
+    if not REDIS_CLIENT:
+        return None
+    try:
+        data = REDIS_CLIENT.hgetall(f"login_session:{session_id}")
+        if not data:
+            return None
+        return data
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Redis获取会话失败: {str(e)}")
+        return None
+
+
+def _set_session_to_redis(session_id: str, session_data: Dict):
+    """将会话数据保存到Redis"""
+    if not REDIS_CLIENT:
+        return
+    try:
+        key = f"login_session:{session_id}"
+        REDIS_CLIENT.hset(key, mapping=session_data)
+        REDIS_CLIENT.expire(key, SESSION_EXPIRE_TIME)
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Redis保存会话失败: {str(e)}")
+
+
+def _update_session_field(session_id: str, field: str, value: str):
+    """更新Redis中的单个会话字段"""
+    if not REDIS_CLIENT:
+        return
+    try:
+        key = f"login_session:{session_id}"
+        REDIS_CLIENT.hset(key, field, value)
+        REDIS_CLIENT.expire(key, SESSION_EXPIRE_TIME)
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Redis更新会话字段失败: {str(e)}")
+
+
+def _delete_session_from_redis(session_id: str):
+    """从Redis删除会话"""
+    if not REDIS_CLIENT:
+        return
+    try:
+        REDIS_CLIENT.delete(f"login_session:{session_id}")
+    except Exception as e:
+        logging.getLogger(__name__).error(f"Redis删除会话失败: {str(e)}")
 
 
 def decrypt_aes_ecb(encrypted_data: str) -> str:
@@ -486,47 +557,47 @@ def auto_login_and_fetch_cookie(
         max_wait = 60
         waited = 0
         while waited < max_wait:
-            with SESSION_LOCK:
-                if session_id in LOGIN_SESSIONS:
-                    session = LOGIN_SESSIONS[session_id]
-                    logger.debug(f"[主线程][{session_id[:8]}] 当前状态: {session['status']}, 已等待: {waited}秒")
-                    
-                    # 检查是否完成（成功、需要验证码、或失败）
-                    if session['status'] in ['waiting_verification', 'failed', 'completed']:
-                        if session['status'] == 'completed':
-                            # 直接登录成功，无需验证码
-                            logger.info(f"[主线程][{session_id[:8]}] 登录成功，无需验证码")
-                            return {
-                                "success": True,
-                                "session_id": session_id,
-                                "status": session['status'],
-                                "servicehall": session.get('servicehall'),
-                                "idserial": idserial,
-                                "error": None
-                            }
-                        elif session['status'] == 'waiting_verification':
-                            # 需要验证码
-                            logger.info(f"[主线程][{session_id[:8]}] 需要验证码")
-                            return {
-                                "success": True,
-                                "session_id": session_id,
-                                "status": session['status'],
-                                "servicehall": None,
-                                "idserial": idserial,
-                                "error": None
-                            }
-                        else:
-                            # 失败
-                            error_msg = session.get('error', '未知错误')
-                            logger.error(f"[主线程][{session_id[:8]}] 登录失败: {error_msg}")
-                            return {
-                                "success": False,
-                                "session_id": session_id,
-                                "status": session['status'],
-                                "servicehall": None,
-                                "idserial": idserial,
-                                "error": error_msg
-                            }
+            session = _get_session_from_redis(session_id)
+            if session:
+                status = session.get('status', 'initializing')
+                logger.debug(f"[主线程][{session_id[:8]}] 当前状态: {status}, 已等待: {waited}秒")
+                
+                # 检查是否完成（成功、需要验证码、或失败）
+                if status in ['waiting_verification', 'failed', 'completed']:
+                    if status == 'completed':
+                        # 直接登录成功，无需验证码
+                        logger.info(f"[主线程][{session_id[:8]}] 登录成功，无需验证码")
+                        return {
+                            "success": True,
+                            "session_id": session_id,
+                            "status": status,
+                            "servicehall": session.get('servicehall'),
+                            "idserial": idserial,
+                            "error": None
+                        }
+                    elif status == 'waiting_verification':
+                        # 需要验证码
+                        logger.info(f"[主线程][{session_id[:8]}] 需要验证码")
+                        return {
+                            "success": True,
+                            "session_id": session_id,
+                            "status": status,
+                            "servicehall": None,
+                            "idserial": idserial,
+                            "error": None
+                        }
+                    else:
+                        # 失败
+                        error_msg = session.get('error', '未知错误')
+                        logger.error(f"[主线程][{session_id[:8]}] 登录失败: {error_msg}")
+                        return {
+                            "success": False,
+                            "session_id": session_id,
+                            "status": status,
+                            "servicehall": None,
+                            "idserial": idserial,
+                            "error": error_msg
+                        }
             time.sleep(0.5)
             waited += 0.5
         
@@ -576,21 +647,20 @@ def _auto_login_thread(
     try:
         # 初始化会话
         logger.info(f"[{session_id[:8]}] 初始化会话")
-        with SESSION_LOCK:
-            LOGIN_SESSIONS[session_id] = {
-                'status': 'initializing',
-                'driver': None,
-                'error': None,
-                'servicehall': None
-            }
+        _set_session_to_redis(session_id, {
+            'status': 'initializing',
+            'error': '',
+            'servicehall': ''
+        })
         
         # 获取浏览器驱动
         logger.info(f"[{session_id[:8]}] 正在启动{browser_type}浏览器...")
         driver = _get_browser_driver_for_login(browser_type, headless)
         logger.info(f"[{session_id[:8]}] 浏览器启动成功")
         
-        with SESSION_LOCK:
-            LOGIN_SESSIONS[session_id]['driver'] = driver
+        # 将driver存储到本地（不存入Redis）
+        with _DRIVER_LOCK:
+            _LOCAL_DRIVERS[session_id] = driver
         
         # 打开登录页面
         logger.info(f"[{session_id[:8]}] 正在打开登录页面...")
@@ -612,9 +682,8 @@ def _auto_login_thread(
             
         except Exception as e:
             logger.error(f"[{session_id[:8]}] 填写学号失败: {str(e)}")
-            with SESSION_LOCK:
-                LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                LOGIN_SESSIONS[session_id]['error'] = f"填写学号失败: {str(e)}"
+            _update_session_field(session_id, 'status', 'failed')
+            _update_session_field(session_id, 'error', f"填写学号失败: {str(e)}")
             return
         
         # 查找密码输入框（使用精确的XPath）
@@ -624,9 +693,8 @@ def _auto_login_thread(
             password_input.send_keys(password)
             
         except Exception as e:
-            with SESSION_LOCK:
-                LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                LOGIN_SESSIONS[session_id]['error'] = f"填写密码失败: {str(e)}"
+            _update_session_field(session_id, 'status', 'failed')
+            _update_session_field(session_id, 'error', f"填写密码失败: {str(e)}")
             return
         
         # 点击登录按钮（使用精确的XPath）
@@ -640,9 +708,8 @@ def _auto_login_thread(
             
         except Exception as e:
             logger.error(f"[{session_id[:8]}] 点击登录按钮失败: {str(e)}")
-            with SESSION_LOCK:
-                LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                LOGIN_SESSIONS[session_id]['error'] = f"点击登录按钮失败: {str(e)}"
+            _update_session_field(session_id, 'status', 'failed')
+            _update_session_field(session_id, 'error', f"点击登录按钮失败: {str(e)}")
             return
         
         # 检查是否有用户名或密码错误提示
@@ -651,9 +718,8 @@ def _auto_login_thread(
             if error_msg and error_msg.is_displayed():
                 error_text = error_msg.text.strip()
                 if error_text:
-                    with SESSION_LOCK:
-                        LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                        LOGIN_SESSIONS[session_id]['error'] = f"登录失败: {error_text}"
+                    _update_session_field(session_id, 'status', 'failed')
+                    _update_session_field(session_id, 'error', f"登录失败: {error_text}")
                     return
         except:
             # 没有找到错误提示元素，说明没有错误，继续执行
@@ -671,9 +737,8 @@ def _auto_login_thread(
         if servicehall:
             # 直接登录成功，无需验证码
             logger.info(f"[{session_id[:8]}] 直接登录成功，无需验证码")
-            with SESSION_LOCK:
-                LOGIN_SESSIONS[session_id]['status'] = 'completed'
-                LOGIN_SESSIONS[session_id]['servicehall'] = servicehall
+            _update_session_field(session_id, 'status', 'completed')
+            _update_session_field(session_id, 'servicehall', servicehall)
             return
         else:
             logger.info(f"[{session_id[:8]}] 需要验证码，进入验证流程")
@@ -734,36 +799,32 @@ def _auto_login_thread(
                     # 既没有验证界面，也没有发送验证码按钮
                     # 保存页面源码用于调试
                     page_source = driver.page_source
-                    with SESSION_LOCK:
-                        LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                        LOGIN_SESSIONS[session_id]['error'] = '未找到验证界面或发送验证码按钮'
+                    _update_session_field(session_id, 'status', 'failed')
+                    _update_session_field(session_id, 'error', '未找到验证界面或发送验证码按钮')
                     return
             
         except Exception as e:
-            with SESSION_LOCK:
-                LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                LOGIN_SESSIONS[session_id]['error'] = f"处理验证界面失败: {str(e)}"
+            _update_session_field(session_id, 'status', 'failed')
+            _update_session_field(session_id, 'error', f"处理验证界面失败: {str(e)}")
             return
         
         # 更新状态为等待验证码
-        with SESSION_LOCK:
-            LOGIN_SESSIONS[session_id]['status'] = 'waiting_verification'
+        _update_session_field(session_id, 'status', 'waiting_verification')
         
         # 等待验证码输入（最多5分钟）
         max_wait = 300
         waited = 0
+        verification_code = None
         while waited < max_wait:
-            with SESSION_LOCK:
-                session = LOGIN_SESSIONS[session_id]
-                if 'verification_code' in session:
-                    verification_code = session['verification_code']
-                    break
+            session = _get_session_from_redis(session_id)
+            if session and session.get('verification_code'):
+                verification_code = session['verification_code']
+                break
             time.sleep(1)
             waited += 1
         else:
-            with SESSION_LOCK:
-                LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                LOGIN_SESSIONS[session_id]['error'] = '等待验证码超时'
+            _update_session_field(session_id, 'status', 'failed')
+            _update_session_field(session_id, 'error', '等待验证码超时')
             return
         
         # 输入验证码
@@ -774,9 +835,8 @@ def _auto_login_thread(
             code_input.send_keys(verification_code)
             
         except Exception as e:
-            with SESSION_LOCK:
-                LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                LOGIN_SESSIONS[session_id]['error'] = f"填写验证码失败: {str(e)}"
+            _update_session_field(session_id, 'status', 'failed')
+            _update_session_field(session_id, 'error', f"填写验证码失败: {str(e)}")
             return
         
         # 查找并点击登录按钮
@@ -804,9 +864,8 @@ def _auto_login_thread(
             time.sleep(3)  # 等待页面跳转
             
         except Exception as e:
-            with SESSION_LOCK:
-                LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                LOGIN_SESSIONS[session_id]['error'] = f"点击登录按钮失败: {str(e)}"
+            _update_session_field(session_id, 'status', 'failed')
+            _update_session_field(session_id, 'error', f"点击登录按钮失败: {str(e)}")
             return
         
         # 检查验证码是否错误
@@ -815,9 +874,8 @@ def _auto_login_thread(
                 By.XPATH, '//div[@class="invalid-feedback" and contains(text(), "校验码错误")]'
             )
             if error_feedback and error_feedback.is_displayed():
-                with SESSION_LOCK:
-                    LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                    LOGIN_SESSIONS[session_id]['error'] = '验证码错误，请重试'
+                _update_session_field(session_id, 'status', 'failed')
+                _update_session_field(session_id, 'error', '验证码错误，请重试')
                 print("检测到验证码错误")
                 return
         except:
@@ -874,9 +932,8 @@ def _auto_login_thread(
             
             if servicehall:
                 # 立即更新状态
-                with SESSION_LOCK:
-                    LOGIN_SESSIONS[session_id]['status'] = 'completed'
-                    LOGIN_SESSIONS[session_id]['servicehall'] = servicehall
+                _update_session_field(session_id, 'status', 'completed')
+                _update_session_field(session_id, 'servicehall', servicehall)
                 print(f"成功获取servicehall cookie: {servicehall[:50]}...")
                 break
             
@@ -884,22 +941,24 @@ def _auto_login_thread(
             waited += 0.5
         
         if not servicehall:
-            with SESSION_LOCK:
-                LOGIN_SESSIONS[session_id]['status'] = 'failed'
-                LOGIN_SESSIONS[session_id]['error'] = '登录失败：未能获取servicehall cookie'
+            _update_session_field(session_id, 'status', 'failed')
+            _update_session_field(session_id, 'error', '登录失败：未能获取servicehall cookie')
     
     except Exception as e:
-        with SESSION_LOCK:
-            LOGIN_SESSIONS[session_id]['status'] = 'failed'
-            LOGIN_SESSIONS[session_id]['error'] = f"登录过程出错: {str(e)}"
+        _update_session_field(session_id, 'status', 'failed')
+        _update_session_field(session_id, 'error', f"登录过程出错: {str(e)}")
     
     finally:
-        # 关闭浏览器
+        # 关闭浏览器并从本地移除driver
         if driver:
             try:
                 driver.quit()
             except:
                 pass
+        
+        with _DRIVER_LOCK:
+            if session_id in _LOCAL_DRIVERS:
+                del _LOCAL_DRIVERS[session_id]
 
 
 def _get_browser_driver_for_login(browser_type: str, headless: bool):
@@ -1066,31 +1125,29 @@ def submit_verification_code(session_id: str, verification_code: str) -> Dict:
     
     logger.info(f"[提交验证码] 收到请求 - session_id: {session_id[:8]}, 验证码: {verification_code}")
     
-    with SESSION_LOCK:
-        # 打印当前所有会话
-        existing_sessions = list(LOGIN_SESSIONS.keys())
-        logger.info(f"[提交验证码] 当前存在的会话: {[s[:8] for s in existing_sessions]}")
-        
-        if session_id not in LOGIN_SESSIONS:
-            logger.error(f"[提交验证码] 会话不存在 - session_id: {session_id[:8]}")
-            return {
-                "success": False,
-                "message": "会话不存在或已过期"
-            }
-        
-        session = LOGIN_SESSIONS[session_id]
-        logger.info(f"[提交验证码] 当前会话状态: {session['status']}")
-        
-        if session['status'] != 'waiting_verification':
-            logger.error(f"[提交验证码] 会话状态错误: {session['status']}")
-            return {
-                "success": False,
-                "message": f"会话状态错误: {session['status']}"
-            }
-        
-        # 设置验证码
-        session['verification_code'] = verification_code
-        logger.info(f"[提交验证码] 验证码已设置到会话中")
+    # 从Redis获取会话
+    session = _get_session_from_redis(session_id)
+    
+    if not session:
+        logger.error(f"[提交验证码] 会话不存在 - session_id: {session_id[:8]}")
+        return {
+            "success": False,
+            "message": "会话不存在或已过期"
+        }
+    
+    status = session.get('status', '')
+    logger.info(f"[提交验证码] 当前会话状态: {status}")
+    
+    if status != 'waiting_verification':
+        logger.error(f"[提交验证码] 会话状态错误: {status}")
+        return {
+            "success": False,
+            "message": f"会话状态错误: {status}"
+        }
+    
+    # 将验证码写入Redis
+    _update_session_field(session_id, 'verification_code', verification_code)
+    logger.info(f"[提交验证码] 验证码已设置到Redis会话中")
     
     return {
         "success": True,
@@ -1118,42 +1175,44 @@ def check_login_status(session_id: str) -> Dict:
     
     logger.debug(f"[检查状态] session_id: {session_id[:8] if session_id else 'None'}")
     
-    with SESSION_LOCK:
-        existing_sessions = list(LOGIN_SESSIONS.keys())
-        logger.debug(f"[检查状态] 当前会话列表: {[s[:8] for s in existing_sessions]}")
-        
-        if session_id not in LOGIN_SESSIONS:
-            logger.warning(f"[检查状态] 会话不存在 - session_id: {session_id[:8] if session_id else 'None'}")
-            return {
-                "success": False,
-                "status": "not_found",
-                "servicehall": None,
-                "error": "会话不存在或已过期"
-            }
-        
-        session = LOGIN_SESSIONS[session_id]
-        logger.debug(f"[检查状态] 会话状态: {session['status']}")
-        
+    # 从Redis获取会话
+    session = _get_session_from_redis(session_id)
+    
+    if not session:
+        logger.warning(f"[检查状态] 会话不存在 - session_id: {session_id[:8] if session_id else 'None'}")
         return {
-            "success": session['status'] == 'completed',
-            "status": session['status'],
-            "servicehall": session.get('servicehall'),
-            "error": session.get('error')
+            "success": False,
+            "status": "not_found",
+            "servicehall": None,
+            "error": "会话不存在或已过期"
         }
+    
+    status = session.get('status', 'unknown')
+    logger.debug(f"[检查状态] 会话状态: {status}")
+    
+    return {
+        "success": status == 'completed',
+        "status": status,
+        "servicehall": session.get('servicehall') or None,
+        "error": session.get('error') or None
+    }
 
 
 def cleanup_login_session(session_id: str):
     """
     清理登录会话
     """
-    with SESSION_LOCK:
-        if session_id in LOGIN_SESSIONS:
-            session = LOGIN_SESSIONS[session_id]
-            driver = session.get('driver')
+    # 清理Redis会话
+    _delete_session_from_redis(session_id)
+    
+    # 清理本地driver
+    with _DRIVER_LOCK:
+        if session_id in _LOCAL_DRIVERS:
+            driver = _LOCAL_DRIVERS[session_id]
             if driver:
                 try:
                     driver.quit()
                 except:
                     pass
-            del LOGIN_SESSIONS[session_id]
+            del _LOCAL_DRIVERS[session_id]
 
