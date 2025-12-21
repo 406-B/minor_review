@@ -196,3 +196,6 @@ LOGGING = {
         },
     },
 }
+
+# DeepSeek API 配置（用于内容审核）
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')

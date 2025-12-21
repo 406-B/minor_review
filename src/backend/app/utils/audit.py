@@ -7,7 +7,7 @@ import json
 import logging
 from typing import Dict, Tuple, Optional
 from django.conf import settings
-import time
+# import time
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,9 @@ class ContentAuditService:
 1. 不包含暴力、色情、赌博等违法内容
 2. 不包含辱骂、人身攻击等不文明语言
 3. 不包含广告、垃圾信息等
-4. 不包含政治敏感内容
+4. 不包含政治相关内容
 5. 不包含虚假信息、谣言等
+6. 不包括任何谐音、隐晦表达等变相违规内容
 
 请严格审核内容，如果发现任何违规情况，请明确指出违规类型和具体原因。
 如果内容合规，请回复"通过"。
@@ -57,9 +58,11 @@ class ContentAuditService:
         Returns:
             Tuple[bool, str]: (是否通过, 原因描述)
         """
+        logger.info(f"[审核开始] 类型={content_type}, 标题={title}, 内容={content[:1000]}")
+        
         if not self.api_key:
-            logger.warning("No API key configured, defaulting to pass")
-            return True, ""
+            logger.warning("[审核失败] 未配置DEEPSEEK_API_KEY")
+            return False, "审核服务未配置"
 
         try:
             # 构建提示词
@@ -68,33 +71,45 @@ class ContentAuditService:
                 title=title,
                 content=content[:1000]  # 限制内容长度
             )
-
+            
             # 调用 DeepSeek API
+            logger.info(f"[审核] 调用DeepSeek API...")
             response = self._call_deepseek_api(prompt)
 
             if not response:
-                logger.error("Failed to get response from DeepSeek API")
-                return True, ""  # 默认通过
+                logger.error("[审核失败] 未能从DeepSeek API获取响应")
+                return False, "审核服务无响应"
+
+            logger.info(f"[审核] API响应: {response[:200]}")
 
             # 解析响应
             result = self._parse_response(response)
             if not result:
-                logger.error("Failed to parse DeepSeek API response")
-                return True, ""
+                logger.error(f"[审核失败] 无法解析API响应: {response}")
+                return False, "审核结果解析失败"
 
-            status = result.get('status', '通过')
-            reason = result.get('reason', '')
+            logger.info(f"[审核] 解析结果: {result}")
 
+            status = result.get('status', '不通过')  # 默认不通过
+            reason = result.get('reason', '审核结果格式错误')
+            
+            is_passed = status == "通过"
+            
             # 限制原因长度
+            full_reason = reason
             if reason and len(reason) > 15:
                 reason = reason[:15] + "..."
 
-            is_passed = status == "通过"
+            if is_passed:
+                logger.info(f"[审核通过] 类型={content_type}, 标题={title}")
+            else:
+                logger.warning(f"[审核不通过] 类型={content_type}, 标题={title}, 原因={full_reason}")
+
             return is_passed, reason
 
         except Exception as e:
-            logger.error(f"Error during content audit: {str(e)}")
-            return True, ""  # 出错时默认通过
+            logger.error(f"[审核异常] 类型={content_type}, 错误={str(e)}", exc_info=True)
+            return False, "审核服务异常"
 
     def _call_deepseek_api(self, prompt: str) -> Optional[str]:
         """调用 DeepSeek API"""
