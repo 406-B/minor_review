@@ -464,57 +464,92 @@ def auto_login_and_fetch_cookie(
             "error": str 或 None
         }
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     session_id = str(uuid.uuid4())
+    logger.info(f"[主线程][{session_id[:8]}] 开始自动登录 - idserial={idserial}, headless={headless}, browser={browser_type}")
     
-    # 在新线程中执行登录流程
-    thread = threading.Thread(
-        target=_auto_login_thread,
-        args=(session_id, idserial, password, headless, browser_type)
-    )
-    thread.daemon = True
-    thread.start()
-    
-    # 等待初始化完成（最多60秒）
-    import time
-    max_wait = 60
-    waited = 0
-    while waited < max_wait:
-        with SESSION_LOCK:
-            if session_id in LOGIN_SESSIONS:
-                session = LOGIN_SESSIONS[session_id]
-                # 检查是否完成（成功、需要验证码、或失败）
-                if session['status'] in ['waiting_verification', 'failed', 'completed']:
-                    if session['status'] == 'completed':
-                        # 直接登录成功，无需验证码
-                        return {
-                            "success": True,
-                            "session_id": session_id,
-                            "status": session['status'],
-                            "servicehall": session.get('servicehall'),
-                            "idserial": idserial,
-                            "error": None
-                        }
-                    else:
-                        # 需要验证码或失败
-                        return {
-                            "success": session['status'] == 'waiting_verification',
-                            "session_id": session_id,
-                            "status": session['status'],
-                            "servicehall": None,
-                            "idserial": idserial,
-                            "error": session.get('error')
-                        }
-        time.sleep(0.5)
-        waited += 0.5
-    
-    return {
-        "success": False,
-        "session_id": None,
-        "status": "failed",
-        "servicehall": None,
-        "idserial": None,
-        "error": "初始化登录流程超时"
-    }
+    try:
+        # 在新线程中执行登录流程
+        logger.info(f"[主线程][{session_id[:8]}] 创建登录线程...")
+        thread = threading.Thread(
+            target=_auto_login_thread,
+            args=(session_id, idserial, password, headless, browser_type)
+        )
+        thread.daemon = True
+        thread.start()
+        logger.info(f"[主线程][{session_id[:8]}] 登录线程已启动，等待初始化...")
+        
+        # 等待初始化完成（最多60秒）
+        import time
+        max_wait = 60
+        waited = 0
+        while waited < max_wait:
+            with SESSION_LOCK:
+                if session_id in LOGIN_SESSIONS:
+                    session = LOGIN_SESSIONS[session_id]
+                    logger.debug(f"[主线程][{session_id[:8]}] 当前状态: {session['status']}, 已等待: {waited}秒")
+                    
+                    # 检查是否完成（成功、需要验证码、或失败）
+                    if session['status'] in ['waiting_verification', 'failed', 'completed']:
+                        if session['status'] == 'completed':
+                            # 直接登录成功，无需验证码
+                            logger.info(f"[主线程][{session_id[:8]}] 登录成功，无需验证码")
+                            return {
+                                "success": True,
+                                "session_id": session_id,
+                                "status": session['status'],
+                                "servicehall": session.get('servicehall'),
+                                "idserial": idserial,
+                                "error": None
+                            }
+                        elif session['status'] == 'waiting_verification':
+                            # 需要验证码
+                            logger.info(f"[主线程][{session_id[:8]}] 需要验证码")
+                            return {
+                                "success": True,
+                                "session_id": session_id,
+                                "status": session['status'],
+                                "servicehall": None,
+                                "idserial": idserial,
+                                "error": None
+                            }
+                        else:
+                            # 失败
+                            error_msg = session.get('error', '未知错误')
+                            logger.error(f"[主线程][{session_id[:8]}] 登录失败: {error_msg}")
+                            return {
+                                "success": False,
+                                "session_id": session_id,
+                                "status": session['status'],
+                                "servicehall": None,
+                                "idserial": idserial,
+                                "error": error_msg
+                            }
+            time.sleep(0.5)
+            waited += 0.5
+        
+        logger.error(f"[主线程][{session_id[:8]}] 等待超时({max_wait}秒)，线程可能卡住")
+        return {
+            "success": False,
+            "session_id": None,
+            "status": "failed",
+            "servicehall": None,
+            "idserial": None,
+            "error": "初始化登录流程超时"
+        }
+        
+    except Exception as e:
+        logger.exception(f"[主线程][{session_id[:8]}] auto_login_and_fetch_cookie异常: {str(e)}")
+        return {
+            "success": False,
+            "session_id": None,
+            "status": "failed",
+            "servicehall": None,
+            "idserial": None,
+            "error": f"登录流程异常: {str(e)}"
+        }
 
 
 def _auto_login_thread(
@@ -531,11 +566,16 @@ def _auto_login_thread(
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
     import time
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"[{session_id[:8]}] 开始自动登录线程 - idserial={idserial}, headless={headless}")
     
     driver = None
     
     try:
         # 初始化会话
+        logger.info(f"[{session_id[:8]}] 初始化会话")
         with SESSION_LOCK:
             LOGIN_SESSIONS[session_id] = {
                 'status': 'initializing',
@@ -545,26 +585,33 @@ def _auto_login_thread(
             }
         
         # 获取浏览器驱动
+        logger.info(f"[{session_id[:8]}] 正在启动{browser_type}浏览器...")
         driver = _get_browser_driver_for_login(browser_type, headless)
+        logger.info(f"[{session_id[:8]}] 浏览器启动成功")
         
         with SESSION_LOCK:
             LOGIN_SESSIONS[session_id]['driver'] = driver
         
         # 打开登录页面
+        logger.info(f"[{session_id[:8]}] 正在打开登录页面...")
         driver.get("https://card.tsinghua.edu.cn/userselftrade")
+        logger.info(f"[{session_id[:8]}] 页面加载完成，当前URL: {driver.current_url}")
         
         # 等待页面加载
         wait = WebDriverWait(driver, 15)
         
         # 查找学号输入框（使用精确的XPath）
         try:
+            logger.info(f"[{session_id[:8]}] 查找学号输入框...")
             username_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '//*[@id="i_user"]'))
             )
             username_input.clear()
             username_input.send_keys(idserial)
+            logger.info(f"[{session_id[:8]}] 学号已填写")
             
         except Exception as e:
+            logger.error(f"[{session_id[:8]}] 填写学号失败: {str(e)}")
             with SESSION_LOCK:
                 LOGIN_SESSIONS[session_id]['status'] = 'failed'
                 LOGIN_SESSIONS[session_id]['error'] = f"填写学号失败: {str(e)}"
@@ -584,11 +631,15 @@ def _auto_login_thread(
         
         # 点击登录按钮（使用精确的XPath）
         try:
+            logger.info(f"[{session_id[:8]}] 查找登录按钮...")
             login_button = driver.find_element(By.XPATH, '//*[@id="theform"]/div[5]/a')
             login_button.click()
+            logger.info(f"[{session_id[:8]}] 登录按钮已点击，等待响应...")
             time.sleep(3)  # 等待登录响应
+            logger.info(f"[{session_id[:8]}] 登录后URL: {driver.current_url}")
             
         except Exception as e:
+            logger.error(f"[{session_id[:8]}] 点击登录按钮失败: {str(e)}")
             with SESSION_LOCK:
                 LOGIN_SESSIONS[session_id]['status'] = 'failed'
                 LOGIN_SESSIONS[session_id]['error'] = f"点击登录按钮失败: {str(e)}"
@@ -609,6 +660,7 @@ def _auto_login_thread(
             pass
         
         # 检查是否直接登录成功（情况2：无需验证码）
+        logger.info(f"[{session_id[:8]}] 检查是否直接登录成功...")
         servicehall = None
         cookies = driver.get_cookies()
         for cookie in cookies:
@@ -618,10 +670,13 @@ def _auto_login_thread(
         
         if servicehall:
             # 直接登录成功，无需验证码
+            logger.info(f"[{session_id[:8]}] 直接登录成功，无需验证码")
             with SESSION_LOCK:
                 LOGIN_SESSIONS[session_id]['status'] = 'completed'
                 LOGIN_SESSIONS[session_id]['servicehall'] = servicehall
             return
+        else:
+            logger.info(f"[{session_id[:8]}] 需要验证码，进入验证流程")
         
         # 情况1：需要验证码，查找验证界面
         try:
@@ -851,24 +906,127 @@ def _get_browser_driver_for_login(browser_type: str, headless: bool):
     """
     获取用于自动登录的浏览器驱动
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         from selenium import webdriver
         from selenium.webdriver.chrome.options import Options as ChromeOptions
         from selenium.webdriver.firefox.options import Options as FirefoxOptions
         from selenium.webdriver.edge.options import Options as EdgeOptions
     except ImportError:
+        logger.error("未安装selenium库")
         raise ImportError("未安装selenium库，请运行: pip install selenium")
     
     browser_type = browser_type.lower()
+    logger.info(f"正在初始化{browser_type}浏览器，headless={headless}")
     
     if browser_type == 'chrome':
         options = ChromeOptions()
         if headless:
-            options.add_argument('--headless')
+            logger.info("配置无头模式参数...")
+            options.add_argument('--headless=new')
+            options.add_argument('--no-sandbox')
+            options.add_argument('--disable-dev-shm-usage')
+            options.add_argument('--disable-gpu')
+            options.add_argument('--window-size=1920,1080')
+            # 设置Chromium路径（Docker环境）
+            import os
+            if os.path.exists('/usr/bin/chromium'):
+                logger.info("检测到Chromium，使用Chromium浏览器")
+                options.binary_location = '/usr/bin/chromium'
+            elif os.path.exists('/usr/bin/google-chrome'):
+                logger.info("检测到Google Chrome")
+                options.binary_location = '/usr/bin/google-chrome'
+        
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
         options.add_experimental_option('useAutomationExtension', False)
-        return webdriver.Chrome(options=options)
+        
+        # 添加更多Docker环境必需的参数
+        if headless:
+            options.add_argument('--disable-extensions')
+            options.add_argument('--disable-logging')
+            options.add_argument('--disable-background-networking')
+            options.add_argument('--disable-default-apps')
+            options.add_argument('--disable-sync')
+            options.add_argument('--disable-translate')
+            options.add_argument('--hide-scrollbars')
+            options.add_argument('--metrics-recording-only')
+            options.add_argument('--mute-audio')
+            options.add_argument('--no-first-run')
+            options.add_argument('--safebrowsing-disable-auto-update')
+            options.add_argument('--ignore-certificate-errors')
+            options.add_argument('--ignore-ssl-errors')
+            options.add_argument('--ignore-certificate-errors-spki-list')
+        
+        try:
+            logger.info("正在启动Chrome/Chromium...")
+            
+            # 使用Service显式管理ChromeDriver
+            from selenium.webdriver.chrome.service import Service
+            import os
+            
+            # 显式指定ChromeDriver路径
+            chromedriver_path = '/usr/local/bin/chromedriver'
+            if not os.path.exists(chromedriver_path):
+                chromedriver_path = '/usr/bin/chromedriver'
+            
+            logger.info(f"ChromeDriver路径: {chromedriver_path}")
+            
+            # 创建Service对象，设置较长的超时时间
+            service = Service(
+                executable_path=chromedriver_path,
+                log_path='/tmp/chromedriver.log'
+            )
+            
+            # 使用超时机制启动Chrome
+            import threading
+            
+            driver_container = {'driver': None, 'error': None}
+            
+            def start_chrome():
+                try:
+                    driver_container['driver'] = webdriver.Chrome(
+                        service=service,
+                        options=options
+                    )
+                    logger.info("WebDriver.Chrome()调用成功")
+                except Exception as e:
+                    logger.error(f"WebDriver.Chrome()调用失败: {str(e)}")
+                    driver_container['error'] = e
+            
+            chrome_thread = threading.Thread(target=start_chrome)
+            chrome_thread.daemon = True
+            logger.info("启动Chrome初始化线程...")
+            chrome_thread.start()
+            chrome_thread.join(timeout=45)  # 增加到45秒超时
+            
+            if chrome_thread.is_alive():
+                logger.error("Chrome启动超时（45秒）")
+                # 尝试读取ChromeDriver日志
+                try:
+                    with open('/tmp/chromedriver.log', 'r') as f:
+                        log_content = f.read()
+                        logger.error(f"ChromeDriver日志: {log_content[-500:]}")  # 只记录最后500字符
+                except:
+                    pass
+                raise TimeoutError("Chrome启动超时，ChromeDriver可能无法与Chrome建立连接")
+            
+            if driver_container['error']:
+                logger.error(f"Chrome启动异常: {driver_container['error']}")
+                raise driver_container['error']
+            
+            if not driver_container['driver']:
+                logger.error("Chrome启动失败，driver为None")
+                raise RuntimeError("Chrome启动失败")
+            
+            driver = driver_container['driver']
+            logger.info("Chrome/Chromium启动成功")
+            return driver
+        except Exception as e:
+            logger.error(f"Chrome启动失败: {str(e)}")
+            raise
     
     elif browser_type == 'firefox':
         options = FirefoxOptions()
@@ -903,16 +1061,28 @@ def submit_verification_code(session_id: str, verification_code: str) -> Dict:
             "message": str
         }
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"[提交验证码] 收到请求 - session_id: {session_id[:8]}, 验证码: {verification_code}")
+    
     with SESSION_LOCK:
+        # 打印当前所有会话
+        existing_sessions = list(LOGIN_SESSIONS.keys())
+        logger.info(f"[提交验证码] 当前存在的会话: {[s[:8] for s in existing_sessions]}")
+        
         if session_id not in LOGIN_SESSIONS:
+            logger.error(f"[提交验证码] 会话不存在 - session_id: {session_id[:8]}")
             return {
                 "success": False,
                 "message": "会话不存在或已过期"
             }
         
         session = LOGIN_SESSIONS[session_id]
+        logger.info(f"[提交验证码] 当前会话状态: {session['status']}")
         
         if session['status'] != 'waiting_verification':
+            logger.error(f"[提交验证码] 会话状态错误: {session['status']}")
             return {
                 "success": False,
                 "message": f"会话状态错误: {session['status']}"
@@ -920,6 +1090,7 @@ def submit_verification_code(session_id: str, verification_code: str) -> Dict:
         
         # 设置验证码
         session['verification_code'] = verification_code
+        logger.info(f"[提交验证码] 验证码已设置到会话中")
     
     return {
         "success": True,
@@ -942,8 +1113,17 @@ def check_login_status(session_id: str) -> Dict:
             "error": str 或 None
         }
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.debug(f"[检查状态] session_id: {session_id[:8] if session_id else 'None'}")
+    
     with SESSION_LOCK:
+        existing_sessions = list(LOGIN_SESSIONS.keys())
+        logger.debug(f"[检查状态] 当前会话列表: {[s[:8] for s in existing_sessions]}")
+        
         if session_id not in LOGIN_SESSIONS:
+            logger.warning(f"[检查状态] 会话不存在 - session_id: {session_id[:8] if session_id else 'None'}")
             return {
                 "success": False,
                 "status": "not_found",
@@ -952,6 +1132,7 @@ def check_login_status(session_id: str) -> Dict:
             }
         
         session = LOGIN_SESSIONS[session_id]
+        logger.debug(f"[检查状态] 会话状态: {session['status']}")
         
         return {
             "success": session['status'] == 'completed',

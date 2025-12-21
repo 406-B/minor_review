@@ -155,15 +155,15 @@ const lastUpdated = computed(() => {
 const detectBrowser = () => {
   const userAgent = navigator.userAgent.toLowerCase()
   
-  if (userAgent.includes('edg/')) {
-    return 'edge'
-  } else if (userAgent.includes('chrome') && !userAgent.includes('edg')) {
-    return 'chrome'
-  } else if (userAgent.includes('firefox')) {
-    return 'firefox'
-  } else if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
-    return 'safari'
-  }
+  // if (userAgent.includes('edg/')) {
+  //   return 'edge'
+  // } else if (userAgent.includes('chrome') && !userAgent.includes('edg')) {
+  //   return 'chrome'
+  // } else if (userAgent.includes('firefox')) {
+  //   return 'firefox'
+  // } else if (userAgent.includes('safari') && !userAgent.includes('chrome')) {
+  //   return 'safari'
+  // }
   
   // 默认使用 Chrome
   return 'chrome'

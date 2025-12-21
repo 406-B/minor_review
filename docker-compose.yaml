@@ -58,6 +58,7 @@ services:
       dockerfile: Dockerfile
     container_name: minor_review_backend
     restart: always
+    shm_size: '2gb'  # Chrome需要的共享内存
     environment:
       DJANGO_SETTINGS_MODULE: app.settings_prod
       DJANGO_SECRET_KEY: django-insecure-prod-key-auto-generated-2025

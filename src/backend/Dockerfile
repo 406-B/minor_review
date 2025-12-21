@@ -14,13 +14,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # 使用清华镜像源加速（可选，注释掉使用默认源）
 RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list.d/debian.sources
 
-# 安装系统依赖（包括 netcat 用于健康检查）
+# 安装系统依赖和Chromium
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
     pkg-config \
     netcat-traditional \
     curl \
+    chromium \
+    chromium-driver \
     && rm -rf /var/lib/apt/lists/*
 
 # 配置 pip 使用清华镜像源（加速下载）

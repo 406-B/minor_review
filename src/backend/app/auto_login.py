@@ -120,21 +120,32 @@ def get_canteen_data(idserial, servicehall):
         }
         
 
-def get_servicehall_cookie(idserial):
+def get_servicehall_cookie(idserial, headless=False):
     """
     打开浏览器，等待用户手动登录，获取servicehall cookie
     
     Args:
         idserial: 学号
+        headless: 是否使用无头模式（Docker环境需要）
     
     Returns:
         servicehall cookie值
     """
-    # 配置Chrome选项
+    # 配置Chrome/Chromium选项
     chrome_options = Options()
     chrome_options.add_argument('--disable-blink-features=AutomationControlled')
     chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
     chrome_options.add_experimental_option('useAutomationExtension', False)
+    
+    # Docker环境必需的选项
+    if headless:
+        chrome_options.add_argument('--headless=new')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
+        # 设置Chromium路径（Docker环境）
+        chrome_options.binary_location = '/usr/bin/chromium'
     
     driver = None
     try:

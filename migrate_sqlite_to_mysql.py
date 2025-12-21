@@ -20,8 +20,8 @@ SQLITE_DB = 'db.sqlite3'
 
 # MySQL 数据库配置（Docker环境）
 MYSQL_CONFIG = {
-    'host': '127.0.0.1',
-    'port': 33306,  # Docker容器映射到主机33306端口（避免与本地MySQL冲突）
+    'host': 'db',
+    'port': 3306,  # Docker容器映射到主机33306端口（避免与本地MySQL冲突）
     'user': 'root',
     'password': 'database',
     'database': 'minor_review',
