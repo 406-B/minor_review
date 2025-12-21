@@ -15,7 +15,7 @@ describe('E2E 食堂和菜品测试', () => {
     cy.visit('/login')
     cy.get('input[autocomplete="username"]').type(testUser.username)
     cy.get('input[autocomplete="current-password"]').type(testUser.password)
-    cy.get('button.login-btn').click()
+      cy.get('button.login-btn').first().click()
     cy.url().should('not.include', '/login')
   })
 
@@ -128,7 +128,7 @@ describe('E2E 食堂和菜品测试', () => {
       cy.get('input[placeholder*="菜品名"]').type('鸡')
       
       // 点击搜索
-      cy.contains('button', '搜索').click()
+        cy.contains('button', '搜索').first().click()
       
       // 验证搜索结果
       cy.get('.dish-card', { timeout: 10000 }).should('have.length.greaterThan', 0)
@@ -158,7 +158,7 @@ describe('E2E 食堂和菜品测试', () => {
       cy.get('.el-select-dropdown__item').first().click({ force: true })
       
       // 点击搜索
-      cy.contains('button', '搜索').click()
+        cy.contains('button', '搜索').first().click()
       
       // 验证搜索结果
       cy.get('.dish-card', { timeout: 10000 }).should('have.length.greaterThan', 0)
@@ -177,7 +177,7 @@ describe('E2E 食堂和菜品测试', () => {
       cy.get('.el-select-dropdown__item').first().click({ force: true })
       
       // 点击搜索
-      cy.contains('button', '搜索').click()
+        cy.contains('button', '搜索').first().click()
       
       // 验证搜索结果（可能有结果或无结果）
       cy.wait(2000)

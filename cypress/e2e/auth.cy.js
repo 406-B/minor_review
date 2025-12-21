@@ -33,7 +33,7 @@ describe('E2E 认证流程测试', () => {
       cy.get('input').eq(2).type(testUser.nickname) // 昵称字段
       
       // 提交注册
-      cy.get('button.register-btn').click()
+      cy.get('button.register-btn').first().click()
       
       // 验证注册成功后跳转 (注册成功后自动登录，跳转到 /profile 或 /onboarding/tags)
       cy.url().should('not.include', '/register')
@@ -54,7 +54,7 @@ describe('E2E 认证流程测试', () => {
 
     it('应当拒绝空表单提交', () => {
       // 直接点击注册按钮（不填写任何信息）
-      cy.get('button.register-btn').click()
+      cy.get('button.register-btn').first().click()
       
       // 应当留在注册页面
       cy.url().should('include', '/register')
@@ -70,7 +70,7 @@ describe('E2E 认证流程测试', () => {
       cy.get('input[autocomplete="username"]').type('123456')
       cy.get('input[autocomplete="new-password"]').type(testUser.password)
       cy.get('input').eq(2).type(testUser.nickname)
-      cy.get('button.register-btn').click()
+      cy.get('button.register-btn').first().click()
       
       // 应当留在注册页面（前端校验拦截）
       cy.url().should('include', '/register')
@@ -81,7 +81,7 @@ describe('E2E 认证流程测试', () => {
       cy.get('input[autocomplete="username"]').type(testUser.username)
       cy.get('input[autocomplete="new-password"]').type('12345678') // 缺少大小写字母和符号
       cy.get('input').eq(2).type(testUser.nickname)
-      cy.get('button.register-btn').click()
+      cy.get('button.register-btn').first().click()
       
       // 应当留在注册页面（前端校验拦截）
       cy.url().should('include', '/register')
@@ -91,7 +91,7 @@ describe('E2E 认证流程测试', () => {
       cy.get('input[autocomplete="username"]').type(testUser.username)
       cy.get('input[autocomplete="new-password"]').type(testUser.password)
       // 昵称留空
-      cy.get('button.register-btn').click()
+      cy.get('button.register-btn').first().click()
       
       // 应当留在注册页面
       cy.url().should('include', '/register')
@@ -115,7 +115,7 @@ describe('E2E 认证流程测试', () => {
       cy.get('input[autocomplete="current-password"]').type(testUser.password)
       
       // 点击登录按钮
-      cy.get('button.login-btn').click()
+      cy.get('button.login-btn').first().click()
       
       // 验证跳转到个人主页或标签设置页
       cy.url().should('not.include', '/login')
@@ -136,7 +136,7 @@ describe('E2E 认证流程测试', () => {
 
     it('应当拒绝空表单提交', () => {
       // 不填写任何信息直接点击登录
-      cy.get('button.login-btn').click()
+      cy.get('button.login-btn').first().click()
       
       // 应当留在登录页面
       cy.url().should('include', '/login')
@@ -145,7 +145,7 @@ describe('E2E 认证流程测试', () => {
     it('应当拒绝错误的用户名', () => {
       cy.get('input[autocomplete="username"]').type('wronguser999')
       cy.get('input[autocomplete="current-password"]').type(testUser.password)
-      cy.get('button.login-btn').click()
+      cy.get('button.login-btn').first().click()
       
       // 应当留在登录页面
       cy.url().should('include', '/login')
@@ -159,7 +159,7 @@ describe('E2E 认证流程测试', () => {
     it('应当拒绝错误的密码', () => {
       cy.get('input[autocomplete="username"]').type(testUser.username)
       cy.get('input[autocomplete="current-password"]').type('WrongPass123-')
-      cy.get('button.login-btn').click()
+      cy.get('button.login-btn').first().click()
       
       // 应当留在登录页面
       cy.url().should('include', '/login')
@@ -189,7 +189,7 @@ describe('E2E 认证流程测试', () => {
       cy.visit('/profile')
       
       // 点击登出按钮（ControlPanel 组件中的登出按钮）
-      cy.contains('button', '登出账号').click()
+      cy.contains('button', '登出账号').first().click()
       
       // 验证跳转到登录页
       cy.url().should('include', '/login')

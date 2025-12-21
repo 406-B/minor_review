@@ -65,38 +65,58 @@ if not User.objects.filter(username='charlie').exists():
 print('All test users ready')
 " || true
 
-echo "Initializing test data..."
-# 运行数据初始化脚本（如果存在）
-if [ -f "src/backend/app/data_filing/populate_database.py" ]; then
-  echo "Running populate_database.py..."
-  sudo docker compose $COMPOSE_FILES exec -T backend python data_filing/populate_database.py || true
-fi
-
 echo ""
-echo "Note: Cypress fixtures (cypress/fixtures/*.json) are used by Cypress tests directly"
-echo "      and do not need to be loaded into Django database."
+echo "Note: Test users created. E2E tests will create their own data during execution."
+echo "      (populate_database.py is not needed for E2E tests)"
 echo ""
 
 echo "Running Cypress tests in docker..."
-sudo docker compose $COMPOSE_FILES run --rm cypress
+echo "=========================================="
+sudo docker compose -f docker-compose.e2e.yaml run --rm --entrypoint "/bin/sh" cypress -c "npx cypress run --reporter spec"
 CYPRESS_EXIT_CODE=$?
 
+echo ""
 echo "=========================================="
-echo "Collecting test artifacts..."
+echo "📊 Test Results Summary"
 echo "=========================================="
-# artifacts (videos/screenshots) are mounted into the repo by the cypress service
-echo "Test videos: ./cypress/videos"
-echo "Screenshots: ./cypress/screenshots"
+
+# 解析测试结果
+if [ -f cypress_output.log ]; then
+  # 提取测试统计
+  PASSING=$(grep -oP '✔\s+\K\d+(?=\s+passing)' cypress_output.log | tail -1 || echo "0")
+  FAILING=$(grep -oP '\d+(?=\s+failing)' cypress_output.log | tail -1 || echo "0")
+  PENDING=$(grep -oP '\d+(?=\s+pending)' cypress_output.log | tail -1 || echo "0")
+  
+  echo "Tests Passed:  ${PASSING}"
+  echo "Tests Failed:  ${FAILING}"
+  [ "$PENDING" != "0" ] && echo "Tests Pending: ${PENDING}"
+  
+  # 显示失败的测试
+  if [ "$FAILING" != "0" ]; then
+    echo ""
+    echo "❌ Failed Tests:"
+    grep -A 2 "failing)" cypress_output.log | tail -20 || true
+  fi
+  
+  rm -f cypress_output.log
+fi
+
+echo ""
+echo "Test artifacts location:"
+echo "  - Videos:      ./cypress/videos"
+echo "  - Screenshots: ./cypress/screenshots"
 
 if [ $CYPRESS_EXIT_CODE -ne 0 ]; then
   echo ""
   echo "=========================================="
-  echo "⚠️  Cypress tests failed with exit code: $CYPRESS_EXIT_CODE"
+  echo "⚠️  E2E tests FAILED (exit code: $CYPRESS_EXIT_CODE)"
   echo "=========================================="
+  echo ""
+  echo "Check the videos and screenshots above for details."
   exit $CYPRESS_EXIT_CODE
 fi
 
 echo ""
 echo "=========================================="
-echo "✅ E2E tests completed successfully!"
+echo "✅ All E2E tests PASSED!"
 echo "=========================================="

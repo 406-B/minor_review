@@ -15,7 +15,7 @@ describe('E2E 社区功能测试', () => {
     cy.visit('/login')
     cy.get('input[autocomplete="username"]').type(testUser.username)
     cy.get('input[autocomplete="current-password"]').type(testUser.password)
-    cy.get('button.login-btn').click()
+    cy.get('button.login-btn').first().click()
     cy.url().should('not.include', '/login')
   })
 
@@ -129,7 +129,7 @@ describe('E2E 社区功能测试', () => {
       cy.get('.dish-card-section').then(($section) => {
         if ($section.length > 0) {
           // 点击菜品卡片
-          cy.get('.dish-card').click()
+          cy.get('.dish-card').first().click()
           
           // 验证跳转到菜品详情页
           cy.url().should('include', '/dish/')
@@ -173,7 +173,7 @@ describe('E2E 社区功能测试', () => {
       cy.get('textarea.comment-input').clear().type(commentText)
       
       // 点击发表评论按钮
-      cy.get('button.comment-btn').click()
+      cy.get('button.comment-btn').first().click()
       
       // 等待评论发表成功
       cy.wait(2000)
@@ -206,7 +206,7 @@ describe('E2E 社区功能测试', () => {
         if ($items.length > 0) {
           // 点击第一条评论的回复按钮
           cy.get('.comment-item').first().within(() => {
-            cy.get('button.comment-reply-btn').click()
+            cy.get('button.comment-reply-btn').first().click()
           })
           
           // 验证回复表单出现
@@ -230,7 +230,7 @@ describe('E2E 社区功能测试', () => {
           cy.get('textarea.reply-input').type(replyText)
           
           // 点击发送按钮
-          cy.get('button.reply-submit-btn').click()
+          cy.get('button.reply-submit-btn').first().click()
           
           // 等待回复成功
           cy.wait(2000)
@@ -251,7 +251,7 @@ describe('E2E 社区功能测试', () => {
           })
           
           // 点击取消按钮
-          cy.get('button.reply-cancel-btn').click()
+          cy.get('button.reply-cancel-btn').first().click()
           
           // 验证回复表单消失
           cy.get('.reply-form').should('not.exist')
@@ -263,7 +263,7 @@ describe('E2E 社区功能测试', () => {
   describe('步骤4: 创建和发布帖子（包括关联菜品）', () => {
     beforeEach(() => {
       cy.visit('/community')
-      cy.get('button.publish-btn').click()
+      cy.get('button.publish-btn').first().click()
       cy.url().should('include', '/post/create')
     })
 
@@ -288,7 +288,7 @@ describe('E2E 社区功能测试', () => {
     })
 
     it('应当能够打开菜品选择悬浮窗', () => {
-      cy.get('button.add-dish-btn').click()
+      cy.get('button.add-dish-btn').first().click()
       
       // 验证悬浮窗出现
       cy.get('.dish-modal').should('exist')
@@ -312,7 +312,7 @@ describe('E2E 社区功能测试', () => {
       cy.get('.modal-results .dish-card').first().click()
       
       // 点击确认选择
-      cy.get('button.confirm-btn').click()
+      cy.get('button.confirm-btn').first().click()
       
       // 验证菜品已选中
       cy.get('.selected-dish-card').should('exist')
@@ -328,7 +328,7 @@ describe('E2E 社区功能测试', () => {
       cy.get('button.confirm-btn').click()
       
       // 点击移除按钮
-      cy.get('button.remove-dish-btn').click()
+      cy.get('button.remove-dish-btn').first().click()
       
       // 验证菜品已移除
       cy.get('.selected-dish-card').should('not.exist')
@@ -346,7 +346,7 @@ describe('E2E 社区功能测试', () => {
       cy.get('textarea.content-input').type(postContent)
       
       // 点击发布
-      cy.contains('button', '发布').click()
+      cy.contains('button', '发布').first().click()
       
       // 验证跳转到社区首页或帖子详情页
       cy.url().should('match', /\/community|\/post\/\d+/, { timeout: 10000 })
@@ -392,7 +392,7 @@ describe('E2E 社区功能测试', () => {
     })
 
     it('应当能够点击返回按钮', () => {
-      cy.contains('button', '返回').click()
+      cy.contains('button', '返回').first().click()
       
       // 验证返回到社区首页
       cy.url().should('include', '/community')

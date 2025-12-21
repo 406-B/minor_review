@@ -15,7 +15,7 @@ describe('E2E 个人主页功能测试', () => {
     cy.visit('/login')
     cy.get('input[autocomplete="username"]').type(testUser.username)
     cy.get('input[autocomplete="current-password"]').type(testUser.password)
-    cy.get('button.login-btn').click()
+    cy.get('button.login-btn').first().click()
     cy.url().should('not.include', '/login')
   })
 
@@ -184,7 +184,7 @@ describe('E2E 个人主页功能测试', () => {
 
     it('应当能够点击"查看全部"跳转到我的帖子页', () => {
       cy.contains('已发布内容').parent().within(() => {
-        cy.contains('查看全部').click()
+        cy.contains('查看全部').first().click()
       })
       
       cy.url().should('include', '/profile/posts')
@@ -213,7 +213,7 @@ describe('E2E 个人主页功能测试', () => {
 
     it('应当能够从我的帖子页返回', () => {
       cy.visit('/profile/posts')
-      cy.get('button.back-btn').click()
+      cy.get('button.back-btn').first().click()
       
       cy.url().should('not.include', '/posts')
     })
@@ -281,7 +281,7 @@ describe('E2E 个人主页功能测试', () => {
   describe('步骤5: 编辑个人资料', () => {
     beforeEach(() => {
       cy.visit('/profile')
-      cy.get('button.edit-btn').click()
+      cy.get('button.edit-btn').first().click()
       cy.url().should('include', '/profile/edit')
     })
 
@@ -336,7 +336,7 @@ describe('E2E 个人主页功能测试', () => {
       const newNickname = `测试昵称${Date.now().toString().slice(-4)}`
       
       cy.get('input.nickname-input').clear().type(newNickname)
-      cy.contains('button', '保存').click()
+      cy.contains('button', '保存').first().click()
       
       // 等待保存成功（可能会跳转或显示提示）
       cy.wait(2000)
@@ -358,7 +358,7 @@ describe('E2E 个人主页功能测试', () => {
     })
 
     it('应当能够点击返回按钮', () => {
-      cy.contains('button', '返回').click()
+      cy.contains('button', '返回').first().click()
       
       cy.url().should('not.include', '/edit')
       cy.url().should('include', '/profile')
@@ -369,7 +369,7 @@ describe('E2E 个人主页功能测试', () => {
     })
 
     it('应当能够点击更换头像按钮', () => {
-      cy.contains('button', '更换头像').click()
+      cy.contains('button', '更换头像').first().click()
       
       // 验证头像裁剪器弹窗出现
       cy.wait(500)
