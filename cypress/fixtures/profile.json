@@ -1,0 +1,333 @@
+{
+  "user": {
+    "id": 4,
+    "username": "tester123",
+    "nickname": "测试用户",
+    "avatar": "/media/avatars/tester123.jpg",
+    "created": "2024-01-01T00:00:00Z",
+    "preference_tags": [
+      { "id": 1, "name": "辣" },
+      { "id": 2, "name": "荤菜" },
+      { "id": 3, "name": "川菜" }
+    ]
+  },
+  "stats": {
+    "liked_posts_count": 15,
+    "commented_posts_count": 28,
+    "posts_count": 6,
+    "check_in_count": 42
+  },
+  "achievements": [
+    {
+      "dish": 1,
+      "dish_name": "宫保鸡丁",
+      "dish_image": "/media/dishes/gongbao.jpg",
+      "count": 5,
+      "level": "bronze"
+    },
+    {
+      "dish": 3,
+      "dish_name": "糖醋排骨",
+      "dish_image": "/media/dishes/tangcu.jpg",
+      "count": 12,
+      "level": "silver"
+    },
+    {
+      "dish": 7,
+      "dish_name": "红烧肉盖浇饭",
+      "dish_image": "/media/dishes/hongshao.jpg",
+      "count": 25,
+      "level": "gold"
+    },
+    {
+      "dish": 9,
+      "dish_name": "水煮鱼片",
+      "dish_image": "/media/dishes/shuizhu.jpg",
+      "count": 150,
+      "level": "rainbow"
+    }
+  ],
+  "myPosts": [
+    {
+      "id": 4,
+      "subject": "糖醋排骨真的绝了！",
+      "content": "第一食堂三楼新开的粤菜窗口，糖醋排骨做得太好吃了！",
+      "created_at": "2024-01-16T12:30:00Z",
+      "comments_count": 18,
+      "likes_count": 56
+    },
+    {
+      "id": 6,
+      "subject": "红烧肉盖浇饭性价比之王",
+      "content": "第二食堂二楼的红烧肉盖浇饭，只要14元！",
+      "created_at": "2024-01-18T13:15:00Z",
+      "comments_count": 22,
+      "likes_count": 68
+    }
+  ],
+  "likedPosts": [
+    {
+      "id": 1,
+      "subject": "宫保鸡丁强烈推荐！",
+      "author": {
+        "id": 1,
+        "username": "alice",
+        "nickname": "爱丽丝"
+      },
+      "created_at": "2024-01-15T09:00:00Z",
+      "likes_count": 25,
+      "comments_count": 8
+    },
+    {
+      "id": 3,
+      "subject": "第二食堂麻辣烫测评",
+      "author": {
+        "id": 1,
+        "username": "alice",
+        "nickname": "爱丽丝"
+      },
+      "created_at": "2024-01-13T11:00:00Z",
+      "likes_count": 38,
+      "comments_count": 12
+    },
+    {
+      "id": 8,
+      "subject": "周末特供：水煮鱼片",
+      "author": {
+        "id": 1,
+        "username": "alice",
+        "nickname": "爱丽丝"
+      },
+      "created_at": "2024-01-20T14:00:00Z",
+      "likes_count": 89,
+      "comments_count": 31
+    }
+  ],
+  "receivedComments": [
+    {
+      "id": 8,
+      "content": "看你的描述好想吃啊！今晚就去试试",
+      "author": {
+        "id": 1,
+        "username": "alice",
+        "nickname": "爱丽丝",
+        "avatar": "/avatars/alice.jpg"
+      },
+      "post_id": 4,
+      "post_subject": "糖醋排骨真的绝了！",
+      "created_at": "2024-01-16T13:15:00Z"
+    },
+    {
+      "id": 9,
+      "content": "记得早点去，晚了可能卖完😄",
+      "author": {
+        "id": 4,
+        "username": "tester123",
+        "nickname": "测试用户",
+        "avatar": "/avatars/tester123.jpg"
+      },
+      "post_id": 4,
+      "post_subject": "糖醋排骨真的绝了！",
+      "created_at": "2024-01-16T13:30:00Z"
+    },
+    {
+      "id": 10,
+      "content": "18元确实有点贵，但看起来值得",
+      "author": {
+        "id": 2,
+        "username": "bob",
+        "nickname": "鲍勃",
+        "avatar": "/avatars/bob.jpg"
+      },
+      "post_id": 4,
+      "post_subject": "糖醋排骨真的绝了！",
+      "created_at": "2024-01-16T14:00:00Z"
+    },
+    {
+      "id": 15,
+      "content": "14元真的很便宜了！明天就去吃",
+      "author": {
+        "id": 1,
+        "username": "alice",
+        "nickname": "爱丽丝",
+        "avatar": "/avatars/alice.jpg"
+      },
+      "post_id": 6,
+      "post_subject": "红烧肉盖浇饭性价比之王",
+      "created_at": "2024-01-18T13:45:00Z"
+    },
+    {
+      "id": 16,
+      "content": "学生党表示已经吃了一个月了😂",
+      "author": {
+        "id": 3,
+        "username": "charlie",
+        "nickname": "查理",
+        "avatar": "/avatars/charlie.jpg"
+      },
+      "post_id": 6,
+      "post_subject": "红烧肉盖浇饭性价比之王",
+      "created_at": "2024-01-18T14:20:00Z"
+    }
+  ],
+  "myComments": [
+    {
+      "id": 4,
+      "content": "昨天刚吃过，确实很不错！👍",
+      "post_id": 1,
+      "post_subject": "宫保鸡丁强烈推荐！",
+      "created_at": "2024-01-15T15:20:00Z"
+    },
+    {
+      "id": 7,
+      "content": "这家麻辣烫我也经常吃，性价比很高",
+      "post_id": 3,
+      "post_subject": "第二食堂麻辣烫测评",
+      "created_at": "2024-01-13T16:45:00Z"
+    },
+    {
+      "id": 11,
+      "content": "推荐第二食堂的麻辣烫或者第一食堂的盖浇饭",
+      "post_id": 5,
+      "post_subject": "今天午餐吃什么？求推荐！",
+      "created_at": "2024-01-17T11:00:00Z"
+    },
+    {
+      "id": 18,
+      "content": "西红柿炒蛋永远是最温暖的菜",
+      "post_id": 7,
+      "post_subject": "西红柿炒蛋的家乡味道",
+      "created_at": "2024-01-19T12:00:00Z"
+    }
+  ],
+  "foodCalendar": {
+    "2024-01": {
+      "15": [
+        {
+          "id": 1,
+          "name": "宫保鸡丁",
+          "price": 12.0,
+          "canteen_name": "第一食堂",
+          "window_name": "川菜窗口",
+          "rating": 4.5,
+          "check_in_count": 5,
+          "daily_check_count": 1,
+          "image": "/media/dishes/gongbao.jpg"
+        },
+        {
+          "id": 2,
+          "name": "西红柿炒蛋",
+          "price": 8.0,
+          "canteen_name": "第一食堂",
+          "window_name": "家常菜窗口",
+          "rating": 4.2,
+          "check_in_count": 3,
+          "daily_check_count": 1,
+          "image": "/media/dishes/xihongshi.jpg"
+        }
+      ],
+      "16": [
+        {
+          "id": 3,
+          "name": "糖醋排骨",
+          "price": 18.0,
+          "canteen_name": "第一食堂",
+          "window_name": "粤菜窗口",
+          "rating": 4.8,
+          "check_in_count": 12,
+          "daily_check_count": 2,
+          "image": "/media/dishes/tangcu.jpg"
+        }
+      ],
+      "17": [
+        {
+          "id": 5,
+          "name": "麻辣烫",
+          "price": 15.0,
+          "canteen_name": "第二食堂",
+          "window_name": "麻辣烫窗口",
+          "rating": 4.3,
+          "check_in_count": 8,
+          "daily_check_count": 1,
+          "image": "/media/dishes/malatang.jpg"
+        }
+      ],
+      "18": [
+        {
+          "id": 7,
+          "name": "红烧肉盖浇饭",
+          "price": 14.0,
+          "canteen_name": "第二食堂",
+          "window_name": "盖浇饭窗口",
+          "rating": 4.6,
+          "check_in_count": 25,
+          "daily_check_count": 3,
+          "image": "/media/dishes/hongshao.jpg"
+        }
+      ],
+      "20": [
+        {
+          "id": 9,
+          "name": "水煮鱼片",
+          "price": 20.0,
+          "canteen_name": "第二食堂",
+          "window_name": "川菜窗口",
+          "rating": 4.9,
+          "check_in_count": 150,
+          "daily_check_count": 1,
+          "image": "/media/dishes/shuizhu.jpg"
+        }
+      ]
+    }
+  },
+  "recommendedDishes": [
+    {
+      "id": 1,
+      "name": "宫保鸡丁",
+      "price": 12.0,
+      "canteen": "第一食堂",
+      "rating": 4.5,
+      "image": "/media/dishes/gongbao.jpg"
+    },
+    {
+      "id": 3,
+      "name": "糖醋排骨",
+      "price": 18.0,
+      "canteen": "第一食堂",
+      "rating": 4.8,
+      "image": "/media/dishes/tangcu.jpg"
+    },
+    {
+      "id": 7,
+      "name": "红烧肉盖浇饭",
+      "price": 14.0,
+      "canteen": "第二食堂",
+      "rating": 4.6,
+      "image": "/media/dishes/hongshao.jpg"
+    },
+    {
+      "id": 9,
+      "name": "水煮鱼片",
+      "price": 20.0,
+      "canteen": "第二食堂",
+      "rating": 4.9,
+      "image": "/media/dishes/shuizhu.jpg"
+    },
+    {
+      "id": 5,
+      "name": "麻辣烫",
+      "price": 15.0,
+      "canteen": "第二食堂",
+      "rating": 4.3,
+      "image": "/media/dishes/malatang.jpg"
+    },
+    {
+      "id": 2,
+      "name": "西红柿炒蛋",
+      "price": 8.0,
+      "canteen": "第一食堂",
+      "rating": 4.2,
+      "image": "/media/dishes/xihongshi.jpg"
+    }
+  ]
+}

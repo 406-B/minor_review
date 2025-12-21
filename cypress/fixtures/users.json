@@ -1,0 +1,61 @@
+{
+  "testUser": {
+    "username": "testuser",
+    "password": "password123",
+    "email": "testuser@example.com",
+    "firstName": "Test",
+    "lastName": "User"
+  },
+  "tester123": {
+    "id": 4,
+    "username": "tester123",
+    "password": "123456Aa-",
+    "nickname": "测试用户",
+    "email": "tester123@example.com",
+    "avatar": "/media/avatars/tester123.jpg",
+    "created": "2024-01-01T00:00:00Z"
+  },
+  "newUser": {
+    "username": "newuser",
+    "password": "NewPassword123!",
+    "email": "newuser@example.com",
+    "firstName": "New",
+    "lastName": "User"
+  },
+  "users": [
+    {
+      "id": 1,
+      "username": "alice",
+      "nickname": "爱丽丝",
+      "email": "alice@example.com",
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "avatar": "/avatars/alice.jpg"
+    },
+    {
+      "id": 2,
+      "username": "bob",
+      "nickname": "鲍勃",
+      "email": "bob@example.com",
+      "firstName": "Bob",
+      "lastName": "Johnson",
+      "avatar": "/avatars/bob.jpg"
+    },
+    {
+      "id": 3,
+      "username": "charlie",
+      "nickname": "查理",
+      "email": "charlie@example.com",
+      "firstName": "Charlie",
+      "lastName": "Brown",
+      "avatar": "/avatars/charlie.jpg"
+    },
+    {
+      "id": 4,
+      "username": "tester123",
+      "nickname": "测试用户",
+      "email": "tester123@example.com",
+      "avatar": "/media/avatars/tester123.jpg"
+    }
+  ]
+}

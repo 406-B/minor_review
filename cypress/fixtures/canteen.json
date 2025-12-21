@@ -1,0 +1,179 @@
+{
+  "canteens": [
+    {
+      "id": 1,
+      "name": "第一食堂",
+      "location": "校园东区",
+      "openingHours": "06:30 - 20:00",
+      "rating": 4.5,
+      "description": "学校最大的食堂，提供多种美食选择"
+    },
+    {
+      "id": 2,
+      "name": "第二食堂",
+      "location": "校园西区",
+      "openingHours": "07:00 - 21:00",
+      "rating": 4.3,
+      "description": "以特色小吃为主的食堂"
+    },
+    {
+      "id": 3,
+      "name": "清真食堂",
+      "location": "校园南区",
+      "openingHours": "06:30 - 19:30",
+      "rating": 4.7,
+      "description": "提供清真美食"
+    }
+  ],
+  "dishes": [
+    {
+      "id": 1,
+      "name": "宫保鸡丁",
+      "price": 12.5,
+      "canteenId": 1,
+      "canteenName": "第一食堂",
+      "category": "川菜",
+      "rating": 4.6,
+      "description": "经典川菜，鸡肉嫩滑，花生酥脆",
+      "image": "/images/dishes/kungpao-chicken.jpg",
+      "tags": ["辣", "热菜", "荤菜"]
+    },
+    {
+      "id": 2,
+      "name": "西红柿炒蛋",
+      "price": 8.0,
+      "canteenId": 1,
+      "canteenName": "第一食堂",
+      "category": "家常菜",
+      "rating": 4.2,
+      "description": "家常菜，酸甜可口",
+      "image": "/images/dishes/tomato-egg.jpg",
+      "tags": ["不辣", "热菜", "素菜"]
+    },
+    {
+      "id": 3,
+      "name": "红烧肉",
+      "price": 15.0,
+      "canteenId": 1,
+      "canteenName": "第一食堂",
+      "category": "家常菜",
+      "rating": 4.8,
+      "description": "色泽红亮，肥而不腻",
+      "image": "/images/dishes/braised-pork.jpg",
+      "tags": ["微辣", "热菜", "荤菜"]
+    },
+    {
+      "id": 4,
+      "name": "麻辣烫",
+      "price": 18.0,
+      "canteenId": 2,
+      "canteenName": "第二食堂",
+      "category": "小吃",
+      "rating": 4.5,
+      "description": "各种食材可选，麻辣鲜香",
+      "image": "/images/dishes/malatang.jpg",
+      "tags": ["辣", "热菜", "可定制"]
+    },
+    {
+      "id": 5,
+      "name": "牛肉拉面",
+      "price": 16.0,
+      "canteenId": 3,
+      "canteenName": "清真食堂",
+      "category": "面食",
+      "rating": 4.7,
+      "description": "牛肉软烂，汤鲜味美",
+      "image": "/images/dishes/beef-noodles.jpg",
+      "tags": ["不辣", "面食", "荤菜"]
+    },
+    {
+      "id": 6,
+      "name": "糖醋里脊",
+      "price": 14.0,
+      "canteenId": 1,
+      "canteenName": "第一食堂",
+      "category": "家常菜",
+      "rating": 4.4,
+      "description": "酸甜口味，外酥里嫩",
+      "image": "/images/dishes/sweet-sour-pork.jpg",
+      "tags": ["不辣", "热菜", "荤菜"]
+    },
+    {
+      "id": 7,
+      "name": "清炒时蔬",
+      "price": 6.0,
+      "canteenId": 1,
+      "canteenName": "第一食堂",
+      "category": "家常菜",
+      "rating": 4.0,
+      "description": "新鲜蔬菜，清淡健康",
+      "image": "/images/dishes/stir-fry-veg.jpg",
+      "tags": ["不辣", "热菜", "素菜"]
+    },
+    {
+      "id": 8,
+      "name": "水煮鱼",
+      "price": 25.0,
+      "canteenId": 2,
+      "canteenName": "第二食堂",
+      "category": "川菜",
+      "rating": 4.9,
+      "description": "麻辣鲜香，鱼肉鲜嫩",
+      "image": "/images/dishes/boiled-fish.jpg",
+      "tags": ["辣", "热菜", "荤菜", "招牌"]
+    },
+    {
+      "id": 9,
+      "name": "羊肉串",
+      "price": 12.0,
+      "canteenId": 3,
+      "canteenName": "清真食堂",
+      "category": "烧烤",
+      "rating": 4.6,
+      "description": "烤得香脆，肉质鲜嫩",
+      "image": "/images/dishes/lamb-skewer.jpg",
+      "tags": ["微辣", "烧烤", "荤菜"]
+    },
+    {
+      "id": 10,
+      "name": "烤冷面",
+      "price": 9.0,
+      "canteenId": 2,
+      "canteenName": "第二食堂",
+      "category": "小吃",
+      "rating": 4.3,
+      "description": "东北特色小吃",
+      "image": "/images/dishes/grilled-noodle.jpg",
+      "tags": ["不辣", "小吃", "素菜"]
+    }
+  ],
+  "reviews": [
+    {
+      "id": 1,
+      "dishId": 1,
+      "userId": 1,
+      "username": "alice",
+      "rating": 5,
+      "comment": "非常好吃，很正宗！",
+      "createdAt": "2024-01-15T10:30:00Z"
+    },
+    {
+      "id": 2,
+      "dishId": 1,
+      "userId": 2,
+      "username": "bob",
+      "rating": 4,
+      "comment": "味道不错，就是有点辣",
+      "createdAt": "2024-01-16T12:20:00Z"
+    },
+    {
+      "id": 3,
+      "dishId": 8,
+      "userId": 1,
+      "username": "alice",
+      "rating": 5,
+      "comment": "超级好吃！招牌菜名不虚传！",
+      "createdAt": "2024-01-17T18:00:00Z"
+    }
+  ]
+}
