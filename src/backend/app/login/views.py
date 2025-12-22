@@ -228,9 +228,10 @@ def logout(request):
                 "properties": {
                     "username": {"type": "string", "description": "用户名"},
                     "password": {"type": "string", "description": "密码"},
+                    "confirm_password": {"type": "string", "description": "确认密码"},
                     "nickname": {"type": "string", "description": "昵称"},
                 },
-            "required": ["username", "password", "nickname"],
+            "required": ["username", "password", "confirm_password", "nickname"],
         }
     },
     responses={
@@ -257,6 +258,11 @@ def register_user(request):
 
         key, passed = register_params_check(content)
         if not passed:
+            if key == "confirm_password":
+                return Response(
+                    {"message": "密码不一致，请仔细检查！"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             return Response(
                 {"message": f"Invalid arguments: {key}"},
                 status=status.HTTP_400_BAD_REQUEST,
