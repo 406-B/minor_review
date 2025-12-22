@@ -381,6 +381,19 @@ async function loadPost() {
 				comments.value = response.data.comments
 				console.log('💬 [评论数据] 加载的评论列表:', response.data.comments)
 			}
+			
+			// 如果 URL 参数中有 action=comment，则滚动到评论区
+			if (route.query.action === 'comment') {
+				setTimeout(() => {
+					const commentSection = document.querySelector('.comments-section')
+					if (commentSection) {
+						commentSection.scrollIntoView({ behavior: 'smooth' })
+						// 聚焦输入框
+						const input = document.querySelector('.comment-input')
+						if (input) input.focus()
+					}
+				}, 500) // 稍微延迟等待 DOM 渲染
+			}
 		} else {
 			error.value = response.message || '获取帖子详情失败'
 		}
