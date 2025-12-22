@@ -270,6 +270,29 @@ export const getMyComments = async (page = 1, page_size = 20) => {
   }
 }
 
+/**
+ * 上传图片
+ * @param {File} file - 图片文件对象
+ * @returns {Promise<string>} 返回图片URL
+ */
+export const uploadImage = async (file) => {
+  try {
+    const formData = new FormData()
+    formData.append('image', file)
+    
+    // 不设置 Content-Type，让浏览器自动设置 multipart/form-data 的 boundary
+    const response = await request.post(`${BASE_URL}/upload/image/`, formData)
+    
+    if (response.code === 200 && response.data && response.data.url) {
+      return response.data.url
+    } else {
+      throw new Error(response.message || '上传失败')
+    }
+  } catch (err) {
+    throw err
+  }
+}
+
 export default {
   getPostList,
   getPostDetail,
@@ -283,5 +306,6 @@ export default {
   getUserStats,
   getMyPosts,
   getLikedPosts,
-  getMyComments
+  getMyComments,
+  uploadImage
 }

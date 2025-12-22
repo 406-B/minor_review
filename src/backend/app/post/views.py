@@ -1,7 +1,14 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
+from django.conf import settings
 import json
+import os
+import uuid
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status as http_status
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 # TODO: 登录页实现后移除/调整：下面导入的 jwt_authentication 与 login_required 在当前阶段
 # 用于在视图层手动触发或保护请求。前端登录页完成并通过 Authorization header 发送 JWT 后，
@@ -523,3 +530,88 @@ def dish_posts(request, dish_id):
             }
         }
     })
+
+
+@extend_schema(
+    tags=['社区论坛'],
+    summary='上传图片',
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'image': {
+                    'type': 'string',
+                    'format': 'binary'
+                }
+            }
+        }
+    },
+    responses={200: dict}
+)
+@api_view(['POST'])
+@login_required
+def upload_image(request):
+    """
+    上传图片（用于帖子和评论）
+    接收图片文件，保存到服务器并返回访问URL
+    """
+    if 'image' not in request.FILES:
+        return Response({
+            'code': 400,
+            'message': '未找到图片文件'
+        }, status=http_status.HTTP_400_BAD_REQUEST)
+    
+    image_file = request.FILES['image']
+    
+    # 验证文件类型
+    allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if image_file.content_type not in allowed_types:
+        return Response({
+            'code': 400,
+            'message': '不支持的图片格式，仅支持 JPG、PNG、GIF、WEBP'
+        }, status=http_status.HTTP_400_BAD_REQUEST)
+    
+    # 验证文件大小（限制为5MB）
+    max_size = 5 * 1024 * 1024  # 5MB
+    if image_file.size > max_size:
+        return Response({
+            'code': 400,
+            'message': '图片大小不能超过5MB'
+        }, status=http_status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # 生成唯一文件名
+        ext = os.path.splitext(image_file.name)[1]
+        if not ext:
+            # 根据content_type推断扩展名
+            ext_map = {
+                'image/jpeg': '.jpg',
+                'image/jpg': '.jpg',
+                'image/png': '.png',
+                'image/gif': '.gif',
+                'image/webp': '.webp'
+            }
+            ext = ext_map.get(image_file.content_type, '.jpg')
+        
+        filename = f"{uuid.uuid4()}{ext}"
+        
+        # 保存到 media/post_images/ 目录
+        file_path = os.path.join('post_images', filename)
+        saved_path = default_storage.save(file_path, image_file)
+        
+        # 生成访问URL
+        image_url = f"{settings.MEDIA_URL}{saved_path}"
+        
+        return Response({
+            'code': 200,
+            'message': '上传成功',
+            'data': {
+                'url': image_url
+            }
+        })
+    
+    except Exception as e:
+        return Response({
+            'code': 500,
+            'message': f'上传失败: {str(e)}'
+        }, status=http_status.HTTP_500_INTERNAL_SERVER_ERROR)
