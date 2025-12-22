@@ -20,6 +20,13 @@ out/
 coverage/
 *.lcov
 .nyc_output
+src/backend/app/.coverage
+src/backend/app/coverage.xml
+src/backend/app/htmlcov/
+src/frontend/coverage/
+coverage_html/
+coverage_html_new/
+coverage_output.log
 
 # Cypress
 cypress/videos/
@@ -65,6 +72,10 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Test logs and reports
+test_logs/
+test-reports/
+
 # Environment variables
 .env
 .env.local
@@ -97,6 +108,9 @@ src/backend/app/db.sqlite3
 # Media uploads (keep folder, ignore files)
 src/backend/app/media/dishes/**
 !src/backend/app/media/dishes/.gitkeep
+
+# Test-generated media files
+src/backend/app/media/avatars/test_avatar*.png
 
 # Java
 *.class
