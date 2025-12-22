@@ -21,6 +21,16 @@
 						<div class="post-content-preview" v-if="post.content_preview">
 							{{ post.content_preview }}
 						</div>
+						<!-- 帖子图片预览 -->
+						<div v-if="post.images && post.images.length > 0" class="post-images-preview">
+							<img 
+								v-for="(image, index) in post.images" 
+								:key="index"
+								:src="image"
+								class="preview-image"
+								@error="(e) => e.target.style.display = 'none'"
+							/>
+						</div>
 						<!-- 关联菜品标签 -->
 						<div v-if="post.dish" class="dish-tag">
 							<span class="dish-icon">🍽️</span>
@@ -30,8 +40,19 @@
 						<div class="post-info">
 								<span class="post-author">{{ post.author?.nickname || post.author?.username || '匿名用户' }}</span>
 								<span class="post-stats">
-									<span class="stat-item">❤️ {{ post.likes_count || 0 }}</span>
-									<span class="stat-item">💬 {{ post.comments_count || 0 }}</span>
+									<span 
+										class="stat-item interactive" 
+										:class="{ liked: post.is_liked }"
+										@click.stop="handleLike(post)"
+									>
+										{{ post.is_liked ? '❤️' : '🤍' }} {{ post.likes_count || 0 }}
+									</span>
+									<span 
+										class="stat-item interactive"
+										@click.stop="goDetail(post.id, true)"
+									>
+										💬 {{ post.comments_count || 0 }}
+									</span>
 								</span>
 							</div>
 						</div>
@@ -62,7 +83,7 @@ import AppTopBar from '@/components/ui/AppTopBar.vue'
 import PageContainer from '@/components/ui/PageContainer.vue'
 import SectionTitle from '@/components/ui/SectionTitle.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
-import { getPostList } from '@/api/community'
+import { getPostList, togglePostLike } from '@/api/community'
 
 const router = useRouter()
 const posts = ref([])
@@ -121,12 +142,42 @@ function goCreate() {
 	router.push({ name: 'PostCreate' })
 }
 
-function goDetail(id) {
+function goDetail(id, focusComment = false) {
 	if (!localStorage.getItem('jwt')) {
 		window.$message?.warning?.('您需要先登录')
 		return router.push('/login')
 	}
-	router.push({ name: 'PostDetail', params: { id } })
+	router.push({ 
+		name: 'PostDetail', 
+		params: { id },
+		query: focusComment ? { action: 'comment' } : {}
+	})
+}
+
+async function handleLike(post) {
+	if (!localStorage.getItem('jwt')) {
+		window.$message?.warning?.('您需要先登录')
+		return router.push('/login')
+	}
+	try {
+		const response = await togglePostLike(post.id)
+		if (response.code === 200 && response.data) {
+			post.is_liked = response.data.is_liked
+			if (post.is_liked) {
+				post.likes_count = (post.likes_count || 0) + 1
+			} else {
+				post.likes_count = Math.max(0, (post.likes_count || 0) - 1)
+			}
+		}
+	} catch (err) {
+		console.error('点赞失败:', err)
+		if (err?.response?.status === 401) {
+			window.$message?.warning?.('您需要先登录')
+			router.push('/login')
+		} else {
+			window.$message?.error?.('操作失败，请重试')
+		}
+	}
 }
 
 onMounted(() => loadPosts())
@@ -138,18 +189,23 @@ onMounted(() => loadPosts())
 .top-actions .title { font-size:18px; font-weight:600 }
 .publish-btn { padding:8px 14px; background:var(--color-accent); color:#fff; border:none; border-radius:var(--radius-xs); cursor:pointer; transition: all 0.3s }
 .publish-btn:hover { background:var(--brand-700) }
-.content-wrap { display:flex; justify-content:flex-start; gap:20px; padding-left:20px }
-.list-wrap { width:720px; background:var(--color-surface); padding:16px; border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); border:1px solid var(--color-border) }
+.content-wrap { display:block; padding: 0 20px; }
+.list-wrap { width: 100%; background:var(--color-surface); padding:16px; border-radius:var(--radius-sm); box-shadow:var(--shadow-sm); border:1px solid var(--color-border) }
 .post-card { display:flex; justify-content:space-between; align-items:center; padding:14px; border:1px solid var(--color-border); margin-bottom:12px; border-radius:var(--radius-sm); background:var(--color-surface); transition: all 0.3s }
 .post-card:hover { box-shadow: var(--shadow-md); border-color: var(--brand-200) }
 .post-left { cursor:pointer; flex:1 }
 .post-title { font-size: 16px; font-weight: 600; color: var(--color-text); margin: 0 0 8px 0; line-height: 1.4 }
 .post-content-preview { font-size: 13px; color: var(--color-muted); margin-bottom: 8px; line-height: 1.5 }
+.post-images-preview { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.preview-image { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #eee; }
 .post-content { font-size: 14px; color: var(--color-text); margin-bottom: 8px; line-height: 1.6 }
 .post-info { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--color-muted) }
 .post-author { color: var(--color-accent) }
-.post-stats { display: flex; gap: 12px }
-.stat-item { display: inline-flex; align-items: center; gap: 4px }
+.post-stats { display: flex; gap: 12px; }
+.stat-item { display: flex; align-items: center; gap: 4px; }
+.stat-item.interactive { cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 0.2s; }
+.stat-item.interactive:hover { background: rgba(0,0,0,0.05); }
+.stat-item.liked { color: #f56c6c; }
 
 /* 菜品标签样式 */
 .dish-tag {

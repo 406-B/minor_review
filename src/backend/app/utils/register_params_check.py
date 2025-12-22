@@ -26,5 +26,9 @@ def register_params_check(content: dict):
     if not content.get("nickname"):
         return "nickname", False
 
+    # 确认密码验证
+    if content.get("confirm_password") != content.get("password"):
+        return "confirm_password", False
+
     return "ok", True
 

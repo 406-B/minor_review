@@ -17,6 +17,10 @@ def get_user(user_id):
 
 def create_user(username, password, nickname):
     try:
+        # 检查用户名是否已存在
+        if User.objects.filter(username=username).exists():
+            return "username_exists"
+
         now = timezone.now()
         u = User.objects.create(
             username=username,
