@@ -271,8 +271,10 @@ def register_user(request):
             password=encrypt_password(password),
             nickname=nickname,
         )
-        if result:
+        if result is True:
             return Response({"message": "ok"}, status=status.HTTP_200_OK)
+        elif result == "username_exists":
+            return Response({"message": "用户名已存在"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message": "Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except json.JSONDecodeError:
