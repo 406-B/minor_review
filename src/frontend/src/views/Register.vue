@@ -1,4 +1,3 @@
-
 <template>
   <PageContainer>
     <template #header>
@@ -15,6 +14,10 @@
         <el-form-item label="密码">
           <el-input v-model="registerForm.password" type="password" autocomplete="new-password" style="width: 100%;" />
           <div class="help">8-15位，需同时包含大小写字母、数字，以及符号 - _ * ^ 中至少一个</div>
+        </el-form-item>
+        <el-form-item label="确认密码">
+          <el-input v-model="registerForm.confirmPassword" type="password" autocomplete="new-password" style="width: 100%;" />
+          <div class="help">请再次输入密码</div>
         </el-form-item>
         <el-form-item label="昵称">
           <el-input v-model="registerForm.nickname" style="width: 100%;" />
@@ -42,7 +45,7 @@ import AppTopBar from '@/components/ui/AppTopBar.vue'
 import { ElMessageBox } from 'element-plus'
 
 const router = useRouter();
-const registerForm = ref({ username: '', password: '', nickname: '' });
+const registerForm = ref({ username: '', password: '', confirmPassword: '', nickname: '' });
 
 function validateUsername(name) {
   if (!name) return '请输入用户名'
@@ -63,6 +66,12 @@ function validatePassword(pwd) {
   return ''
 }
 
+function validateConfirmPassword(confirm, pwd) {
+  if (!confirm) return '请再次输入密码'
+  if (confirm !== pwd) return '密码不一致，请仔细检查！'
+  return ''
+}
+
 function validateNickname(nick) {
   if (!nick || !nick.trim()) return '请输入昵称'
   const n = nick.trim()
@@ -74,10 +83,12 @@ const onRegister = async () => {
   // 前端校验
   const userErr = validateUsername(registerForm.value.username)
   const pwdErr = validatePassword(registerForm.value.password)
+  const confirmErr = validateConfirmPassword(registerForm.value.confirmPassword, registerForm.value.password)
   const nickErr = validateNickname(registerForm.value.nickname)
   const errs = [
     userErr && `用户名：${userErr}`,
     pwdErr && `密码：${pwdErr}`,
+    confirmErr && `确认密码：${confirmErr}`,
     nickErr && `昵称：${nickErr}`,
   ].filter(Boolean)
   if (errs.length) {
@@ -85,7 +96,12 @@ const onRegister = async () => {
     return
   }
   try {
-    await register(registerForm.value);
+    await register({
+      username: registerForm.value.username,
+      password: registerForm.value.password,
+      confirm_password: registerForm.value.confirmPassword,
+      nickname: registerForm.value.nickname
+    });
     // 注册成功后自动登录，节省一步
     const loginRes = await login({ username: registerForm.value.username, password: registerForm.value.password })
     const jwt = loginRes?.jwt || loginRes?.data?.jwt

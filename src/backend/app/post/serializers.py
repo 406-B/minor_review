@@ -78,11 +78,12 @@ class PostSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(read_only=True)
     dish = DishSimpleSerializer(read_only=True)
     is_liked = serializers.SerializerMethodField()
+    content_preview = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = ['id', 'author', 'subject', 'images', 'dish', 'created_at', 'updated_at', 
-                  'likes_count', 'comments_count', 'is_liked']
+                  'likes_count', 'comments_count', 'is_liked', 'content_preview']
         read_only_fields = ['id', 'author', 'created_at', 'updated_at', 
                             'likes_count', 'comments_count']
 
@@ -103,6 +104,14 @@ class PostSerializer(serializers.ModelSerializer):
                 object_id=obj.id
             ).exists()
         return False
+
+    def get_content_preview(self, obj):
+        """获取帖子内容预览（前30个字）"""
+        if not obj.content:
+            return ""
+        if len(obj.content) > 30:
+            return obj.content[:30] + "..."
+        return obj.content
 
 
 class PostDetailSerializer(serializers.ModelSerializer):
