@@ -70,6 +70,13 @@ def get_user_stats(user):
         author=user
     ).count()
 
+    # 统计用户评论过的不同帖子数量（去重），用于前端的 `commented_posts_count`
+    try:
+        commented_posts_count = Comment.objects.filter(author=user).values('post').distinct().count()
+    except Exception:
+        # 若 Comment 关联字段名不是 `post`（兼容性保护），尝试使用 `post_id`
+        commented_posts_count = Comment.objects.filter(author=user).values('post_id').distinct().count()
+
     # 统计用户发布的帖子数量
     posts_count = Post.objects.filter(author=user).count()
 
@@ -79,6 +86,7 @@ def get_user_stats(user):
     return {
         'liked_posts_count': liked_posts_count,      # 点赞的帖子数量
         'comments_count': comments_count,  # 评论数量（总数）
+        'commented_posts_count': commented_posts_count,
         'posts_count': posts_count,  # 发布的帖子数量
         'following_count': following_count,        # 关注的人数量（未实现）
     }
