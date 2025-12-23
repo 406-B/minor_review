@@ -360,8 +360,12 @@ const canDeleteComment = (comment) => {
 	return result
 }
 
-function goBack() { 
-	router.push({ name: 'CommunityHome' }) 
+function goBack() {
+	if (window.history.length > 1) {
+		router.back()
+	} else {
+		router.push({ name: 'CommunityHome' })
+	}
 }
 
 async function loadPost() {
@@ -417,7 +421,8 @@ async function handleDelete() {
 		
 		if (response.code === 200) {
 			window.$message?.success?.('删除成功')
-			router.push({ name: 'CommunityHome' })
+			if (window.history.length > 1) router.back()
+			else router.push({ name: 'CommunityHome' })
 		} else {
 			window.$message?.error?.(response.message || '删除失败')
 		}
