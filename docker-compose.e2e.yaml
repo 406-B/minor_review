@@ -46,6 +46,11 @@ services:
       DJANGO_SETTINGS_MODULE: app.settings_prod
       DJANGO_SECRET_KEY: e2e-django-secret
       DJANGO_ALLOWED_HOSTS: "*"
+      # E2E 环境覆盖：允许 E2E 前端 Origin 进行跨域与 CSRF 信任
+      CORS_ALLOWED_ORIGINS: "http://localhost,http://127.0.0.1,http://43.143.148.157"
+      CSRF_TRUSTED_ORIGINS: "http://localhost,http://127.0.0.1,http://43.143.148.157"
+      # JWT secret for E2E (should match token issuer)
+      JWT_SECRET: jwt-secret-key-auto-generated-2025
       MYSQL_HOST: db
       MYSQL_PORT: 3306
       MYSQL_DATABASE: minor_review_e2e

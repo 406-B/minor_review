@@ -18,6 +18,66 @@ describe('E2E 认证流程测试', () => {
     cy.clearLocalStorage()
   })
 
+  // 辅助：处理可能的 onboarding 重定向（/profile -> /onboarding/tags）
+  function handlePossibleOnboarding() {
+    return cy.location('pathname', { timeout: 20000 }).then((p) => {
+      if (p.includes('/tags')) {
+        // 确保 actions 区域和跳过按钮已渲染
+        cy.get('.actions', { timeout: 10000 }).should('exist')
+        cy.contains('button', '跳过', { timeout: 10000 }).should('be.visible')
+        // 定义递归尝试函数：最多尝试 3 次点击跳过
+        const trySkipAttempt = (attempt = 1) => {
+          return cy.contains('button', '跳过', { timeout: 10000 }).then(($btn) => {
+            cy.wrap($btn).click({ force: attempt > 1 })
+            // 点击后短等待让路由和异步处理有机会完成，然后检查当前路径
+            return cy.wait(500).then(() => {
+              return cy.location('pathname', { timeout: 5000 }).then((uAfter) => {
+                if (uAfter.includes('/profile')) return cy.wrap(null)
+                if (attempt < 3) {
+                  cy.log(`Skip attempt ${attempt} failed, retrying...`)
+                  return trySkipAttempt(attempt + 1)
+                }
+                // 三次尝试后仍未跳转，断言失败
+                throw new Error('点击跳过后未能跳转到 /profile')
+              })
+            })
+          })
+        }
+        return trySkipAttempt(1)
+      }
+      if (p.includes('/profile')) {
+        // profile 页面短暂触发跳转到 onboarding 的情况，等待并再次检查
+        return cy.wait(500).then(() => {
+          return cy.location('pathname', { timeout: 5000 }).then((p2) => {
+            if (p2.includes('/onboarding/tags')) {
+              cy.get('.actions', { timeout: 10000 }).should('exist')
+              cy.contains('button', '跳过', { timeout: 10000 }).should('be.visible')
+              const trySkipAttempt = (attempt = 1) => {
+                return cy.contains('button', '跳过', { timeout: 10000 }).then(($btn) => {
+                  cy.wrap($btn).click({ force: attempt > 1 })
+                  return cy.wait(500).then(() => {
+                    return cy.location('pathname', { timeout: 5000 }).then((uAfter) => {
+                      if (uAfter.includes('/profile')) return cy.wrap(null)
+                      if (attempt < 3) {
+                        cy.log(`Skip attempt ${attempt} failed, retrying...`)
+                        return trySkipAttempt(attempt + 1)
+                      }
+                      throw new Error('点击跳过后未能跳转到 /profile')
+                    })
+                  })
+                })
+              }
+              return trySkipAttempt(1)
+            }
+            return cy.wrap(null)
+          })
+        })
+      }
+      // 既不是 profile 也不是 onboarding，短等待后重试
+      return cy.wait(500).then(() => handlePossibleOnboarding())
+    })
+  }
+
   // 每个测试后清理状态
   afterEach(() => {
     cy.clearLocalStorage()
@@ -34,12 +94,13 @@ describe('E2E 认证流程测试', () => {
       cy.get('input[autocomplete="new-password"]').type(testUser.password)
       cy.get('input').eq(2).type(testUser.nickname) // 昵称字段
       
-      // 提交注册
-      cy.get('button.register-btn').first().click()
+      // 提交注册（在 .el-form 内查找注册按钮）
+      cy.get('.el-form').find('button.register-btn').click()
       
       // 等待 JWT 写入 localStorage，然后断言跳转
       cy.window().its('localStorage').invoke('getItem', 'jwt').should('exist')
-      cy.url({ timeout: 20000 }).should('match', /\/(profile|onboarding\/tags)/)
+      // 处理可能的 onboarding 跳转（包括 profile -> onboarding 的短暂跳转）
+      handlePossibleOnboarding()
       
       // 验证用户信息已保存
       cy.window().then((win) => {
@@ -50,8 +111,8 @@ describe('E2E 认证流程测试', () => {
     })
 
     it('应当拒绝空表单提交', () => {
-      // 直接点击注册按钮（不填写任何信息）
-      cy.get('button.register-btn').first().click()
+      // 直接点击注册按钮（不填写任何信息）——在 .el-form 内查找
+      cy.get('.el-form').find('button.register-btn').first().click()
       
       // 应当留在注册页面
       cy.url().should('include', '/register')
@@ -67,7 +128,7 @@ describe('E2E 认证流程测试', () => {
       cy.get('input[autocomplete="username"]').type('123456')
       cy.get('input[autocomplete="new-password"]').type(testUser.password)
       cy.get('input').eq(2).type(testUser.nickname)
-      cy.get('button.register-btn').first().click()
+      cy.get('.el-form').find('button.register-btn').first().click()
       
       // 应当留在注册页面（前端校验拦截）
       cy.url().should('include', '/register')
@@ -78,7 +139,7 @@ describe('E2E 认证流程测试', () => {
       cy.get('input[autocomplete="username"]').type(testUser.username)
       cy.get('input[autocomplete="new-password"]').type('12345678') // 缺少大小写字母和符号
       cy.get('input').eq(2).type(testUser.nickname)
-      cy.get('button.register-btn').first().click()
+      cy.get('.el-form').find('button.register-btn').first().click()
       
       // 应当留在注册页面（前端校验拦截）
       cy.url().should('include', '/register')
@@ -88,7 +149,7 @@ describe('E2E 认证流程测试', () => {
       cy.get('input[autocomplete="username"]').type(testUser.username)
       cy.get('input[autocomplete="new-password"]').type(testUser.password)
       // 昵称留空
-      cy.get('button.register-btn').first().click()
+      cy.get('.el-form').find('button.register-btn').first().click()
       
       // 应当留在注册页面
       cy.url().should('include', '/register')
@@ -111,12 +172,12 @@ describe('E2E 认证流程测试', () => {
       cy.get('input[autocomplete="username"]').type(testUser.username)
       cy.get('input[autocomplete="current-password"]').type(testUser.password)
       
-      // 点击登录按钮
-        cy.get('button.login-btn').first().click()
+      // 点击登录按钮（在 .el-form 内查找）
+        cy.get('.el-form').find('button.login-btn').first().click()
       
-      // 验证跳转到个人主页或标签设置页
+      // 验证跳转并处理 onboarding 流程
       cy.url().should('not.include', '/login')
-      cy.url().should('match', /\/(profile|onboarding\/tags)/)
+      handlePossibleOnboarding()
       
       // 验证 JWT token 存在
         cy.window().its('localStorage').invoke('getItem', 'jwt').should('exist')
@@ -127,11 +188,32 @@ describe('E2E 认证流程测试', () => {
         expect(userInfo).to.exist
         expect(userInfo.username).to.equal(testUser.username)
       })
+      // 合并登出流程：登录后直接尝试登出
+      cy.visit('/profile')
+      cy.contains('button', '登出账号', { timeout: 10000 }).first().click()
+      cy.url().should('include', '/login')
+      cy.window().then((win) => {
+        expect(win.localStorage.getItem('jwt')).to.be.null
+        expect(win.localStorage.getItem('userInfo')).to.be.null
+      })
+      // 再次登录验证（合并）：使用相同账号再次登录并验证
+      cy.visit('/login')
+      cy.get('input[autocomplete="username"]').type(testUser.username)
+      cy.get('input[autocomplete="current-password"]').type(testUser.password)
+      cy.get('.el-form').find('button.login-btn').first().click()
+      cy.url().should('not.include', '/login')
+      handlePossibleOnboarding()
+      cy.window().its('localStorage').invoke('getItem', 'jwt').should('exist')
+      cy.window().then((win) => {
+        const userInfo = JSON.parse(win.localStorage.getItem('userInfo'))
+        expect(userInfo).to.exist
+        expect(userInfo.username).to.equal(testUser.username)
+      })
     })
 
     it('应当拒绝空表单提交', () => {
-      // 不填写任何信息直接点击登录
-      cy.get('button.login-btn').first().click()
+      // 不填写任何信息直接点击登录（在 .el-form 内查找）
+      cy.get('.el-form').find('button.login-btn').first().click()
       
       // 应当留在登录页面
       cy.url().should('include', '/login')
@@ -140,7 +222,7 @@ describe('E2E 认证流程测试', () => {
     it('应当拒绝错误的用户名', () => {
       cy.get('input[autocomplete="username"]').type('wronguser999')
       cy.get('input[autocomplete="current-password"]').type(testUser.password)
-      cy.get('button.login-btn').first().click()
+      cy.get('.el-form').find('button.login-btn').first().click()
       
       // 应当留在登录页面
       cy.url().should('include', '/login')
@@ -154,7 +236,7 @@ describe('E2E 认证流程测试', () => {
     it('应当拒绝错误的密码', () => {
       cy.get('input[autocomplete="username"]').type(testUser.username)
       cy.get('input[autocomplete="current-password"]').type('WrongPass123-')
-      cy.get('button.login-btn').first().click()
+      cy.get('.el-form').find('button.login-btn').first().click()
       
       // 应当留在登录页面
       cy.url().should('include', '/login')
@@ -166,68 +248,5 @@ describe('E2E 认证流程测试', () => {
     })
   })
 
-  describe('步骤3: 用户登出', () => {
-    beforeEach(() => {
-      // 先登录
-      cy.visit('/login')
-      cy.get('input[autocomplete="username"]').type(testUser.username)
-      cy.get('input[autocomplete="current-password"]').type(testUser.password)
-      cy.get('button.login-btn').first().click()
-      
-      // 等待跳转完成
-      cy.url().should('not.include', '/login')
-      cy.url().should('match', /\/(profile|onboarding\/tags)/)
-    })
-
-    it('应当能够成功登出', () => {
-      // 访问个人主页（确保能看到登出按钮）
-      cy.visit('/profile')
-      
-      // 点击登出按钮（ControlPanel 组件中的登出按钮）
-      cy.contains('button', '登出账号').first().click()
-      
-      // 验证跳转到登录页
-      cy.url().should('include', '/login')
-      
-      // 验证 JWT token 已清除
-      cy.window().then((win) => {
-        expect(win.localStorage.getItem('jwt')).to.be.null
-      })
-      
-      // 验证用户信息已清除
-      cy.window().then((win) => {
-        expect(win.localStorage.getItem('userInfo')).to.be.null
-      })
-    })
-  })
-
-  describe('步骤4: 再次登录验证', () => {
-    before(() => {
-      // 确保已登出
-      cy.clearLocalStorage()
-    })
-
-    beforeEach(() => {
-      cy.visit('/login')
-    })
-
-    it('应当能够在登出后再次登录', () => {
-      // 使用相同账号再次登录
-      cy.get('input[autocomplete="username"]').type(testUser.username)
-      cy.get('input[autocomplete="current-password"]').type(testUser.password)
-      cy.get('button.login-btn').first().click()
-      
-      // 验证登录成功
-      cy.url().should('not.include', '/login')
-      cy.url().should('match', /\/(profile|onboarding\/tags)/)
-      
-      // 验证 token 和用户信息重新创建
-      cy.window().its('localStorage').invoke('getItem', 'jwt').should('exist')
-      cy.window().then((win) => {
-        const userInfo = JSON.parse(win.localStorage.getItem('userInfo'))
-        expect(userInfo).to.exist
-        expect(userInfo.username).to.equal(testUser.username)
-      })
-    })
-  })
+  
 })

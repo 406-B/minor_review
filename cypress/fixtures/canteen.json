@@ -1,179 +1,291 @@
-{
-  "canteens": [
-    {
-      "id": 1,
-      "name": "第一食堂",
-      "location": "校园东区",
-      "openingHours": "06:30 - 20:00",
-      "rating": 4.5,
-      "description": "学校最大的食堂，提供多种美食选择"
-    },
-    {
-      "id": 2,
-      "name": "第二食堂",
-      "location": "校园西区",
-      "openingHours": "07:00 - 21:00",
-      "rating": 4.3,
-      "description": "以特色小吃为主的食堂"
-    },
-    {
-      "id": 3,
-      "name": "清真食堂",
-      "location": "校园南区",
-      "openingHours": "06:30 - 19:30",
-      "rating": 4.7,
-      "description": "提供清真美食"
-    }
-  ],
-  "dishes": [
-    {
-      "id": 1,
+[
+  {
+    "model": "list.tag",
+    "pk": 1,
+    "fields": {"name": "辣", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 2,
+    "fields": {"name": "热菜", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 3,
+    "fields": {"name": "荤菜", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 4,
+    "fields": {"name": "不辣", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 5,
+    "fields": {"name": "素菜", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 6,
+    "fields": {"name": "微辣", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 7,
+    "fields": {"name": "可定制", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 8,
+    "fields": {"name": "招牌", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 9,
+    "fields": {"name": "面食", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 10,
+    "fields": {"name": "小吃", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.tag",
+    "pk": 11,
+    "fields": {"name": "川菜", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.canteen",
+    "pk": 1,
+    "fields": {"name": "第一食堂", "address": "校园东区", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.canteen",
+    "pk": 2,
+    "fields": {"name": "第二食堂", "address": "校园西区", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.canteen",
+    "pk": 3,
+    "fields": {"name": "清真食堂", "address": "校园南区", "created_at": "2025-12-22T00:00:00Z", "updated_at": "2025-12-22T00:00:00Z"}
+  },
+  {
+    "model": "list.dish",
+    "pk": 1,
+    "fields": {
       "name": "宫保鸡丁",
-      "price": 12.5,
-      "canteenId": 1,
-      "canteenName": "第一食堂",
-      "category": "川菜",
-      "rating": 4.6,
       "description": "经典川菜，鸡肉嫩滑，花生酥脆",
-      "image": "/images/dishes/kungpao-chicken.jpg",
-      "tags": ["辣", "热菜", "荤菜"]
-    },
-    {
-      "id": 2,
+      "price": "12.50",
+      "canteen": 1,
+      "window": 1,
+      "image": "images/dishes/kungpao-chicken.jpg",
+      "rating": "4.60",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [1,2,3],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.dish",
+    "pk": 2,
+    "fields": {
       "name": "西红柿炒蛋",
-      "price": 8.0,
-      "canteenId": 1,
-      "canteenName": "第一食堂",
-      "category": "家常菜",
-      "rating": 4.2,
       "description": "家常菜，酸甜可口",
-      "image": "/images/dishes/tomato-egg.jpg",
-      "tags": ["不辣", "热菜", "素菜"]
-    },
-    {
-      "id": 3,
+      "price": "8.00",
+      "canteen": 1,
+      "window": 2,
+      "image": "images/dishes/tomato-egg.jpg",
+      "rating": "4.20",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [4,2,5],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.dish",
+    "pk": 3,
+    "fields": {
       "name": "红烧肉",
-      "price": 15.0,
-      "canteenId": 1,
-      "canteenName": "第一食堂",
-      "category": "家常菜",
-      "rating": 4.8,
       "description": "色泽红亮，肥而不腻",
-      "image": "/images/dishes/braised-pork.jpg",
-      "tags": ["微辣", "热菜", "荤菜"]
-    },
-    {
-      "id": 4,
+      "price": "15.00",
+      "canteen": 1,
+      "window": 3,
+      "image": "images/dishes/braised-pork.jpg",
+      "rating": "4.80",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [6,2,3],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.dish",
+    "pk": 4,
+    "fields": {
       "name": "麻辣烫",
-      "price": 18.0,
-      "canteenId": 2,
-      "canteenName": "第二食堂",
-      "category": "小吃",
-      "rating": 4.5,
       "description": "各种食材可选，麻辣鲜香",
-      "image": "/images/dishes/malatang.jpg",
-      "tags": ["辣", "热菜", "可定制"]
-    },
-    {
-      "id": 5,
+      "price": "18.00",
+      "canteen": 2,
+      "window": 4,
+      "image": "images/dishes/malatang.jpg",
+      "rating": "4.50",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [1,2,7],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.dish",
+    "pk": 5,
+    "fields": {
       "name": "牛肉拉面",
-      "price": 16.0,
-      "canteenId": 3,
-      "canteenName": "清真食堂",
-      "category": "面食",
-      "rating": 4.7,
       "description": "牛肉软烂，汤鲜味美",
-      "image": "/images/dishes/beef-noodles.jpg",
-      "tags": ["不辣", "面食", "荤菜"]
-    },
-    {
-      "id": 6,
+      "price": "16.00",
+      "canteen": 3,
+      "window": 5,
+      "image": "images/dishes/beef-noodles.jpg",
+      "rating": "4.70",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [4,9,3],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.dish",
+    "pk": 6,
+    "fields": {
       "name": "糖醋里脊",
-      "price": 14.0,
-      "canteenId": 1,
-      "canteenName": "第一食堂",
-      "category": "家常菜",
-      "rating": 4.4,
       "description": "酸甜口味，外酥里嫩",
-      "image": "/images/dishes/sweet-sour-pork.jpg",
-      "tags": ["不辣", "热菜", "荤菜"]
-    },
-    {
-      "id": 7,
+      "price": "14.00",
+      "canteen": 1,
+      "window": 2,
+      "image": "images/dishes/sweet-sour-pork.jpg",
+      "rating": "4.40",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [4,2,3],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.dish",
+    "pk": 7,
+    "fields": {
       "name": "清炒时蔬",
-      "price": 6.0,
-      "canteenId": 1,
-      "canteenName": "第一食堂",
-      "category": "家常菜",
-      "rating": 4.0,
       "description": "新鲜蔬菜，清淡健康",
-      "image": "/images/dishes/stir-fry-veg.jpg",
-      "tags": ["不辣", "热菜", "素菜"]
-    },
-    {
-      "id": 8,
+      "price": "6.00",
+      "canteen": 1,
+      "window": 3,
+      "image": "images/dishes/stir-fry-veg.jpg",
+      "rating": "4.00",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [4,2,5],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.dish",
+    "pk": 8,
+    "fields": {
       "name": "水煮鱼",
-      "price": 25.0,
-      "canteenId": 2,
-      "canteenName": "第二食堂",
-      "category": "川菜",
-      "rating": 4.9,
       "description": "麻辣鲜香，鱼肉鲜嫩",
-      "image": "/images/dishes/boiled-fish.jpg",
-      "tags": ["辣", "热菜", "荤菜", "招牌"]
-    },
-    {
-      "id": 9,
+      "price": "25.00",
+      "canteen": 2,
+      "window": 4,
+      "image": "images/dishes/boiled-fish.jpg",
+      "rating": "4.90",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [1,2,3,8],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.dish",
+    "pk": 9,
+    "fields": {
       "name": "羊肉串",
-      "price": 12.0,
-      "canteenId": 3,
-      "canteenName": "清真食堂",
-      "category": "烧烤",
-      "rating": 4.6,
       "description": "烤得香脆，肉质鲜嫩",
-      "image": "/images/dishes/lamb-skewer.jpg",
-      "tags": ["微辣", "烧烤", "荤菜"]
-    },
-    {
-      "id": 10,
+      "price": "12.00",
+      "canteen": 3,
+      "window": 5,
+      "image": "images/dishes/lamb-skewer.jpg",
+      "rating": "4.60",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [6,3],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.dish",
+    "pk": 10,
+    "fields": {
       "name": "烤冷面",
-      "price": 9.0,
-      "canteenId": 2,
-      "canteenName": "第二食堂",
-      "category": "小吃",
-      "rating": 4.3,
       "description": "东北特色小吃",
-      "image": "/images/dishes/grilled-noodle.jpg",
-      "tags": ["不辣", "小吃", "素菜"]
+      "price": "9.00",
+      "canteen": 2,
+      "window": 4,
+      "image": "images/dishes/grilled-noodle.jpg",
+      "rating": "4.30",
+      "rating_count": 0,
+      "view_count": 0,
+      "tags": [4,10,5],
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
     }
-  ],
-  "reviews": [
-    {
-      "id": 1,
-      "dishId": 1,
-      "userId": 1,
-      "username": "alice",
-      "rating": 5,
-      "comment": "非常好吃，很正宗！",
-      "createdAt": "2024-01-15T10:30:00Z"
-    },
-    {
-      "id": 2,
-      "dishId": 1,
-      "userId": 2,
-      "username": "bob",
-      "rating": 4,
-      "comment": "味道不错，就是有点辣",
-      "createdAt": "2024-01-16T12:20:00Z"
-    },
-    {
-      "id": 3,
-      "dishId": 8,
-      "userId": 1,
-      "username": "alice",
-      "rating": 5,
-      "comment": "超级好吃！招牌菜名不虚传！",
-      "createdAt": "2024-01-17T18:00:00Z"
+  },
+  {
+    "model": "list.review",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "dish": 1,
+      "content": "非常好吃，很正宗！",
+      "published_score": "5.00",
+      "status": "approved",
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
     }
-  ]
-}
+  },
+  {
+    "model": "list.review",
+    "pk": 2,
+    "fields": {
+      "user": 2,
+      "dish": 1,
+      "content": "味道不错，就是有点辣",
+      "published_score": "4.00",
+      "status": "approved",
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  },
+  {
+    "model": "list.review",
+    "pk": 3,
+    "fields": {
+      "user": 1,
+      "dish": 8,
+      "content": "超级好吃！招牌菜名不虚传！",
+      "published_score": "5.00",
+      "status": "approved",
+      "created_at": "2025-12-22T00:00:00Z",
+      "updated_at": "2025-12-22T00:00:00Z"
+    }
+  }
+]

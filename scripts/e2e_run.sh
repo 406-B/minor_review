@@ -70,53 +70,127 @@ echo "Note: Test users created. E2E tests will create their own data during exec
 echo "      (populate_database.py is not needed for E2E tests)"
 echo ""
 
-echo "Running Cypress tests in docker..."
-echo "=========================================="
-sudo docker compose -f docker-compose.e2e.yaml run --rm --entrypoint "/bin/sh" cypress -c "npx cypress run --reporter spec"
-CYPRESS_EXIT_CODE=$?
+# 导入 cypress/fixtures 下的 Django fixtures（如果存在）
+echo "Importing Django fixtures from cypress/fixtures if present..."
+if [ -d "cypress/fixtures" ]; then
+  echo "Copying fixtures into backend container..."
+  # 将主机上的 fixtures 目录复制到后端容器的 /app/fixtures
+  sudo docker cp cypress/fixtures/. minor_review_backend_e2e:/app/fixtures || true
 
-echo ""
-echo "=========================================="
-echo "📊 Test Results Summary"
-echo "=========================================="
+  # Load fixtures sequentially (explicit checks). 输出 ✅ 在每个成功加载后。
+  echo "Loading fixtures sequentially..."
 
-# 解析测试结果
-if [ -f cypress_output.log ]; then
-  # 提取测试统计
-  PASSING=$(grep -oP '✔\s+\K\d+(?=\s+passing)' cypress_output.log | tail -1 || echo "0")
-  FAILING=$(grep -oP '\d+(?=\s+failing)' cypress_output.log | tail -1 || echo "0")
-  PENDING=$(grep -oP '\d+(?=\s+pending)' cypress_output.log | tail -1 || echo "0")
-  
-  echo "Tests Passed:  ${PASSING}"
-  echo "Tests Failed:  ${FAILING}"
-  [ "$PENDING" != "0" ] && echo "Tests Pending: ${PENDING}"
-  
-  # 显示失败的测试
-  if [ "$FAILING" != "0" ]; then
-    echo ""
-    echo "❌ Failed Tests:"
-    grep -A 2 "failing)" cypress_output.log | tail -20 || true
+  if [ -f "cypress/fixtures/users.json" ]; then
+    echo "Processing users fixture (will encrypt passwords and upsert into login.User): users.json"
+    sudo docker compose $COMPOSE_FILES exec -T backend python manage.py shell <<'PY'
+import json, os
+from login.models import User
+from utils.jwt import encrypt_password
+fpath = '/app/fixtures/users.json'
+if os.path.exists(fpath):
+    with open(fpath, 'r', encoding='utf-8') as fh:
+        data = json.load(fh)
+    for item in data:
+        fields = item.get('fields', {})
+        username = fields.get('username')
+        raw_pw = fields.get('password')
+        nickname = fields.get('nickname', '')
+        avatar = fields.get('avatar', None)
+        if not username or raw_pw is None:
+            continue
+        enc = encrypt_password(raw_pw)
+        obj, created = User.objects.update_or_create(username=username, defaults={'password': enc, 'nickname': nickname})
+        if avatar:
+            try:
+                obj.avatar = avatar
+                obj.save()
+            except Exception:
+                pass
+    print('Users processed')
+else:
+    print('No users.json found at', fpath)
+PY
+    echo "✅ users.json processed"
   fi
-  
-  rm -f cypress_output.log
-fi
 
-echo ""
-echo "Test artifacts location:"
-echo "  - Videos:      ./cypress/videos"
-echo "  - Screenshots: ./cypress/screenshots"
+  if [ -f "cypress/fixtures/canteen.json" ]; then
+    # Ensure floors/windows exist before loading dishes inside canteen.json
+    if [ -f "cypress/fixtures/floors.json" ]; then
+      echo "Loading fixture: floors.json"
+      if sudo docker compose $COMPOSE_FILES exec -T backend python manage.py loaddata "/app/fixtures/floors.json"; then
+        echo "✅ floors.json loaded"
+      else
+        echo "Warning: failed to load fixture floors.json"
+      fi
+    fi
 
-if [ $CYPRESS_EXIT_CODE -ne 0 ]; then
-  echo ""
-  echo "=========================================="
-  echo "⚠️  E2E tests FAILED (exit code: $CYPRESS_EXIT_CODE)"
-  echo "=========================================="
-  echo ""
-  echo "Check the videos and screenshots above for details."
-  exit $CYPRESS_EXIT_CODE
+    if [ -f "cypress/fixtures/windows.json" ]; then
+      echo "Loading fixture: windows.json"
+      if sudo docker compose $COMPOSE_FILES exec -T backend python manage.py loaddata "/app/fixtures/windows.json"; then
+        echo "✅ windows.json loaded"
+      else
+        echo "Warning: failed to load fixture windows.json"
+      fi
+    fi
+
+    echo "Loading fixture: canteen.json"
+    if sudo docker compose $COMPOSE_FILES exec -T backend python manage.py loaddata "/app/fixtures/canteen.json"; then
+      echo "✅ canteen.json loaded"
+    else
+      echo "Warning: failed to load fixture canteen.json"
+    fi
+  fi
+
+  if [ -f "cypress/fixtures/posts.json" ]; then
+    echo "Loading fixture: posts.json"
+    if sudo docker compose $COMPOSE_FILES exec -T backend python manage.py loaddata "/app/fixtures/posts.json"; then
+      echo "✅ posts.json loaded"
+    else
+      echo "Warning: failed to load fixture posts.json"
+    fi
+  fi
+
+  if [ -f "cypress/fixtures/comments.json" ]; then
+    echo "Loading fixture: comments.json"
+    if sudo docker compose $COMPOSE_FILES exec -T backend python manage.py loaddata "/app/fixtures/comments.json"; then
+      echo "✅ comments.json loaded"
+    else
+      echo "Warning: failed to load fixture comments.json"
+    fi
+  fi
+
+  if [ -f "cypress/fixtures/profile.json" ]; then
+    echo "Loading fixture: profile.json"
+    if sudo docker compose $COMPOSE_FILES exec -T backend python manage.py loaddata "/app/fixtures/profile.json"; then
+      echo "✅ profile.json loaded"
+    else
+      echo "Warning: failed to load fixture profile.json"
+    fi
+  fi
+
+  # Load any remaining fixture files not explicitly handled
+  for f in cypress/fixtures/*.json cypress/fixtures/*.yaml cypress/fixtures/*.yml; do
+    if [ -f "$f" ]; then
+      fname=$(basename "$f")
+      case "$fname" in
+        users.json|canteen.json|posts.json|comments.json|profile.json|floors.json|windows.json)
+          ;;
+        *)
+          echo "Loading fixture: $fname"
+          if sudo docker compose $COMPOSE_FILES exec -T backend python manage.py loaddata "/app/fixtures/$fname"; then
+            echo "✅ $fname loaded"
+          else
+            echo "Warning: failed to load fixture $fname"
+          fi
+          ;;
+      esac
+    fi
+  done
+else
+  echo "No cypress/fixtures directory found; skipping fixture import."
 fi
 
 echo ""
 echo "=========================================="
-echo "✅ All E2E tests PASSED!"
+echo "✅ E2E 测试环境部署完成！"
 echo "=========================================="
