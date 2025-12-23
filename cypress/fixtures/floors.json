@@ -1,0 +1,38 @@
+[
+  {
+    "model": "list.floor",
+    "pk": 1,
+    "fields": {
+      "name": "一楼",
+      "canteen": 1,
+      "order": 1
+    }
+  },
+  {
+    "model": "list.floor",
+    "pk": 2,
+    "fields": {
+      "name": "二楼",
+      "canteen": 1,
+      "order": 2
+    }
+  },
+  {
+    "model": "list.floor",
+    "pk": 3,
+    "fields": {
+      "name": "一楼",
+      "canteen": 2,
+      "order": 1
+    }
+  },
+  {
+    "model": "list.floor",
+    "pk": 4,
+    "fields": {
+      "name": "一楼",
+      "canteen": 3,
+      "order": 1
+    }
+  }
+]

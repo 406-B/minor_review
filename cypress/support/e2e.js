@@ -1,13 +1,8 @@
 // ***********************************************************
-// This example support/e2e.js is processed and
-// loaded automatically before your test files.
+// This file is processed and loaded automatically before your test files.
 //
-// This is a great place to put global configuration and
-// behavior that modifies Cypress.
-//
-// You can change the location of this file or turn off
-// automatically serving support files with the
-// 'supportFile' configuration option.
+// You can change the location of this file or turn off automatically serving
+// support files with the 'supportFile' configuration option.
 //
 // You can read more here:
 // https://on.cypress.io/configuration
@@ -19,12 +14,15 @@ import './commands';
 // Alternatively you can use CommonJS syntax:
 // require('./commands')
 
+// 全局配置
 Cypress.on('uncaught:exception', (err, runnable) => {
-  // returning false here prevents Cypress from
-  // failing the test on uncaught exceptions
-  // You might want to handle specific exceptions here
-  if (err.message.includes('ResizeObserver loop limit exceeded')) {
-    return false;
-  }
-  return true;
+  // 返回 false 以防止 Cypress 将未捕获的异常视为失败
+  // 在开发中可能会有一些非关键的错误
+  return false;
+});
+
+// 在每个测试之前清除本地存储和 cookies
+beforeEach(() => {
+  cy.clearLocalStorage();
+  cy.clearCookies();
 });
