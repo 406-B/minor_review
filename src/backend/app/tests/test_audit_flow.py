@@ -2,6 +2,10 @@ import pytest
 from post.models import Post, Comment
 from list.models import Review, Dish, Tag
 
+
+# 认证标签：集成测试（通过 API + DB 链路验证）
+pytestmark = [pytest.mark.integration]
+
 @pytest.mark.django_db
 class TestAuditFlow:
     """

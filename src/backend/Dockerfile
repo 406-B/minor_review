@@ -46,6 +46,8 @@ EXPOSE 8000
 
 # 启动脚本
 COPY entrypoint.sh /entrypoint.sh
+# 修复 Windows 下可能出现的 CRLF 换行符问题
+RUN sed -i 's/\r$//' /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

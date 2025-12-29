@@ -1,6 +1,10 @@
 import pytest
 from list.models import Dish, Tag
 
+
+# 认证标签：集成测试（通过 API + DB 链路验证）
+pytestmark = [pytest.mark.integration]
+
 @pytest.mark.django_db
 class TestRecommendationFlow:
     """

@@ -117,3 +117,16 @@ a.out
 *.test
 *.prof
 
+
+# test/coverage artifacts
+src/backend/app/.coverage
+htmlcov/
+.coverage
+coverage.xml
+
+# Django collected static
+src/backend/app/staticfiles/
+
+# local downloads/cache
+src/backend/app/downloads/
+

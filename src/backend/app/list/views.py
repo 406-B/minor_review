@@ -1096,13 +1096,23 @@ def get_food_calendar(request):
     # 获取年月参数（默认当前月）
     from datetime import datetime, timedelta
     import calendar as cal
+    from django.utils import timezone
 
-    year = int(request.query_params.get('year', datetime.now().year))
-    month = int(request.query_params.get('month', datetime.now().month))
+    # 使用时区感知的当前时间作为默认值，避免 naive datetime 警告
+    now = timezone.localtime(timezone.now())
+    year = int(request.query_params.get('year', now.year))
+    month = int(request.query_params.get('month', now.month))
 
     # 计算月份的第一天和最后一天
     first_day = datetime(year, month, 1)
     last_day = datetime(year, month, cal.monthrange(year, month)[1], 23, 59, 59)
+    # 将构造的 naive datetime 转为时区感知的 datetime
+    try:
+        first_day = timezone.make_aware(first_day)
+        last_day = timezone.make_aware(last_day)
+    except Exception:
+        # 如果已经是时区感知的，则忽略
+        pass
 
     # 获取该月的所有打卡记录
     records = DishCheckInRecord.objects.filter(

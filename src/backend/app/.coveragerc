@@ -10,6 +10,8 @@ omit =
     manage.py
     */wsgi.py
     */asgi.py
+    */settings_prod.py
+    auto_login.py
 
 [report]
 exclude_lines =

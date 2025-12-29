@@ -1,6 +1,10 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
+
+# 认证标签：集成测试（通过 API 端点驱动，必要时 mock 外部依赖）
+pytestmark = [pytest.mark.integration]
+
 @pytest.mark.django_db
 class TestConsumptionFlow:
     """

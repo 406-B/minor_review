@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # 测试运行器服务
+  backend-tests:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    # 覆盖默认启动命令，改为运行 pytest
+    command: pytest tests -q
+    working_dir: /app
+    environment:
+      DJANGO_SETTINGS_MODULE: app.test_settings
+      TEST_IN_DOCKER: "true"
+      MYSQL_DATABASE: minor_review_test
+      MYSQL_ROOT_PASSWORD: database
+      MYSQL_HOST: db-test  # 连接到测试专用数据库
+      MYSQL_PORT: 3306
+    volumes:
+      - ./src/backend/app:/app
+    depends_on:
+      db-test:
+        condition: service_healthy
+    networks:
+      - backend_network
+
+  # 测试专用数据库服务（完全隔离，不影响开发库）
+  db-test:
+    image: mysql:8.0
+    container_name: minor_review_db_test
+    restart: "no"
+    environment:
+      MYSQL_ROOT_PASSWORD: database
+      MYSQL_DATABASE: minor_review_test
+    # 不映射端口到主机，避免 3306 冲突
+    # ports:
+    #   - "33307:3306" 
+    networks:
+      - backend_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pdatabase"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+
+networks:
+  backend_network:
+    driver: bridge

@@ -3,6 +3,10 @@ from login.models import User
 from django.contrib.auth.models import User as AuthUser
 from utils.jwt import encrypt_password
 
+
+# 认证标签：集成测试（通过 API + DB 链路验证）
+pytestmark = [pytest.mark.integration]
+
 @pytest.mark.django_db
 class TestLoginFlow:
     """
@@ -23,6 +27,7 @@ class TestLoginFlow:
         data = {
             'username': 'user123',
             'password': 'Password123-',
+            'confirm_password': 'Password123-',
             'nickname': 'New User'
         }
         
@@ -47,14 +52,15 @@ class TestLoginFlow:
         data = {
             'username': 'user123',
             'password': 'Password123-',
+            'confirm_password': 'Password123-',
             'nickname': 'Another User'
         }
         
         response = api_client.post(url, data, format='json')
         
-        # create_user returns False on duplicate (unique constraint), view returns 500
-        assert response.status_code == 500
-        assert response.data['message'] == "Error"
+        # Duplicate username returns 400 with '用户名已存在'
+        assert response.status_code == 400
+        assert response.data['message'] == "用户名已存在"
 
     def test_login_success(self, api_client):
         """测试用户登录成功"""

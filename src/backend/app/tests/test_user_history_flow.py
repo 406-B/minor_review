@@ -4,6 +4,10 @@ from login.models import User as LoginUser
 from list.models import Dish, Review
 from utils.jwt import encrypt_password
 
+
+# 认证标签：集成测试（通过 API + DB 链路验证）
+pytestmark = [pytest.mark.integration]
+
 @pytest.mark.django_db
 class TestUserHistoryFlow:
     """

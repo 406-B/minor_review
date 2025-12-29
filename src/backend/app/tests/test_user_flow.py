@@ -3,6 +3,10 @@ from django.urls import reverse
 from login.models import User as LoginUser
 from django.contrib.auth.models import User as AuthUser
 
+
+# 认证标签：集成测试（通过 API + DB 链路验证）
+pytestmark = [pytest.mark.integration]
+
 @pytest.mark.django_db
 class TestUserFlow:
     """
@@ -18,6 +22,7 @@ class TestUserFlow:
         data = {
             'username': 'newuser1',
             'password': 'Password123-',
+            'confirm_password': 'Password123-',
             'nickname': 'New User'
         }
         response = api_client.post(url, data, format='json')

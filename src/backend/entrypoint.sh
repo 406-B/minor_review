@@ -12,6 +12,12 @@ while ! nc -z $MYSQL_HOST $MYSQL_PORT; do
 done
 echo "MySQL is ready!"
 
+# 如果传入的命令是 pytest，则直接执行该命令（用于集成测试）
+if [[ "$1" == "pytest"* ]]; then
+    echo "Running tests..."
+    exec "$@"
+fi
+
 # 安装可能缺失的依赖（临时修复）
 echo "Installing additional dependencies..."
 pip install requests pycryptodome -q || true

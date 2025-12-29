@@ -2,6 +2,10 @@ import pytest
 from django.urls import reverse
 from list.models import Dish
 
+
+# 认证标签：集成测试（通过 API + DB/序列化链路验证）
+pytestmark = [pytest.mark.integration]
+
 @pytest.mark.django_db
 class TestCanteenFlow:
     """

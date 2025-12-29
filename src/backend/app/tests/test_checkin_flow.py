@@ -1,5 +1,10 @@
 import pytest
 from list.models import DishCheckInRecord, UserDishHistory
+from django.utils import timezone
+
+
+# 认证标签：集成测试（通过 API + DB 链路验证）
+pytestmark = [pytest.mark.integration]
 
 @pytest.mark.django_db
 class TestCheckInFlow:
@@ -24,6 +29,21 @@ class TestCheckInFlow:
         history = UserDishHistory.objects.get(dish=sample_dish)
         assert history.count == 1
 
+    def test_check_in_dish_daily_limit_exceeded_returns_400(self, auth_client, sample_dish):
+        """同一道菜每日最多打卡3次，超过返回 400（覆盖 check_in_dish 上限分支）。"""
+        url = f'/api/v1/dishes/{sample_dish.id}/check-in/'
+
+        # 前三次成功
+        for i in range(3):
+            resp = auth_client.post(url, {'notes': f'n{i}'}, format='json')
+            assert resp.status_code == 200
+            assert resp.data['code'] == 200
+
+        # 第四次应触发上限
+        resp4 = auth_client.post(url, {'notes': 'n3'}, format='json')
+        assert resp4.status_code == 400
+        assert resp4.data['code'] == 400
+
     def test_get_food_calendar(self, auth_client, sample_dish):
         """测试获取美食日历"""
         # 先打卡一次
@@ -41,8 +61,7 @@ class TestCheckInFlow:
         assert data['summary']['total_check_ins'] >= 1
 
         # 测试 get_check_in_calendar (按月概览)
-        import datetime
-        now = datetime.datetime.now()
+        now = timezone.now()
         url_calendar = f'/api/v1/profile/check-in-calendar?year={now.year}&month={now.month}'
         response_calendar = auth_client.get(url_calendar)
         

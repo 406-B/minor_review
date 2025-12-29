@@ -11,7 +11,10 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "test:e2e:docker": "docker compose -f docker-compose.yaml -f docker-compose.test.yaml up --exit-code-from cypress cypress",
+    "test:e2e:local-docker": "cross-env CYPRESS_baseUrl=http://localhost cypress run",
+    "test:integration:docker": "docker compose -f docker-compose.integration-test.yaml run --rm backend-tests"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.4.3",
