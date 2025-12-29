@@ -119,3 +119,7 @@ a.out
 
 src/backend/chrome-installer/google-chrome-stable.deb
 src/backend/chrome-installer/chromedriver-linux64.zip
+
+# perf results
+perf/results/
+
