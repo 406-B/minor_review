@@ -189,3 +189,52 @@ SALT = "django-insecure-salt-change-in-production"  # 密码加密盐值
 
 # DeepSeek API 配置（用于内容审核）
 DEEPSEEK_API_KEY = "sk-6ca4652a7c6f42e2b84564aaca772eb0"
+
+# Redis 缓存配置
+import os
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_DB = int(os.getenv('REDIS_DB', 0))
+
+# Django 缓存配置 - 使用 Redis
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            },
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+        },
+        'KEY_PREFIX': 'minor_review',
+        'TIMEOUT': 300,  # 默认缓存5分钟
+    },
+    # 长期缓存（用于很少变化的数据，如食堂列表）
+    'long_term': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'minor_review_long',
+        'TIMEOUT': 3600,  # 1小时
+    },
+    # 短期缓存（用于频繁变化的数据，如菜品评分）
+    'short_term': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/2',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'minor_review_short',
+        'TIMEOUT': 60,  # 1分钟
+    },
+}
+
+# Session 使用 Redis 存储（可选，提升性能）
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'

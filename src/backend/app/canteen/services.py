@@ -18,10 +18,12 @@ from Crypto.Util.Padding import unpad
 
 # Redis客户端配置
 try:
+    redis_password = os.getenv('REDIS_PASSWORD', '')
     REDIS_CLIENT = redis.Redis(
         host=os.getenv('REDIS_HOST', 'localhost'),
         port=int(os.getenv('REDIS_PORT', 6379)),
         db=int(os.getenv('REDIS_DB', 0)),
+        password=redis_password if redis_password else None,
         decode_responses=True,
         socket_connect_timeout=5
     )
@@ -262,42 +264,29 @@ def get_browser_driver(browser_type: str = 'chrome'):
     try:
         from selenium import webdriver
         from selenium.webdriver.chrome.options import Options as ChromeOptions
-        from selenium.webdriver.firefox.options import Options as FirefoxOptions
-        from selenium.webdriver.edge.options import Options as EdgeOptions
+        from selenium.webdriver.chrome.service import Service as ChromeService
     except ImportError:
         raise ImportError(
             "未安装selenium库，请运行: pip install selenium"
         )
     
-    browser_type = browser_type.lower()
-    
-    if browser_type == 'chrome':
-        options = ChromeOptions()
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        options.add_experimental_option('useAutomationExtension', False)
-        return webdriver.Chrome(options=options)
-    
-    elif browser_type == 'firefox':
-        options = FirefoxOptions()
-        options.set_preference("dom.webdriver.enabled", False)
-        return webdriver.Firefox(options=options)
-    
-    elif browser_type == 'edge':
-        options = EdgeOptions()
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        return webdriver.Edge(options=options)
-    
-    elif browser_type == 'safari':
-        # Safari需要在系统偏好设置中启用远程自动化
-        return webdriver.Safari()
-    
-    else:
-        raise ValueError(
-            f"不支持的浏览器类型: {browser_type}。"
-            f"支持的类型: chrome, firefox, edge, safari"
-        )
+    options = ChromeOptions()
+    # 无头模式（服务器环境必需）
+    options.add_argument('--headless=new')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
+    # 反爬虫检测
+    options.add_argument('--disable-blink-features=AutomationControlled')
+    options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    options.add_experimental_option('useAutomationExtension', False)
+                
+    # 容器环境：使用 Chromium
+    options.binary_location = '/usr/bin/chromium'
+    service = ChromeService(executable_path='/usr/bin/chromedriver')
+                
+    return webdriver.Chrome(service=service, options=options)
+
 
 
 def fetch_servicehall_cookie(

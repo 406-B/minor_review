@@ -1102,7 +1102,7 @@ def _calculate_achievement_tier(check_in_count):
 @login_required
 def get_check_in_history(request):
     """
-    获取用户打卡历史（按日期范围或月份）
+    获取用户打卡历史（按日期范围或月份，带缓存）
     """
     # 获取用户
     auth_user = _get_or_create_auth_user(request)
@@ -1163,18 +1163,36 @@ def get_check_in_history(request):
             'message': f'日期格式错误: {str(e)}'
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    # 查询打卡记录
+    # 尝试从缓存获取
+    from django.core.cache import caches
+    cache = caches['default']
+    cache_key = f'check_in_history:{auth_user.id}:{start_date}:{end_date}'
+    cached_data = cache.get(cache_key)
+    
+    if cached_data:
+        return Response(cached_data, status=status.HTTP_200_OK)
+
+    # 优化后的查询：一次性加载所有需要的数据
     check_in_records = DishCheckInRecord.objects.filter(
         user=auth_user,
         checked_in_at__date__gte=start_date,
         checked_in_at__date__lte=end_date
-    ).select_related('dish', 'dish__canteen', 'dish__window').prefetch_related('dish__tags').order_by('-checked_in_at')
+    ).select_related(
+        'dish__canteen',
+        'dish__window'
+    ).prefetch_related(
+        'dish__tags'
+    ).order_by('-checked_in_at')
 
-    # 获取用户菜品历史（用于统计）
+    # 获取用户菜品历史（用于统计）- 优化为字典查询
+    dish_ids = [r.dish_id for r in check_in_records]
     dish_history_map = {}
-    dish_histories = UserDishHistory.objects.filter(user=auth_user).select_related('dish')
-    for history in dish_histories:
-        dish_history_map[history.dish_id] = history
+    if dish_ids:
+        dish_histories = UserDishHistory.objects.filter(
+            user=auth_user,
+            dish_id__in=dish_ids
+        ).select_related('dish')
+        dish_history_map = {h.dish_id: h for h in dish_histories}
 
     # 按日期分组
     check_ins_by_date = defaultdict(list)
@@ -1273,14 +1291,19 @@ def get_check_in_history(request):
         'most_frequent_dish': most_frequent_dish
     }
 
-    return Response({
+    response_data = {
         'code': 200,
         'message': '获取成功',
         'data': {
             'check_ins': check_ins_list,
             'summary': summary
         }
-    }, status=status.HTTP_200_OK)
+    }
+    
+    # 缓存结果（5分钟）
+    cache.set(cache_key, response_data, 300)
+    
+    return Response(response_data, status=status.HTTP_200_OK)
 
 
 @extend_schema(

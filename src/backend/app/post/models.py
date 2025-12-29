@@ -66,6 +66,9 @@ class Post(models.Model):
         indexes = [
             models.Index(fields=['-created_at']),
             models.Index(fields=['author']),
+            models.Index(fields=['status', '-created_at']),  # 审核状态+时间
+            models.Index(fields=['dish', '-created_at']),  # 菜品相关帖子
+            models.Index(fields=['-likes_count']),  # 热门帖子排序
         ]
 
     def __str__(self):
@@ -140,6 +143,8 @@ class Comment(models.Model):
         indexes = [
             models.Index(fields=['post', 'created_at']),
             models.Index(fields=['author']),
+            models.Index(fields=['post', 'parent', 'created_at']),  # 帖子评论列表
+            models.Index(fields=['status', '-created_at']),  # 审核状态
         ]
 
     def __str__(self):

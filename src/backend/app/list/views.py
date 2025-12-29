@@ -1,5 +1,6 @@
 from .models import Floor, Window
 from .serializers import FloorSerializer
+from utils.cache_utils import cache_result, CacheManager
 # ==================== 食堂楼层与窗口接口 ====================
 
 from rest_framework.decorators import api_view, permission_classes
@@ -11,9 +12,24 @@ from rest_framework import status, permissions
 def canteen_floors(request, canteen_id):
     """
     获取指定食堂的所有楼层、窗口及窗口下的菜品
+    优化：使用prefetch_related预加载关联数据，避免N+1查询问题
+    优化：使用Redis缓存结果，提升响应速度
     """
-    floors = Floor.objects.filter(canteen_id=canteen_id).order_by('order', 'id')
-    data = FloorSerializer(floors, many=True).data
+    # 使用缓存包装数据库查询
+    cache_key = f"canteen_floors:{canteen_id}"
+    
+    def fetch_floors():
+        floors = Floor.objects.filter(canteen_id=canteen_id).select_related('canteen').prefetch_related(
+            'windows',
+            'windows__dishes',
+            'windows__dishes__tags',
+            'windows__dishes__canteen'
+        ).order_by('order', 'id')
+        return FloorSerializer(floors, many=True).data
+    
+    # 使用长期缓存（1小时），因为楼层和窗口数据不常变化
+    data = CacheManager.get_or_set(cache_key, fetch_floors, timeout=3600, cache_alias='long_term')
+    
     return Response({
         'code': 200,
         'message': '获取楼层窗口成功',
@@ -96,23 +112,35 @@ def my_reviews(request):
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def canteen_list(request):
-    queryset = Canteen.objects.all()
-
-    # 搜索功能
+    # 检查是否有搜索参数
     search = request.query_params.get('search', None)
-    if search:
-        queryset = queryset.filter(name__icontains=search)
-
-    # 排序
     ordering = request.query_params.get('ordering', 'name')
-    if ordering in ['name', '-name', 'created_at', '-created_at']:
-        queryset = queryset.order_by(ordering)
-
-    serializer = CanteenSerializer(queryset, many=True)
+    
+    # 如果有搜索或排序参数，不使用缓存（因为参数组合太多）
+    if search or ordering != 'name':
+        queryset = Canteen.objects.all()
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+        if ordering in ['name', '-name', 'created_at', '-created_at']:
+            queryset = queryset.order_by(ordering)
+        serializer = CanteenSerializer(queryset, many=True)
+        return Response({
+            'code': 200,
+            'message': '获取食堂列表成功',
+            'data': serializer.data
+        })
+    
+    # 默认情况使用缓存
+    def fetch_canteens():
+        queryset = Canteen.objects.all().order_by('name')
+        return CanteenSerializer(queryset, many=True).data
+    
+    data = CacheManager.get_or_set('canteen_list_default', fetch_canteens, timeout=3600, cache_alias='long_term')
+    
     return Response({
         'code': 200,
         'message': '获取食堂列表成功',
-        'data': serializer.data
+        'data': data
     })
 
 
@@ -246,17 +274,24 @@ def dish_detail(request, dish_id):
     """
     获取菜品详情
     自动增加浏览次数
+    使用短期缓存（1分钟），因为浏览次数会频繁变化
     """
+    # 先增加浏览次数
     dish = get_object_or_404(Dish, id=dish_id)
-
-    # 增加浏览次数
     dish.increment_view_count()
+    
+    # 使用短期缓存获取详情
+    cache_key = f"dish_detail:{dish_id}"
+    
+    def fetch_dish_detail():
+        return DishSerializer(dish).data
+    
+    data = CacheManager.get_or_set(cache_key, fetch_dish_detail, timeout=60, cache_alias='short_term')
 
-    serializer = DishSerializer(dish)
     return Response({
         'code': 200,
         'message': '获取菜品详情成功',
-        'data': serializer.data
+        'data': data
     })
 
 
@@ -265,11 +300,23 @@ def dish_detail(request, dish_id):
 def hot_dishes(request):
     """
     获取热门菜品（按浏览次数排序）
+    使用短期缓存（5分钟）
     """
     limit = int(request.query_params.get('limit', 10))
-    dishes = Dish.objects.order_by('-view_count', '-rating')[:limit]
+    
+    cache_key = f"hot_dishes:{limit}"
+    
+    def fetch_hot_dishes():
+        dishes = Dish.objects.order_by('-view_count', '-rating')[:limit]
+        return DishListSerializer(dishes, many=True).data
+    
+    data = CacheManager.get_or_set(cache_key, fetch_hot_dishes, timeout=300, cache_alias='default')
 
-    serializer = DishListSerializer(dishes, many=True)
+    return Response({
+        'code': 200,
+        'message': '获取热门菜品成功',
+        'data': data
+    })
     return Response({
         'code': 200,
         'message': '获取热门菜品成功',

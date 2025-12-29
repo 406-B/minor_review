@@ -1,17 +1,18 @@
 <template>
-  <div class="achi-wrap" :style="wrapStyle">
+  <div class="achi-wrap" :style="wrapStyle" ref="wrapRef">
     <img
-      v-if="src && imageOk"
+      v-if="shouldLoad && src && imageOk"
       :src="src"
       :alt="alt"
       class="achi-img"
-      :class="borderClass"
+      :class="[borderClass, { 'img-loading': isLoading }]"
       @error="onError"
       @load="onLoad"
+      loading="lazy"
     />
-    <template v-if="!(src && imageOk)">
+    <template v-if="!(shouldLoad && src && imageOk)">
       <slot name="placeholder">
-        <div class="achi-placeholder">图</div>
+        <div class="achi-placeholder">{{ isLoading ? '加载中...' : '图' }}</div>
       </slot>
     </template>
     <div v-if="count > 0" class="achi-badge" :class="badgeClass">{{ badgeText }}</div>
@@ -29,12 +30,17 @@ const props = defineProps({
   width: { type: [String, Number], default: '100%' },
   height: { type: [String, Number], default: '100%' },
   radius: { type: [String, Number], default: '8px' },
+  lazy: { type: Boolean, default: true }, // 是否启用懒加载
 })
 
 const countRef = ref(0)
 const count = computed(() => countRef.value)
 let handler = null
 const imageOk = ref(true)
+const shouldLoad = ref(!props.lazy) // 如果不启用懒加载，直接加载
+const isLoading = ref(false)
+const wrapRef = ref(null)
+let observer = null
 
 const wrapStyle = computed(() => ({
   width: typeof props.width === 'number' ? props.width + 'px' : props.width,
@@ -56,8 +62,40 @@ function refresh() {
   countRef.value = getDishCheckinCount(props.dishId)
 }
 
-function onError() { imageOk.value = false }
-function onLoad() { imageOk.value = true }
+function onError() { 
+  imageOk.value = false
+  isLoading.value = false
+}
+
+function onLoad() { 
+  imageOk.value = true
+  isLoading.value = false
+}
+
+// 设置懒加载观察器
+function setupLazyLoad() {
+  if (!props.lazy || !wrapRef.value) return
+  
+  if ('IntersectionObserver' in window) {
+    observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !shouldLoad.value) {
+          shouldLoad.value = true
+          isLoading.value = true
+          observer.unobserve(entry.target)
+        }
+      })
+    }, {
+      rootMargin: '50px', // 提前50px开始加载
+      threshold: 0.01
+    })
+    
+    observer.observe(wrapRef.value)
+  } else {
+    // 不支持IntersectionObserver的浏览器直接加载
+    shouldLoad.value = true
+  }
+}
 
 onMounted(async () => {
   await ensureAchievementsLoaded()
@@ -67,17 +105,45 @@ onMounted(async () => {
     if (Number(e.detail.dishId) === Number(props.dishId)) refresh()
   }
   onAchievementsUpdated(handler)
+  
+  // 设置图片懒加载
+  setupLazyLoad()
 })
 
 onBeforeUnmount(() => {
   if (handler) offAchievementsUpdated(handler)
+  if (observer && wrapRef.value) {
+    observer.unobserve(wrapRef.value)
+    observer.disconnect()
+  }
 })
 </script>
 
 <style scoped>
 .achi-wrap { position: relative; overflow: hidden; }
-.achi-img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: block; }
-.achi-placeholder { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; color:#999; background:#f4f6f8; border-radius: inherit; font-weight:600 }
+.achi-img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+  border-radius: inherit; 
+  display: block;
+  transition: opacity 0.3s ease-in-out;
+}
+.achi-img.img-loading {
+  opacity: 0;
+}
+.achi-placeholder { 
+  width: 100%; 
+  height: 100%; 
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  color:#999; 
+  background:#f4f6f8; 
+  border-radius: inherit; 
+  font-weight:600;
+  font-size: 12px;
+}
 .achi-badge {
   position: absolute;
   right: 6px;

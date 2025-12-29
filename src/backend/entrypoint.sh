@@ -12,9 +12,20 @@ while ! nc -z $MYSQL_HOST $MYSQL_PORT; do
 done
 echo "MySQL is ready!"
 
-# 安装可能缺失的依赖（临时修复）
-echo "Installing additional dependencies..."
-pip install requests pycryptodome -q || true
+# 等待Redis就绪
+echo "Waiting for Redis..."
+while ! nc -z $REDIS_HOST $REDIS_PORT; do
+  sleep 1
+done
+echo "Redis is ready!"
+
+# 安装/更新依赖（确保新依赖已安装）
+echo "Installing/Updating dependencies..."
+pip install --no-cache-dir -r requirements.txt -q
+
+# 检查并合并迁移冲突
+echo "Checking for migration conflicts..."
+python manage.py makemigrations --merge --noinput 2>/dev/null || echo "No conflicts to merge"
 
 # 运行数据库迁移
 echo "Running database migrations..."
@@ -27,6 +38,14 @@ python manage.py collectstatic --noinput --clear
 # 创建媒体文件目录
 echo "Creating media directories..."
 mkdir -p media/avatars media/dishes
+
+# 验证Redis缓存连接
+echo "Verifying Redis cache connection..."
+if [ -n "$REDIS_PASSWORD" ]; then
+    python manage.py shell -c "from django.core.cache import cache; cache.set('test', 'ok'); print('✅ Redis cache with auth OK' if cache.get('test') == 'ok' else '❌ Redis cache failed')" || echo "⚠️  Cache check skipped"
+else
+    python manage.py shell -c "from django.core.cache import cache; cache.set('test', 'ok'); print('✅ Redis cache OK' if cache.get('test') == 'ok' else '❌ Redis cache failed')" || echo "⚠️  Cache check skipped"
+fi
 
 echo "==================================="
 echo "Starting Gunicorn server..."
@@ -42,3 +61,4 @@ exec gunicorn app.wsgi:application \
     --access-logfile - \
     --error-logfile - \
     --log-level info
+
