@@ -5,26 +5,26 @@ echo "==================================="
 echo "Minor Review Backend Starting..."
 echo "==================================="
 
-# 等待数据库就绪
+# 绛夊緟鏁版嵁搴撳氨缁?
 echo "Waiting for MySQL..."
 while ! nc -z $MYSQL_HOST $MYSQL_PORT; do
   sleep 1
 done
 echo "MySQL is ready!"
 
-# 安装可能缺失的依赖（临时修复）
+# 瀹夎鍙兘缂哄け鐨勪緷璧栵紙涓存椂淇锛?
 echo "Installing additional dependencies..."
 pip install requests pycryptodome -q || true
 
-# 运行数据库迁移
+# 杩愯鏁版嵁搴撹縼绉?
 echo "Running database migrations..."
 python manage.py migrate --noinput
 
-# 收集静态文件
+# 鏀堕泦闈欐€佹枃浠?
 echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
-# 创建媒体文件目录
+# 鍒涘缓濯掍綋鏂囦欢鐩綍
 echo "Creating media directories..."
 mkdir -p media/avatars media/dishes
 
@@ -32,7 +32,7 @@ echo "==================================="
 echo "Starting Gunicorn server..."
 echo "==================================="
 
-# 启动 Gunicorn
+# 鍚姩 Gunicorn
 exec gunicorn app.wsgi:application \
     --bind 0.0.0.0:8000 \
     --workers 4 \
