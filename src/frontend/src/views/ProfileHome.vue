@@ -254,10 +254,17 @@ import {
 } from '@/utils/achievements';
 import ConsumptionCard from '@/components/ConsumptionCard.vue';
 import FoodCalendar from '@/components/FoodCalendar.vue';
+import { refreshAuthDependent } from '@/utils/authRefresh'
 
 const router = useRouter();
-const isAuthed = computed(() => !!localStorage.getItem('jwt'));
+// local reactive auth flag driven by auth:changed events
+const isAuthedLocal = ref(!!localStorage.getItem('jwt'))
+const isAuthed = computed(() => isAuthedLocal.value)
 const goLogin = () => router.push('/login');
+function onAuthChanged(e) { isAuthedLocal.value = !!(e && e.detail && e.detail.isAuthed) }
+
+// expose helper for manual refresh if needed elsewhere
+const triggerAuthRefresh = () => refreshAuthDependent()
 const published = ref([]);
 const interactions = ref([]);
 const user = ref({});
@@ -463,6 +470,10 @@ const formatTime = (timestamp) => {
 };
 
 onMounted(async () => {
+  // 监听并立即刷新登录态，确保遮罩等依赖登录态的组件正确渲染
+  window.addEventListener('auth:changed', onAuthChanged)
+  try { triggerAuthRefresh() } catch (_) {}
+
   // 先加载用户信息（用于 hasTags 之类的判定）
   await load();
   // 再加载推荐
@@ -478,6 +489,7 @@ onMounted(async () => {
 onUnmounted(() => {
   stopAuto();
   if (achiHandler) offAchievementsUpdated(achiHandler);
+  window.removeEventListener('auth:changed', onAuthChanged)
 });
 
 const viewAllPublished = () => {

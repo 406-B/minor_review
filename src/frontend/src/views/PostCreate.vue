@@ -176,7 +176,11 @@ const tempSelectedDish = ref(null) // 悬浮窗中临时选择的菜品
 let searchTimeout = null
 
 function goBack() {
-	router.push({ name: 'CommunityHome' })
+	if (window.history.length > 1) {
+		router.back()
+	} else {
+		router.push({ name: 'CommunityHome' })
+	}
 }
 
 // 关闭菜品选择悬浮窗
