@@ -97,6 +97,7 @@ function parseFlowWeights(raw) {
 const FLOW_WEIGHTS = parseFlowWeights(__ENV.FLOW_WEIGHTS);
 const ENABLE_WRITES = String(__ENV.ENABLE_WRITES || '1').trim() !== '0';
 const FORCE_B_WRITES = String(__ENV.FORCE_B_WRITES || '1').trim() !== '0';
+const PERF_PRESSURE = String(__ENV.PERF_PRESSURE || '0').trim() === '1';
 
 // Business-semantic metrics (independent from k6 built-in expected_response)
 // - allowed success: treat 200/400 as acceptable for idempotent/exists cases
@@ -124,15 +125,17 @@ export const options = {
   thresholds: {
     // global safety nets (only for expected_response:true)
     'http_req_failed{expected_response:true}': ['rate<0.01'],
-    'http_req_duration{expected_response:true}': ['p(95)<800'],
+
+  // Global latency SLO (strict only). Under increased pressure we expect queueing.
+  'http_req_duration{expected_response:true}': [PERF_PRESSURE ? 'p(95)<5000' : 'p(95)<800'],
 
   // A: public/browse should be fast.
   // In local Docker/Windows env, occasional cold paths can spike; keep a reasonable guardrail.
-  'http_req_duration{expected_response:true,flow:A}': ['p(95)<900'],
+    'http_req_duration{expected_response:true,flow:A}': [PERF_PRESSURE ? 'p(95)<5000' : 'p(95)<900'],
 
     // B: writes can be slower, but must be reliable
     'http_req_failed{expected_response:true,flow:B}': ['rate<0.02'],
-    'http_req_duration{expected_response:true,flow:B}': ['p(95)<1200'],
+  'http_req_duration{expected_response:true,flow:B}': [PERF_PRESSURE ? 'p(95)<5000' : 'p(95)<1200'],
 
     // C/D: light coverage, keep reasonable
     'http_req_failed{expected_response:true,flow:C}': ['rate<0.02'],
@@ -144,7 +147,7 @@ export const options = {
     'b_allowed_success_rate{has_samples:true}': ['rate>0.98'],
   // Total B allowed duration mixes several actions; keep it informational (no threshold).
   // Instead, enforce the slowest/most important write action(s).
-  'b_allowed_req_duration_create_review{has_samples:true}': ['p(95)<3000'],
+  'b_allowed_req_duration_create_review{has_samples:true}': [PERF_PRESSURE ? 'p(95)<5000' : 'p(95)<3000'],
   },
 };
 

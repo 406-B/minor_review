@@ -37,6 +37,27 @@
 
 注意：脚本里所有请求都强制 `redirects: 0`，避免被 302 带到 https。
 
+### 提升压力（推荐做法）
+
+默认脚本是一个“温和峰值”的 staged（峰值 20 VUs）。如果你想提升压力，建议优先通过 `STAGES` 增加并发与保持时间。
+
+同时建议在“明显加压”的场景打开 `PERF_PRESSURE=1`：这会启用一套更宽松的 **压力模式阈值**（默认阈值不变），避免高压下因排队导致 p95 跨越而直接失败。
+
+示例（高压 smoke，峰值 50 VUs，约 1~2 分钟）：
+
+```powershell
+$env:BASE_URL='http://[::1]'
+$env:REGISTER_USER='0'
+$env:PERF_PRESSURE='1'
+$env:STAGES='20s:20,40s:50,20s:0'
+& tools\k6\k6-v1.4.2-windows-amd64\k6.exe run .\perf\k6\api-core-stages.js
+```
+
+说明：
+
+- `PERF_PRESSURE=1` 仅影响 thresholds（p95 上限会放宽到 5s），不会改变请求语义/覆盖范围。
+- 仍然遵循“跳过所有审核/管理员接口”的约定（audit/approve/reject 不会被调用）。
+
 ## 约定：跳过所有“审核/管理员”接口
 
 为保证稳定性与贴近普通用户流量，本仓库的 k6 压测脚本**不会覆盖**下列类型接口：
