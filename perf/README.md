@@ -58,6 +58,43 @@ $env:STAGES='20s:20,40s:50,20s:0'
 - `PERF_PRESSURE=1` 仅影响 thresholds（p95 上限会放宽到 5s），不会改变请求语义/覆盖范围。
 - 仍然遵循“跳过所有审核/管理员接口”的约定（audit/approve/reject 不会被调用）。
 
+## 6 小时无人值守“极限并发”测试（自动升压 + 自动停）
+
+脚本：`perf/utils/limit-test.ps1`
+
+它会在一个目录下按台阶逐步升压：每个台阶跑固定时长，导出 k6 summary JSON，自动解析关键指标；一旦连续若干台阶触发“不可用”阈值，就会停止继续加压，并生成报告。
+
+### 默认安全策略（你睡觉期间建议用默认）
+
+- 台阶：从 20 VUs 开始，每步 +10，最多 300
+- 每步 6 分钟（360s），总预算 6 小时（~60 步上限）
+- 失败判定（strict only）：
+	- `http_req_failed{expected_response:true}` > 1% **或**
+	- `http_req_duration{expected_response:true}` p95 > 5000ms（以及 flow A/B 同级别）
+- 连续 2 步失败则停止（避免偶发抖动误判）
+
+### 启动示例（PowerShell）
+
+```powershell
+cd C:\rg2025_test\minor_review
+
+# 建议：高压阈值模式 + 读多写少，避免写链路把数据库拖死后影响判定
+\perf\utils\limit-test.ps1 -Hours 6 -StartVUs 20 -StepVUs 10 -MaxVUs 300 -StepSeconds 360 -PressureMode:$true -FlowWeights '{"A":85,"B":10,"C":3,"D":2}'
+```
+
+### 输出产物
+
+会生成目录：`perf/results/limit-<timestamp>/`
+
+- `report.md`：汇总结论（最后稳定台阶/首次不稳定区间起点）与每台阶指标表格
+- `report.csv`：同样的表格，方便 Excel 画图
+- `step-*-summary.json` / `step-*-console.txt`：每个台阶的原始输出
+
+### 如何“安全停止”
+
+- 直接关闭 PowerShell 窗口即可停止继续加压；已完成台阶的产物会保留。
+- runner 也会在达到预算时间或达到 `MaxVUs` 后自动结束。
+
 ## 约定：跳过所有“审核/管理员”接口
 
 为保证稳定性与贴近普通用户流量，本仓库的 k6 压测脚本**不会覆盖**下列类型接口：
