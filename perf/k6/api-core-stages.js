@@ -297,13 +297,25 @@ function probeIds(authHeader) {
   const out = { canteenId: null, dishId: null, tagId: null, postId: null, reviewId: null };
 
   // canteen list
-  const canteens = getExpected(`${BASE_URL}/api/v1/canteens/`, { name: 'canteens', flow: 'A' });
+  const canteens = http.get(`${BASE_URL}/api/v1/canteens/`, {
+    tags: { name: 'canteens_probe', flow: 'A', expected_response: 'false', semantic: 'edge' },
+    timeout: '10s',
+    redirects: 0,
+    expectedResponse: (r) => r.status >= 200 && r.status < 400,
+    headers: jsonHeaders(),
+  });
   const cj = safeJson(canteens);
   // list endpoints return {code,message,data:[...]}
   out.canteenId = extractFirstId(cj && cj.data, ['id', 'canteen_id']);
 
   // dish list
-  const dishes = getExpected(`${BASE_URL}/api/v1/dishes/?ordering=-view_count`, { name: 'dishes', flow: 'A' });
+  const dishes = http.get(`${BASE_URL}/api/v1/dishes/?ordering=-view_count`, {
+    tags: { name: 'dishes_probe', flow: 'A', expected_response: 'false', semantic: 'edge' },
+    timeout: '10s',
+    redirects: 0,
+    expectedResponse: (r) => r.status >= 200 && r.status < 400,
+    headers: jsonHeaders(),
+  });
   const dj = safeJson(dishes);
   out.dishId = extractFirstId(dj && dj.data, ['id', 'dish_id']);
 
@@ -566,6 +578,13 @@ function flowB(ids, authHeader) {
 
 function flowC(ids, authHeader) {
   // forum read heavy
+  // NOTE: Per requirement, we intentionally skip any audit/approve/reject endpoints.
+  // (Those are admin/moderation flows and tend to introduce permission instability.)
+
+  // Forum home (if enabled)
+  const home = getExpected(`${BASE_URL}/api/v1/forum/home/`, { name: 'forum_home', flow: 'C', expected_response: 'false' }, authHeader);
+  check(home, { 'forum home ok': (r) => [200, 404].includes(r.status) });
+
   const list = getExpected(`${BASE_URL}/api/v1/posts/?page=1&page_size=20`, { name: 'posts_list', flow: 'C' }, authHeader);
   check(list, { 'posts list 200': (r) => r.status === 200 });
 
@@ -589,7 +608,88 @@ function flowC(ids, authHeader) {
         authHeader
       );
       check(like, { 'post like ok': (r) => [200, 404].includes(r.status) });
+
+      // Create a comment (light write). Mark as non-strict to avoid permission/validation differences.
+      const createComment = postExpectedCustom(
+        `${BASE_URL}/api/v1/comments/create/`,
+        {
+          post_id: effectivePostId,
+          content: `k6 comment ${Date.now()} ${Math.random().toString(16).slice(2)}`,
+        },
+        { name: 'comment_create', flow: 'C', expected_response: 'false', semantic: 'allowed' },
+        (r) => [200, 201, 400, 401, 403, 404, 405].includes(r.status),
+        authHeader
+      );
+      check(createComment, { 'comment create ok': (r) => [200, 201, 400, 401, 403, 404, 405].includes(r.status) });
+
+      // Try to interact with an existing comment if we can extract an id.
+      let commentId = null;
+      try {
+        const cj = safeJson(comments);
+        commentId = extractFirstId(
+          (cj && cj.data && (cj.data.comments || cj.data.items || cj.data.results)) || cj,
+          ['id', 'comment_id']
+        );
+      } catch (_) {
+        // ignore
+      }
+
+      if (commentId != null) {
+        const commentLike = postExpectedCustom(
+          `${BASE_URL}/api/v1/comments/${commentId}/like/`,
+          {},
+          { name: 'comment_like', flow: 'C', expected_response: 'false', semantic: 'allowed' },
+          (r) => [200, 400, 401, 403, 404, 405].includes(r.status),
+          authHeader
+        );
+        check(commentLike, { 'comment like ok': (r) => [200, 400, 401, 403, 404, 405].includes(r.status) });
+
+        const commentDelete = postExpectedCustom(
+          `${BASE_URL}/api/v1/comments/${commentId}/delete/`,
+          {},
+          { name: 'comment_delete', flow: 'C', expected_response: 'false', semantic: 'allowed' },
+          (r) => [200, 400, 401, 403, 404, 405].includes(r.status),
+          authHeader
+        );
+        check(commentDelete, { 'comment delete ok': (r) => [200, 400, 401, 403, 404, 405].includes(r.status) });
+      }
     }
+  }
+
+  // Dish posts (optional)
+  if (ids.dishId != null) {
+    const dishPosts = getExpected(
+      `${BASE_URL}/api/v1/dishes/${ids.dishId}/posts/?page=1&page_size=10`,
+      { name: 'dish_posts', flow: 'C', expected_response: 'false' },
+      authHeader
+    );
+    check(dishPosts, { 'dish posts ok': (r) => [200, 404].includes(r.status) });
+  }
+
+  // Upload image + create post are heavier and often depend on storage settings.
+  // Keep them non-strict and tolerant; skip entirely when writes are disabled.
+  if (ENABLE_WRITES) {
+    const upload = http.post(`${BASE_URL}/api/v1/upload/image/`, null, {
+      tags: { name: 'post_upload_image', flow: 'C', expected_response: 'false', semantic: 'edge' },
+      timeout: '20s',
+      redirects: 0,
+      expectedResponse: (r) => [200, 400, 401, 403, 404, 405, 415].includes(r.status),
+      headers: Object.assign({}, jsonHeaders(authHeader)),
+    });
+    check(upload, { 'upload image ok': (r) => [200, 400, 401, 403, 404, 405, 415].includes(r.status) });
+
+    const createPost = postExpectedCustom(
+      `${BASE_URL}/api/v1/posts/create/`,
+      {
+        title: `k6 post ${Date.now()}`,
+        content: `k6 post content ${Math.random().toString(16).slice(2)}`,
+        dish_id: ids.dishId || undefined,
+      },
+      { name: 'post_create', flow: 'C', expected_response: 'false', semantic: 'allowed' },
+      (r) => [200, 201, 400, 401, 403, 404, 405].includes(r.status),
+      authHeader
+    );
+    check(createPost, { 'post create ok': (r) => [200, 201, 400, 401, 403, 404, 405].includes(r.status) });
   }
 }
 

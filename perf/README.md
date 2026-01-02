@@ -37,6 +37,15 @@
 
 注意：脚本里所有请求都强制 `redirects: 0`，避免被 302 带到 https。
 
+## 约定：跳过所有“审核/管理员”接口
+
+为保证稳定性与贴近普通用户流量，本仓库的 k6 压测脚本**不会覆盖**下列类型接口：
+
+- 任何包含 `audit` 的接口（例如 `GET /api/v1/audit/pending`、`POST /api/v1/audit/<type>/<id>`）
+- 任何 `approve` / `reject` 的管理员审核接口（例如 `POST /api/v1/dishes/<id>/tags/approve/|reject/`）
+
+这些接口需要管理员权限或人工流程，且返回码/数据状态差异较大，不适合作为默认 smoke 的稳定阈值来源。
+
 ### k6 可执行文件位置（Windows）
 
 - 压测使用的 k6 以 zip 形式存放在：`tools/k6/k6-v1.4.2-windows-amd64.zip`
@@ -138,7 +147,12 @@ JWT 获取方式：`PATCH /api/v1/login`，请求头使用 `Authorization: Beare
 	- `POST /api/v1/dishes/<id>/check-in/`
 	- `GET /api/v1/reviews/my/`
 - C（少量）：论坛（读为主，少量点赞）
+	- `GET /api/v1/forum/home/`（可选）
 	- `GET /api/v1/posts/`、（可选）`GET /api/v1/posts/<id>/`、`GET /api/v1/posts/<id>/comments/`
+	- （轻量写，non-strict）`POST /api/v1/posts/<id>/like/`
+	- （轻量写，non-strict）`POST /api/v1/comments/create/`、`POST /api/v1/comments/<id>/like/`、`POST /api/v1/comments/<id>/delete/`
+	- （可选，non-strict）`GET /api/v1/dishes/<dish_id>/posts/`
+	- （可选，non-strict/edge）`POST /api/v1/upload/image/`、`POST /api/v1/posts/create/`
 - D（少量）：个人中心（轻量读）
 	- `GET /api/v1/profile`、`GET /api/v1/profile/stats`、`GET /api/v1/profile/check-in-history`
 
@@ -162,6 +176,11 @@ B 流需要有 dish 数据才能产生写样本。
 - **allowed**：允许 200/400，只做功能 check，不纳入阈值（更接近“用户反复点击/幂等”）。
 
 如果你希望把“400=幂等成功”也算作成功率，我们可以把阈值逻辑改成以 `checks` 为门槛（而不是 http_req_failed）。
+
+### 覆盖策略：strict vs edge
+
+- `expected_response:true`：用于严格阈值统计（global p95、flow A p95 等）
+- `expected_response:false` / `semantic=edge`：用于覆盖但不纳入严格阈值（边界参数、可能较慢、或依赖环境配置的请求）
 
 ### 性能关键开关：禁用外部内容审核（本地压测建议开启）
 
