@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.core.cache import caches
 from .models import Post, Comment, Like
 
 
@@ -19,34 +20,75 @@ def create_post(user, subject, content, images=None, dish=None):
         images=images or [],
         dish=dish
     )
+    # 清除帖子列表缓存
+    _invalidate_post_list_cache()
     return post
 
 
 def get_post_list(page=1, page_size=20):
     """
-    获取帖子列表（分页）
+    获取帖子列表（分页，带缓存）
     """
+    cache_key = f'post_list:{page}:{page_size}'
+    cache = caches['short_term']  # 使用1分钟短期缓存
+    
+    # 尝试从缓存获取
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return cached_data
+    
+    # 缓存未命中，查询数据库
     offset = (page - 1) * page_size
-    posts = Post.objects.select_related('author').all()[offset:offset + page_size]
-    total = Post.objects.count()
-    return {
+    posts = Post.objects.select_related(
+        'author', 
+        'dish',
+        'dish__canteen'
+    ).prefetch_related(
+        'dish__tags'
+    ).all()[offset:offset + page_size]
+    
+    total = cache.get('post_list_total')
+    if total is None:
+        total = Post.objects.count()
+        cache.set('post_list_total', total, 60)
+    
+    result = {
         'posts': posts,
         'total': total,
         'page': page,
         'page_size': page_size,
         'total_pages': (total + page_size - 1) // page_size
     }
+    
+    # 缓存结果
+    cache.set(cache_key, result, 60)
+    return result
 
 
 def get_post_detail(post_id):
     """
-    获取帖子详情（包含评论）
+    获取帖子详情（包含评论，带缓存）
     """
+    cache_key = f'post_detail:{post_id}'
+    cache = caches['default']  # 使用5分钟默认缓存
+    
+    # 尝试从缓存获取
+    cached_post = cache.get(cache_key)
+    if cached_post:
+        return cached_post
+    
     try:
-        post = Post.objects.select_related('author', 'dish__canteen').prefetch_related(
+        post = Post.objects.select_related(
+            'author', 
+            'dish__canteen'
+        ).prefetch_related(
+            'dish__tags',
             'comments__author',
             'comments__replies__author'  # 预加载回复评论
         ).get(id=post_id)
+        
+        # 缓存结果
+        cache.set(cache_key, post, 300)
         return post
     except Post.DoesNotExist:
         return None
@@ -73,12 +115,16 @@ def toggle_post_like(user, post_id):
             # 新增点赞
             post.likes_count += 1
             post.save(update_fields=['likes_count'])
+            # 清除帖子详情缓存
+            caches['default'].delete(f'post_detail:{post_id}')
             return True, "点赞成功"
         else:
             # 取消点赞
             like.delete()
             post.likes_count = max(0, post.likes_count - 1)
             post.save(update_fields=['likes_count'])
+            # 清除帖子详情缓存
+            caches['default'].delete(f'post_detail:{post_id}')
             return False, "取消点赞"
 
 
@@ -119,6 +165,9 @@ def create_comment(user, post_id, content, images=None, parent_id=None):
         # 更新帖子评论数
         post.comments_count += 1
         post.save(update_fields=['comments_count'])
+        
+        # 清除帖子详情缓存（包含评论）
+        caches['default'].delete(f'post_detail:{post_id}')
         
         if parent_comment:
             return comment, "回复成功"
@@ -186,19 +235,46 @@ def toggle_comment_like(user, comment_id):
 
 def get_user_posts(user_id, page=1, page_size=20):
     """
-    获取用户发布的帖子列表
+    获取用户发布的帖子列表（带缓存）
     """
+    cache_key = f'user_posts:{user_id}:{page}:{page_size}'
+    cache = caches['default']
+    
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return cached_data
+    
     offset = (page - 1) * page_size
-    posts = Post.objects.filter(author_id=user_id).select_related('author')[offset:offset + page_size]
+    posts = Post.objects.filter(
+        author_id=user_id
+    ).select_related(
+        'author',
+        'dish',
+        'dish__canteen'
+    ).prefetch_related(
+        'dish__tags'
+    )[offset:offset + page_size]
+    
     total = Post.objects.filter(author_id=user_id).count()
     
-    return {
+    result = {
         'posts': posts,
         'total': total,
         'page': page,
         'page_size': page_size,
         'total_pages': (total + page_size - 1) // page_size
     }
+    
+    cache.set(cache_key, result, 300)
+    return result
+
+
+def _invalidate_post_list_cache():
+    """清除帖子列表相关缓存"""
+    cache = caches['short_term']
+    # 清除总数缓存
+    cache.delete('post_list_total')
+    # 注意：实际项目中可能需要更复杂的缓存键管理
 
 
 def delete_post(user, post_id):

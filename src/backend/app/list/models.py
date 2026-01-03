@@ -12,6 +12,9 @@ class Floor(models.Model):
         ordering = ['order', 'id']
         verbose_name = 'Floor'
         verbose_name_plural = 'Floors'
+        indexes = [
+            models.Index(fields=['canteen', 'order']),
+        ]
     def __str__(self):
         return f"{self.canteen.name} - {self.name}"
 
@@ -23,6 +26,9 @@ class Window(models.Model):
         ordering = ['order', 'id']
         verbose_name = 'Window'
         verbose_name_plural = 'Windows'
+        indexes = [
+            models.Index(fields=['floor', 'order']),
+        ]
     def __str__(self):
         return f"{self.floor.canteen.name}-{self.floor.name}-{self.name}"
 
@@ -132,6 +138,8 @@ class Dish(models.Model):
             models.Index(fields=['name']),
             models.Index(fields=['canteen']),
             models.Index(fields=['-rating']),
+            models.Index(fields=['window']),
+            models.Index(fields=['canteen', '-rating']),
         ]
 
     def __str__(self):

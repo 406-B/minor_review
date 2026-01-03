@@ -1,11 +1,10 @@
 version: '3.8'
 
 services:
-  # MySQL 数据库
+  # MySQL 数据库（不暴露公网端口）
   db:
     image: mysql:8.0
-    ports:
-      - "33306:3306"  # 映射到主机33306端口，避免与本地MySQL冲突
+    # ports 已移除 - 不对外暴露端口，仅内网访问
     container_name: minor_review_db
     restart: always
     environment:
@@ -26,40 +25,40 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --default-authentication-plugin=mysql_native_password
 
-  # Redis 缓存服务（用于跨worker会话共享）
+  # Redis 缓存服务（带密码保护，不暴露公网）
   redis:
     image: redis:7-alpine
     container_name: minor_review_redis
     restart: always
-    ports:
-      - "6379:6379"
+    # ports 已移除 - 不对外暴露端口，仅内网访问
     networks:
       - backend_network
+    environment:
+      - REDIS_PASSWORD=Minor_Review_Redis_2025_Secure_Pass
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "Minor_Review_Redis_2025_Secure_Pass", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --requirepass Minor_Review_Redis_2025_Secure_Pass
     volumes:
       - redis_data:/data
 
-  # phpMyAdmin 数据库管理界面
+  # phpMyAdmin 数据库管理界面（仅通过 Nginx 代理访问，需管理员权限）
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     container_name: minor_review_phpmyadmin
     restart: always
-    ports:
-      - "8080:80"  # 通过 http://localhost:8080 访问
+    # ports 已移除 - 通过 Nginx 反向代理访问 /phpmyadmin/
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: database
-      MYSQL_ROOT_PASSWORD: database
+      PMA_ABSOLUTE_URI: http://43.143.148.157/phpmyadmin/
       UPLOAD_LIMIT: 50M
+      # 不设置默认用户，必须手动登录
     networks:
       - backend_network
+      - nginx_network
     depends_on:
       db:
         condition: service_healthy
@@ -78,6 +77,7 @@ services:
     restart: always
     shm_size: '2gb'  # Chrome需要的共享内存
     environment:
+      DEBUG: "False"
       DJANGO_SETTINGS_MODULE: app.settings_prod
       DJANGO_SECRET_KEY: django-insecure-prod-key-auto-generated-2025
       DJANGO_ALLOWED_HOSTS: "*"
@@ -88,6 +88,7 @@ services:
       MYSQL_PORT: 3306
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      REDIS_PASSWORD: Minor_Review_Redis_2025_Secure_Pass
       REDIS_DB: 0
       JWT_SECRET: jwt-secret-key-auto-generated-2025
       PASSWORD_SALT: password-salt-auto-generated-2025

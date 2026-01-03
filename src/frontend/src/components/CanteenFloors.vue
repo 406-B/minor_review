@@ -227,6 +227,10 @@ watch(activeFloor, async () => {
   transition: opacity var(--fade-up-duration, 360ms) ease-out,
               transform var(--fade-up-duration, 360ms) ease-out;
   transition-delay: var(--fade-up-delay, 0ms);
+  /* GPU加速优化 */
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .no-animate .window-block {
   opacity: 1 !important;
@@ -260,6 +264,10 @@ watch(activeFloor, async () => {
   cursor: pointer;
   transition: box-shadow 0.18s, transform 0.18s;
   border: 1px solid #ffe0b2;
+  /* GPU加速优化 */
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .dish-card:hover {
   box-shadow: 0 8px 32px #ff980033;

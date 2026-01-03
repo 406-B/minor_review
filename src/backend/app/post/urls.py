@@ -8,6 +8,9 @@ urlpatterns = [
     # 菜品相关帖子
     path('dishes/<int:dish_id>/posts/', views.dish_posts, name='dish_posts'),
     
+    # 图片上传
+    path('upload/image/', views.upload_image, name='upload_image'),
+    
     # 帖子相关
     path('posts/', views.post_list, name='post_list'),
     path('posts/create/', views.create_post, name='create_post'),

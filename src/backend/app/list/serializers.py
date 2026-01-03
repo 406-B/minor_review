@@ -109,13 +109,29 @@ class DishSerializer(serializers.ModelSerializer):
 
 class DishListSerializer(serializers.ModelSerializer):
     window = WindowSerializer(read_only=True)
-    """Simplified serializer for list views"""
-    tags = TagSerializer(many=True, read_only=True)
-    canteen_name = serializers.CharField(source='canteen.name', read_only=True)
+    """Simplified serializer for list views - 优化版本"""
+    tags = serializers.SerializerMethodField()
+    canteen_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Dish
         fields = ['id', 'name', 'price', 'image', 'canteen_name', 'tags', 'rating', 'view_count', 'window']
+    
+    def get_tags(self, obj):
+        """优化：从预加载的数据中获取tags，避免额外查询"""
+        try:
+            # 如果已经prefetch，直接使用
+            tags = obj.tags.all()
+            return [{'id': t.id, 'name': t.name} for t in tags]
+        except Exception:
+            return []
+    
+    def get_canteen_name(self, obj):
+        """优化：从预加载的canteen对象中获取名称"""
+        try:
+            return obj.canteen.name if obj.canteen else ''
+        except Exception:
+            return ''
 
 class RatingSerializer(serializers.ModelSerializer):
     """评分序列化器"""
