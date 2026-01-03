@@ -1,0 +1,153 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: minor_review_db_e2e
+    environment:
+      MYSQL_ROOT_PASSWORD: database
+      MYSQL_DATABASE: minor_review_e2e
+    ports:
+      - "33307:3306"
+    volumes:
+      - minor_review_mysql_data_e2e:/var/lib/mysql
+      - ./init_e2e.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pdatabase"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    networks:
+      - backend_network
+
+  redis:
+    image: redis:6.2
+    container_name: minor_review_redis_e2e
+    ports:
+      - "6380:6379"
+    volumes:
+      - minor_review_redis_data_e2e:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend_network
+
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: minor_review_backend_e2e
+    environment:
+      DJANGO_SETTINGS_MODULE: app.settings_prod
+      DJANGO_SECRET_KEY: e2e-django-secret
+      DJANGO_ALLOWED_HOSTS: "*"
+      # E2E 环境覆盖：允许 E2E 前端 Origin 进行跨域与 CSRF 信任
+      CORS_ALLOWED_ORIGINS: "http://localhost,http://127.0.0.1,http://43.143.148.157"
+      CSRF_TRUSTED_ORIGINS: "http://localhost,http://127.0.0.1,http://43.143.148.157"
+      # JWT secret for E2E (should match token issuer)
+      JWT_SECRET: jwt-secret-key-auto-generated-2025
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: minor_review_e2e
+      MYSQL_USER: root
+      MYSQL_PASSWORD: database
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - minor_review_media_e2e:/app/media
+      - minor_review_static_e2e:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/" ]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+    networks:
+      - backend_network
+      - nginx_network
+
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: minor_review_frontend_e2e
+    environment:
+      VITE_API_BASE: "/api/"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health" ]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    networks:
+      - nginx_network
+
+  nginx:
+    image: nginx:latest
+    container_name: minor_review_nginx_e2e
+    ports:
+      - "8081:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/app.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - minor_review_media_e2e:/app/media:ro
+      - minor_review_static_e2e:/app/static:ro
+      - minor_review_nginx_logs_e2e:/var/log/nginx
+    environment:
+      UPSTREAM_HOST: backend
+      UPSTREAM_PORT: 8000
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nginx_network
+
+  cypress:
+    image: cypress/included:13.6.0
+    container_name: minor_review_cypress_e2e
+    working_dir: /e2e
+    environment:
+      CYPRESS_BASE_URL: http://nginx:80
+    volumes:
+      - ./:/e2e:cached
+    entrypoint: ["/bin/sh", "-c"]
+    command: "npx cypress run"
+    depends_on:
+      nginx:
+        condition: service_healthy
+    networks:
+      - nginx_network
+
+volumes:
+  minor_review_mysql_data_e2e:
+    name: minor_review_mysql_data_e2e
+  minor_review_redis_data_e2e:
+    name: minor_review_redis_data_e2e
+  minor_review_media_e2e:
+    name: minor_review_media_e2e
+  minor_review_static_e2e:
+    name: minor_review_static_e2e
+  minor_review_nginx_logs_e2e:
+    name: minor_review_nginx_logs_e2e
+
+networks:
+  nginx_network:
+    name: minor_review_nginx_net_e2e
+  backend_network:
+    name: minor_review_backend_net_e2e

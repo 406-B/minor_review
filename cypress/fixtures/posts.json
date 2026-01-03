@@ -1,0 +1,98 @@
+[
+  {
+    "model": "post.post",
+    "pk": 1,
+    "fields": {
+      "author": 1,
+      "subject": "宫保鸡丁强烈推荐！",
+      "content": "今天在第一食堂吃到超级好吃的宫保鸡丁，鸡肉嫩滑，花生酥脆，酸甜适中！强烈推荐给大家尝试。性价比超高，才12元一份！",
+      "images": [],
+      "dish": 1,
+      "status": "approved",
+      "likes_count": 25,
+      "comments_count": 3,
+      "created_at": "2024-01-15T09:00:00Z",
+      "updated_at": "2024-01-15T09:00:00Z"
+    }
+  },
+  {
+    "model": "post.post",
+    "pk": 2,
+    "fields": {
+      "author": 2,
+      "subject": "如何在食堂吃得健康又美味",
+      "content": "分享一些我在食堂的饮食经验：1. 多选蒸菜少选炸菜 2. 荤素搭配均衡 3. 少油少盐 4. 多吃蔬菜水果。希望对大家有帮助！",
+      "images": [],
+      "dish": null,
+      "status": "approved",
+      "likes_count": 42,
+      "comments_count": 0,
+      "created_at": "2024-01-14T14:30:00Z",
+      "updated_at": "2024-01-14T14:30:00Z"
+    }
+  },
+  {
+    "model": "post.post",
+    "pk": 3,
+    "fields": {
+      "author": 1,
+      "subject": "第二食堂麻辣烫测评",
+      "content": "今天去尝试了第二食堂的麻辣烫，给大家做个详细的测评。环境干净整洁，菜品新鲜，汤底麻辣适中，价格按重量计算很公道。推荐豆腐皮、金针菇和午餐肉的搭配！",
+      "images": [],
+      "dish": 4,
+      "status": "approved",
+      "likes_count": 38,
+      "comments_count": 0,
+      "created_at": "2024-01-13T11:00:00Z",
+      "updated_at": "2024-01-13T11:00:00Z"
+    }
+  },
+  {
+    "model": "post.post",
+    "pk": 4,
+    "fields": {
+      "author": 4,
+      "subject": "糖醋排骨真的绝了！",
+      "content": "第一食堂三楼新开的粤菜窗口，糖醋排骨做得太好吃了！酸甜比例完美，排骨外酥里嫩，每块都裹满了酱汁。虽然18元有点小贵，但份量足，值得一试！",
+      "images": [],
+      "dish": 3,
+      "status": "approved",
+      "likes_count": 56,
+      "comments_count": 0,
+      "created_at": "2024-01-16T12:30:00Z",
+      "updated_at": "2024-01-16T12:30:00Z"
+    }
+  },
+  {
+    "model": "post.post",
+    "pk": 5,
+    "fields": {
+      "author": 3,
+      "subject": "今天午餐吃什么？求推荐！",
+      "content": "纠结症患者每天最痛苦的时刻就是选午餐...大家有什么推荐吗？最近吃腻了炒菜，想换换口味。",
+      "images": [],
+      "dish": null,
+      "status": "approved",
+      "likes_count": 12,
+      "comments_count": 0,
+      "created_at": "2024-01-17T10:45:00Z",
+      "updated_at": "2024-01-17T10:45:00Z"
+    }
+  },
+  {
+    "model": "post.post",
+    "pk": 6,
+    "fields": {
+      "author": 4,
+      "subject": "红烧肉盖浇饭性价比之王",
+      "content": "第二食堂二楼的红烧肉盖浇饭，只要14元！肉块大，肥瘦相间，酱汁浓郁拌饭超级香。而且米饭管饱，学生党必选！",
+      "images": [],
+      "dish": 7,
+      "status": "approved",
+      "likes_count": 68,
+      "comments_count": 0,
+      "created_at": "2024-01-18T13:15:00Z",
+      "updated_at": "2024-01-18T13:15:00Z"
+    }
+  }
+]
