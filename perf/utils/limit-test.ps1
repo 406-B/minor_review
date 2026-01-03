@@ -23,10 +23,16 @@ param(
   [string]$ScriptPath = ".\\perf\\k6\\api-core-stages.js",
 
   # Use pressure thresholds profile (p95 tolerant). Recommended for limit tests.
-  [bool]$PressureMode = $true,
+  [switch]$PressureMode,
+
+  # Disable pressure mode (use stricter thresholds). Useful for dry-runs.
+  [switch]$NoPressureMode,
 
   # Skip auto-register (recommended for repeatability).
-  [bool]$SkipRegister = $true,
+  [switch]$SkipRegister,
+
+  # Disable skip-register.
+  [switch]$NoSkipRegister,
 
   # Optional: bias traffic to read-heavy during limit tests.
   [string]$FlowWeights = '{"A":85,"B":10,"C":3,"D":2}',
@@ -35,10 +41,27 @@ param(
   [double]$MaxStrictFailRate = 0.01,
   [int]$MaxStrictP95Ms = 5000,
   [int]$MaxFlowAP95Ms = 5000,
-  [int]$MaxFlowBP95Ms = 5000
+  [int]$MaxFlowBP95Ms = 5000,
+
+  # Additional availability guards
+  [double]$MinChecksRate = 0.98,
+  [double]$MinRps = 0.1
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Defaults: keep unattended test stable and repeatable.
+# - PressureMode: use tolerant thresholds (PERF_PRESSURE=1)
+# - SkipRegister: avoid repeated register attempts
+if (-not $PSBoundParameters.ContainsKey('PressureMode') -and -not $PSBoundParameters.ContainsKey('NoPressureMode')) {
+  $PressureMode = $true
+}
+if ($NoPressureMode) { $PressureMode = $false }
+
+if (-not $PSBoundParameters.ContainsKey('SkipRegister') -and -not $PSBoundParameters.ContainsKey('NoSkipRegister')) {
+  $SkipRegister = $true
+}
+if ($NoSkipRegister) { $SkipRegister = $false }
 
 function Find-K6([string]$Explicit) {
   if ($Explicit -and (Test-Path $Explicit)) { return (Resolve-Path $Explicit).Path }
@@ -109,6 +132,15 @@ function Parse-Summary([string]$summaryPath) {
 function Should-Stop($parsed) {
   $reasons = @()
 
+  if ($parsed.checksRate -ne $null -and $parsed.checksRate -lt $MinChecksRate) {
+    $reasons += ("checks rate {0:P2} < {1:P2}" -f $parsed.checksRate, $MinChecksRate)
+  }
+
+  # If summary exists but throughput is basically zero, it usually indicates hard failure / no traffic.
+  if ($parsed.rps -ne $null -and $parsed.rps -lt $MinRps) {
+    $reasons += ("rps {0:N2} < {1:N2} (no effective traffic)" -f $parsed.rps, $MinRps)
+  }
+
   if ($parsed.strictFailRate -ne $null -and $parsed.strictFailRate -gt $MaxStrictFailRate) {
     $reasons += ("strict fail rate {0:P2} > {1:P2}" -f $parsed.strictFailRate, $MaxStrictFailRate)
   }
@@ -126,6 +158,22 @@ function Should-Stop($parsed) {
   }
 
   return @{ hasStop = ($reasons.Count -gt 0); reasons = $reasons }
+}
+
+function Classify-K6Failure([string]$stderrPath, [int]$exitCode) {
+  if ($exitCode -eq 0) { return $null }
+  if (-not (Test-Path $stderrPath)) { return "k6 exit code $exitCode (no stderr)" }
+
+  $tail = (Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue | Select-Object -Last 80) -join "`n"
+
+  if ($tail -match 'thresholds on metrics' -or $tail -match 'thresholds have been crossed') {
+    return "k6 thresholds crossed (exit=$exitCode)"
+  }
+  if ($tail -match 'request timeout' -or $tail -match 'timeout') {
+    return "k6 request timeout(s) observed (exit=$exitCode)"
+  }
+
+  return "k6 exit code $exitCode (unknown)"
 }
 
 $repoRoot = (Resolve-Path '.').Path
@@ -151,6 +199,8 @@ while ( ($forceOneStep -or (Get-Date) -lt $deadline) -and $vu -le $MaxVUs) {
 
   $summaryPath = Join-Path $runDir ("step-{0:D3}-vus-{1}.summary.json" -f $step, $vu)
   $consolePath = Join-Path $runDir ("step-{0:D3}-vus-{1}.console.txt" -f $step, $vu)
+  $stdoutPath = Join-Path $runDir ("step-{0:D3}-vus-{1}.stdout.txt" -f $step, $vu)
+  $stderrPath = Join-Path $runDir ("step-{0:D3}-vus-{1}.stderr.txt" -f $step, $vu)
 
   # Prepare env for this step
   $env:BASE_URL = $BaseUrl
@@ -161,27 +211,54 @@ while ( ($forceOneStep -or (Get-Date) -lt $deadline) -and $vu -le $MaxVUs) {
 
   Write-Host ("\n[Step {0}] VUs={1} Stages={2}" -f $step, $vu, $stages)
 
-  # Run k6 and capture console output
-  $cmd = "`"$k6`" run `"$ScriptPath`" --summary-export `"$summaryPath`""
-  $out = cmd /c $cmd 2>&1 | Out-String
-  Set-Content -Path $consolePath -Value $out -Encoding UTF8
+  # Run k6 in a separate process and redirect stdout/stderr to file.
+  # This avoids VS Code integrated terminal renderer overhead and prevents NativeCommandError
+  # from aborting the whole runner when k6 exits non-zero (e.g. thresholds crossed).
+  $exitCode = 0
+  $args = @('run', $ScriptPath, '--summary-export', $summaryPath)
+  $p = Start-Process -FilePath $k6 -ArgumentList $args -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+  $exitCode = [int]$p.ExitCode
+
+  # Merge stdout/stderr into a single file for easy reading.
+  # (Start-Process does not allow RedirectStandardOutput and RedirectStandardError to be the same path.)
+  if (Test-Path $consolePath) { Remove-Item -Force $consolePath -ErrorAction SilentlyContinue }
+  if (Test-Path $stdoutPath) { Get-Content -LiteralPath $stdoutPath -ErrorAction SilentlyContinue | Out-File -LiteralPath $consolePath -Encoding utf8 }
+  if (Test-Path $stderrPath) { Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue | Out-File -LiteralPath $consolePath -Encoding utf8 -Append }
 
   if ($forceOneStep) { $deadline = Get-Date } # ensure single step when Hours<=0
 
-  $parsed = Parse-Summary $summaryPath
-  $stop = Should-Stop $parsed
+  $parsed = $null
+  $stop = $null
+  $k6Failure = Classify-K6Failure $stderrPath $exitCode
+  if (Test-Path $summaryPath) {
+    $parsed = Parse-Summary $summaryPath
+    $stop = Should-Stop $parsed
+  } else {
+    # If k6 died before writing summary, force a stop reason.
+    $parsed = @{ strictFailRate = $null; strictP95Ms = $null; flowAP95Ms = $null; flowBP95Ms = $null; rps = $null; checksRate = $null }
+    $stop = @{ hasStop = $true; reasons = @("missing summary export ($k6Failure)") }
+  }
+
+  # If k6 exits non-zero (e.g. thresholds crossed), treat it as a stop reason for this step.
+  # We still rely on parsed metrics to decide (when summary exists), but exit code is a strong signal.
+  if ($exitCode -ne 0 -and $stop -and -not $stop.hasStop) {
+    $stop = @{ hasStop = $true; reasons = @($k6Failure) }
+  } elseif ($exitCode -ne 0 -and $stop -and $stop.hasStop) {
+    $stop.reasons = @($stop.reasons + @($k6Failure))
+  }
 
   $row = [ordered]@{
     step = $step
     vus = $vu
     stages = $stages
+    k6ExitCode = $exitCode
     rps = $parsed.rps
     strictFailRate = $parsed.strictFailRate
     strictP95Ms = $parsed.strictP95Ms
     flowAP95Ms = $parsed.flowAP95Ms
     flowBP95Ms = $parsed.flowBP95Ms
-  ok = (-not $stop.hasStop)
-  reasons = ($stop.reasons -join '; ')
+    ok = (-not $stop.hasStop)
+    reasons = ($stop.reasons -join '; ')
     summary = (Split-Path -Leaf $summaryPath)
     console = (Split-Path -Leaf $consolePath)
   }

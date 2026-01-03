@@ -64,7 +64,7 @@ $env:STAGES='20s:20,40s:50,20s:0'
 
 它会在一个目录下按台阶逐步升压：每个台阶跑固定时长，导出 k6 summary JSON，自动解析关键指标；一旦连续若干台阶触发“不可用”阈值，就会停止继续加压，并生成报告。
 
-### 默认安全策略（你睡觉期间建议用默认）
+### 默认安全策略
 
 - 台阶：从 20 VUs 开始，每步 +10，最多 300
 - 每步 6 分钟（360s），总预算 6 小时（~60 步上限）
@@ -79,7 +79,11 @@ $env:STAGES='20s:20,40s:50,20s:0'
 cd C:\rg2025_test\minor_review
 
 # 建议：高压阈值模式 + 读多写少，避免写链路把数据库拖死后影响判定
-\perf\utils\limit-test.ps1 -Hours 6 -StartVUs 20 -StepVUs 10 -MaxVUs 300 -StepSeconds 360 -PressureMode:$true -FlowWeights '{"A":85,"B":10,"C":3,"D":2}'
+# 注意：PressureMode/SkipRegister 是 switch 参数，传入时不要写 :$true，直接写 -PressureMode 即可
+\perf\utils\limit-test.ps1 -Hours 6 -StartVUs 20 -StepVUs 10 -MaxVUs 300 -StepSeconds 360 -PressureMode -FlowWeights '{"A":85,"B":10,"C":3,"D":2}'
+
+# 如果你想用更严格阈值做短验证（更容易触发 thresholds crossed），用：
+# \perf\utils\limit-test.ps1 -Hours 0 -StartVUs 20 -StepVUs 10 -MaxVUs 40 -StepSeconds 20 -FailStreakStop 1 -NoPressureMode
 ```
 
 ### 输出产物
@@ -88,7 +92,15 @@ cd C:\rg2025_test\minor_review
 
 - `report.md`：汇总结论（最后稳定台阶/首次不稳定区间起点）与每台阶指标表格
 - `report.csv`：同样的表格，方便 Excel 画图
-- `step-*-summary.json` / `step-*-console.txt`：每个台阶的原始输出
+- `step-*-summary.json`：每个台阶的 k6 summary export
+- `step-*-stdout.txt` / `step-*-stderr.txt`：每个台阶的标准输出/错误输出（分开保存，避免 PowerShell 限制）
+- `step-*-console.txt`：把 stdout+stderr 合并后的便于阅读版本
+
+### VS Code 集成终端的建议
+
+runner 已改为用独立进程启动 k6，并把输出重定向到文件，因此即使 k6 因 thresholds crossed 以非 0 退出，也不会把脚本炸掉。
+
+不过做 6 小时无人值守时，仍建议用 Windows Terminal / 单独的 PowerShell 窗口运行，减少 VS Code 渲染与插件带来的不确定性。
 
 ### 如何“安全停止”
 
